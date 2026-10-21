@@ -14,4 +14,5 @@ comptime {
     _ = @import("audio/quantize.zig");
     _ = @import("audio/channelmixer.zig");
     _ = @import("audio/resampler.zig");
+    _ = @import("audio/converter.zig");
 }
