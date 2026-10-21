@@ -21,4 +21,5 @@ comptime {
     _ = @import("video/converter.zig");
     _ = @import("video/blend.zig");
     _ = @import("video/overlay.zig");
+    _ = @import("video/anc.zig");
 }
