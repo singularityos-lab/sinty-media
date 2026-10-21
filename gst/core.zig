@@ -48,6 +48,12 @@ comptime {
     _ = @import("bin.zig");
     _ = @import("pipeline.zig");
     _ = @import("ghostpad.zig");
+    _ = @import("pluginfeature.zig");
+    _ = @import("plugin.zig");
+    _ = @import("elementfactory.zig");
+    _ = @import("urihandler.zig");
+    _ = @import("registry.zig");
+    _ = @import("pluginloader.zig");
 }
 
 var ready = std.atomic.Value(bool).init(false);
@@ -61,20 +67,26 @@ pub var preload_plugins: ?*c.GSList = null;
 pub var registry_disabled = false;
 pub var registry_update_disabled = false;
 
-fn forkSetEnabled() ?*const fn (c.gboolean) callconv(.c) void {
-    return @import("gtype.zig").lookup(?*const fn (c.gboolean) callconv(.c) void, "gst_registry_fork_set_enabled");
-}
+
 
 fn findExecutablePath() void {
-    if (_gst_executable_path != null) return;
+    if (executablePath() != null) return;
     var buf: [4096]u8 = undefined;
     const n = c.readlink("/proc/self/exe", &buf, buf.len);
     if (n <= 0) return;
-    _gst_executable_path = c.g_strndup(&buf, @intCast(n));
+    executableSlot().* = c.g_strndup(&buf, @intCast(n));
+}
+
+fn executableSlot() *[*c]u8 {
+    return @import("gtype.zig").lookup(?*[*c]u8, "_gst_executable_path") orelse &_gst_executable_path;
+}
+
+pub fn executablePath() [*c]u8 {
+    return executableSlot().*;
 }
 
 pub export fn gst_get_main_executable_path() [*c]const u8 {
-    return _gst_executable_path;
+    return executablePath();
 }
 
 fn pre(_: ?*c.GOptionContext, _: ?*c.GOptionGroup, _: c.gpointer, _: [*c][*c]c.GError) callconv(.c) c.gboolean {
@@ -109,8 +121,35 @@ fn post(_: ?*c.GOptionContext, _: ?*c.GOptionGroup, _: c.gpointer, _: [*c][*c]c.
     @import("event.zig").initialize();
     @import("message.zig").initialize();
     @import("query.zig").initialize();
+    _ = c.g_type_class_ref(c.gst_plugin_error_get_type());
+    _ = c.g_type_class_ref(c.gst_plugin_flags_get_type());
+    _ = c.g_type_class_ref(c.gst_plugin_dependency_flags_get_type());
+    @import("plugin.zig").initialize();
+    _ = @import("plugin.zig").gst_plugin_register_static(1, 28, "staticelements", "core elements linked into the GStreamer library", registerCore, "1.28.2", "LGPL", "gstreamer", "sinty-media", "https://sinty.dev");
     ready.store(true, .release);
+    initStaticPlugins();
+    _ = @import("registry.zig").gst_update_registry();
+    @import("pluginfeature.zig").applyRankEnv();
     return 1;
+}
+
+fn registerCore(p: ?*c.GstPlugin) callconv(.c) c.gboolean {
+    const f = @import("elementfactory.zig");
+    const pl: [*c]@import("plugin.zig").Plugin = @ptrCast(@alignCast(p));
+    if (f.gst_element_register(pl, "bin", c.GST_RANK_PRIMARY, @import("bin.zig").gst_bin_get_type()) == 0 or
+        f.gst_element_register(pl, "pipeline", c.GST_RANK_PRIMARY, @import("pipeline.zig").gst_pipeline_get_type()) == 0)
+        @panic("core elements");
+    return 1;
+}
+
+fn initStaticPlugins() void {
+    const m = c.g_module_open(null, c.G_MODULE_BIND_LOCAL) orelse return;
+    defer _ = c.g_module_close(m);
+    var func: c.gpointer = null;
+    if (c.g_module_symbol(m, "gst_init_static_plugins", &func) != 0) {
+        const f: *const fn () callconv(.c) void = @ptrCast(func);
+        f();
+    }
 }
 
 const Opt = enum(c_int) { none, version, fatal_warnings, debug_level, debug, debug_disable, debug_no_color, debug_color_mode, debug_help, plugin_path, plugin_load, segtrap_disable, registry_update_disable, registry_fork_disable };
@@ -176,7 +215,7 @@ fn onOption(name: [*c]const u8, arg: [*c]const u8, _: c.gpointer, err: [*c][*c]c
         .registry_update_disable => if (!registry_disabled) {
             registry_update_disabled = true;
         },
-        .registry_fork_disable => if (forkSetEnabled()) |f| f(0),
+        .registry_fork_disable => @import("registry.zig").gst_registry_fork_set_enabled(0),
         .none => {
             c.g_set_error(err, c.g_option_error_quark(), c.G_OPTION_ERROR_UNKNOWN_OPTION, c.g_dgettext("gstreamer-1.0", "Unknown option"));
             return 0;

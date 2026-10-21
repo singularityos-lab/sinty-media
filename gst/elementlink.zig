@@ -444,20 +444,17 @@ pub export fn gst_element_link_pads(src: [*c]Element, sn: [*c]const u8, dest: [*
     return gst_element_link_pads_full(src, sn, dest, dn, c.GST_PAD_LINK_CHECK_DEFAULT);
 }
 
-fn lookup(comptime T: type, comptime n: [:0]const u8) T {
-    return gtype.lookup(T, n);
-}
-
 pub export fn gst_element_link_pads_filtered(src: [*c]Element, sn: [*c]const u8, dest: [*c]Element, dn: [*c]const u8, filter: [*c]c.GstCaps) c.gboolean {
     const f = "gst_element_link_pads_filtered";
     if (!check.that(element.isElement(src), f, "GST_IS_ELEMENT (src)")) return 0;
     if (!check.that(element.isElement(dest), f, "GST_IS_ELEMENT (dest)")) return 0;
     if (!check.that(filter == null or filter[0].mini_object.type == c._gst_caps_type, f, "filter == NULL || GST_IS_CAPS (filter)")) return 0;
     if (filter == null) return gst_element_link_pads(src, sn, dest, dn);
-    const make = lookup(?*const fn ([*c]const u8, [*c]const u8) callconv(.c) [*c]Element, "gst_element_factory_make") orelse return 0;
-    const bin_add = lookup(?*const fn ([*c]Element, [*c]Element) callconv(.c) c.gboolean, "gst_bin_add") orelse return 0;
-    const bin_remove = lookup(?*const fn ([*c]Element, [*c]Element) callconv(.c) c.gboolean, "gst_bin_remove") orelse return 0;
-    const bin_type = gtype.weakType("gst_bin_get_type");
+    const bin = @import("bin.zig");
+    const make = @import("elementfactory.zig").gst_element_factory_make;
+    const bin_add = bin.gst_bin_add;
+    const bin_remove = bin.gst_bin_remove;
+    const bin_type = bin.gst_bin_get_type();
     const cf = make("capsfilter", null);
     if (cf == null) return 0;
     _ = element.gst_element_set_locked_state(cf, 1);
@@ -466,7 +463,7 @@ pub export fn gst_element_link_pads_filtered(src: [*c]Element, sn: [*c]const u8,
     var state: c.GstState = 0;
     var pending: c.GstState = 0;
     _ = element.gst_element_get_state(parent, &state, &pending, 0);
-    if (bin_add(parent, cf) == 0) {
+    if (bin_add(@ptrCast(parent), cf) == 0) {
         c.gst_object_unref(parent);
         return 0;
     }

@@ -57,7 +57,23 @@ pub fn lookup(comptime T: type, comptime symbol: [:0]const u8) T {
     return @ptrCast(@alignCast(c.dlsym(null, symbol.ptr)));
 }
 
+var self_handle: ?*anyopaque = null;
+
+fn selfHandle() ?*anyopaque {
+    if (self_handle == null) {
+        var dl: c.Dl_info = undefined;
+        if (c.dladdr(@ptrCast(&selfHandle), &dl) != 0 and dl.dli_fname != null)
+            self_handle = c.dlopen(dl.dli_fname, c.RTLD_LAZY | c.RTLD_NOLOAD);
+    }
+    return self_handle;
+}
+
+pub fn own(comptime T: type, comptime symbol: [:0]const u8) T {
+    const h = selfHandle() orelse return lookup(T, symbol);
+    return @ptrCast(@alignCast(c.dlsym(h, symbol.ptr)));
+}
+
 pub fn weakType(comptime symbol: [:0]const u8) c.GType {
-    const f = lookup(?*const fn () callconv(.c) c.GType, symbol) orelse return 0;
+    const f = own(?*const fn () callconv(.c) c.GType, symbol) orelse return 0;
     return f();
 }

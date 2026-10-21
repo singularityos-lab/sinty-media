@@ -243,12 +243,10 @@ pub export fn gst_element_get_current_clock_time(e: [*c]Element) c.GstClockTime 
     return c.gst_clock_get_time(clock);
 }
 
-var ghost_type: c.GType = 0;
-var ghost_target: ?*const fn ([*c]Pad, [*c]Pad) callconv(.c) c.gboolean = null;
+const ghostpad = @import("ghostpad.zig");
 
 fn isGhost(p: [*c]Pad) bool {
-    if (ghost_type == 0) ghost_type = gtype.weakType("gst_ghost_pad_get_type");
-    return ghost_type != 0 and gtype.instanceOf(p, ghost_type);
+    return gtype.instanceOf(p, ghostpad.gst_ghost_pad_get_type());
 }
 
 pub export fn gst_element_add_pad(e: [*c]Element, p: [*c]Pad) c.gboolean {
@@ -320,8 +318,7 @@ pub export fn gst_element_remove_pad(e: [*c]Element, p: [*c]Pad) c.gboolean {
         c.gst_object_unref(peer);
     }
     if (isGhost(p)) {
-        if (ghost_target == null) ghost_target = gtype.lookup(?*const fn ([*c]Pad, [*c]Pad) callconv(.c) c.gboolean, "gst_ghost_pad_set_target");
-        if (ghost_target) |f| _ = f(p, null);
+        _ = ghostpad.gst_ghost_pad_set_target(@ptrCast(p), null);
     }
     lock(e);
     switch (p[0].direction) {

@@ -16,6 +16,11 @@
 #include <dlfcn.h>
 #include <execinfo.h>
 #include <unistd.h>
+#include <signal.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
 #include <glib.h>
 #include <glib-object.h>
+#include <gmodule.h>
 #include <gst/gst.h>

@@ -151,11 +151,8 @@ fn resetStart(p: [*c]Pipeline, t: c.GstClockTime) void {
 }
 
 pub export fn gst_pipeline_new(name: [*c]const u8) [*c]Element {
-    const make = gtype.lookup(?*const fn ([*c]const u8, [*c]const u8) callconv(.c) [*c]Element, "gst_element_factory_make");
-    if (make) |f| {
-        const r = f("pipeline", name);
-        if (r != null) return r;
-    }
+    const r = @import("elementfactory.zig").gst_element_factory_make("pipeline", name);
+    if (r != null) return r;
     return @ptrCast(@alignCast(c.g_object_new(gst_pipeline_get_type(), "name", name, @as([*c]const u8, null))));
 }
 

@@ -204,25 +204,16 @@ pub fn parentOf(p: anytype) [*c]Obj {
     return object.of(p).parent;
 }
 
-var element_type: c.GType = 0;
-
 pub fn elementType() c.GType {
-    if (element_type == 0) element_type = gtype.weakType("gst_element_get_type");
-    return element_type;
+    return @import("element.zig").gst_element_get_type();
 }
 
 pub fn isElement(p: anytype) bool {
-    const t = elementType();
-    return t != 0 and gtype.instanceOf(p, t);
+    return gtype.instanceOf(p, elementType());
 }
 
-var post_fn: ?*const fn ([*c]c.GstElement, [*c]c.GstMessage) callconv(.c) c.gboolean = null;
-
 pub fn post(el: [*c]c.GstElement, msg: [*c]c.GstMessage) void {
-    if (post_fn == null) post_fn = gtype.lookup(?*const fn ([*c]c.GstElement, [*c]c.GstMessage) callconv(.c) c.gboolean, "gst_element_post_message");
-    if (post_fn) |f| {
-        _ = f(el, msg);
-    } else c.gst_mini_object_unref(@ptrCast(msg));
+    _ = @import("element.zig").gst_element_post_message(el, msg);
 }
 
 pub fn nameOf(o: [*c]Obj) [*c]const u8 {
