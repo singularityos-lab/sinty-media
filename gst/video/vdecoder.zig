@@ -506,7 +506,7 @@ fn sinkEventDefault(d: [*c]Dec, event_in: [*c]Event) callconv(.c) c.gboolean {
             const f = drainOut(d, true);
             streamUnlock(d);
             ret = f == c.GST_FLOW_OK;
-            if (ret and p.had_input_data and !p.had_output_data) post(d, c.GST_MESSAGE_ERROR, .stream, c.GST_STREAM_ERROR_DECODE, c.g_strdup(c.g_dgettext("gst-plugins-base-1.0", "No valid frames decoded before end of stream")), c.g_strdup("no valid frames found"), "gst_video_decoder_sink_event_default", 1503);
+            if (ret and p.had_input_data and !p.had_output_data) post(d, c.GST_MESSAGE_ERROR, .stream, c.GST_STREAM_ERROR_DECODE, c.g_strdup("No valid frames decoded before end of stream"), c.g_strdup("no valid frames found"), "gst_video_decoder_sink_event_default", 1503);
             forward = true;
         },
         c.GST_EVENT_GAP => {
@@ -1695,7 +1695,7 @@ fn decideAllocationDefault(d: [*c]Dec, query: [*c]Query) callconv(.c) c.gboolean
             if (c.gst_buffer_pool_set_config(p, config) == 0) {
                 if (allocator != null) c.gst_object_unref(allocator);
                 c.gst_object_unref(p);
-                el.messageAt(d, c.GST_MESSAGE_ERROR, .resource, c.GST_RESOURCE_ERROR_SETTINGS, c.g_strdup(c.g_dgettext("gst-plugins-base-1.0", "Failed to configure the buffer pool")), c.g_strdup("Configuration is most likely invalid, please report this issue."), PATH, "gst_video_decoder_decide_allocation_default", 4373, null);
+                el.messageAt(d, c.GST_MESSAGE_ERROR, .resource, c.GST_RESOURCE_ERROR_SETTINGS, c.g_strdup("Failed to configure the buffer pool"), c.g_strdup("Configuration is most likely invalid, please report this issue."), PATH, "gst_video_decoder_decide_allocation_default", 4373, null);
                 return 0;
             }
         }
