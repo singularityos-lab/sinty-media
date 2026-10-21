@@ -11,7 +11,7 @@ const Lib = struct {
 const libs = [_]Lib{
     .{ .name = "gstreamer-1.0", .root = "gst/core.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gmodule-2.0" }, .deps = &.{} },
     .{ .name = "gstbase-1.0", .root = "gst/base.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0" }, .deps = &.{} },
-    .{ .name = "gsttag-1.0", .root = "gst/tag.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "zlib" }, .deps = &.{} },
+    .{ .name = "gsttag-1.0", .root = "gst/tag.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "zlib" }, .deps = &.{}, .dest = "staging" },
     .{ .name = "gstapp-1.0", .root = "gst/app.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0" }, .deps = &.{} },
 };
 
@@ -73,7 +73,7 @@ pub fn build(b: *std.Build) void {
 
     const c_mod = gstModule(b, "tests/diff/c.zig", target, optimize, &.{ "gobject-2.0", "glib-2.0" });
     const diff_step = b.step("diff", "build the differential tests");
-    for ([_][]const u8{ "object", "buffer", "caps", "misc", "pool", "taglist", "toc", "streams", "event", "message", "query", "clock", "bus", "task", "pad", "element", "bin", "pipeline", "ghostpad", "registry", "parse", "uri", "extras", "helpers", "logging", "control", "dot", "real" }) |name| {
+    for ([_][]const u8{ "object", "buffer", "caps", "misc", "pool", "taglist", "toc", "streams", "event", "message", "query", "clock", "bus", "task", "pad", "element", "bin", "pipeline", "ghostpad", "registry", "parse", "uri", "extras", "helpers", "logging", "control", "dot", "real", "quarks" }) |name| {
         const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
         m.addImport("c", c_mod);
         const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
@@ -87,7 +87,7 @@ pub fn build(b: *std.Build) void {
         diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
     }
 
-    for ([_][]const u8{ "tag", "id3v2" }) |name| {
+    for ([_][]const u8{ "tag", "id3v2", "xmp" }) |name| {
         const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-tag-1.0", "gstreamer-base-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0", "zlib" });
         m.addImport("c", c_mod);
         const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });

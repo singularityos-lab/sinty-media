@@ -212,8 +212,33 @@ fn vorbis() void {
     out("  short null {d}", .{@intFromBool(short == null)});
 }
 
+fn findPng(tf: [*c]c.GstTypeFind, _: c.gpointer) callconv(.c) void {
+    const d = c.gst_type_find_peek(tf, 0, 8);
+    if (d == null) return;
+    if (std.mem.eql(u8, d[0..8], "\x89PNG\r\n\x1a\n")) {
+        const caps = c.gst_caps_new_empty_simple("image/png");
+        c.gst_type_find_suggest(tf, c.GST_TYPE_FIND_MAXIMUM, caps);
+        c.gst_caps_unref(caps);
+    } else if (std.mem.eql(u8, d[0..7], "http://")) {
+        const caps = c.gst_caps_new_empty_simple("text/uri-list");
+        c.gst_type_find_suggest(tf, c.GST_TYPE_FIND_LIKELY, caps);
+        c.gst_caps_unref(caps);
+    }
+}
+
+fn isolate() void {
+    _ = c.g_setenv("GST_PLUGIN_SYSTEM_PATH", "/nonexistent-sinty", 1);
+    _ = c.g_setenv("GST_REGISTRY", "/nonexistent-sinty/registry.bin", 1);
+}
+
+fn typefinders() void {
+    _ = c.gst_type_find_register(null, "sinty-test-png", c.GST_RANK_PRIMARY, findPng, null, null, null, null);
+}
+
 pub fn main() void {
+    isolate();
     c.gst_init(null, null);
+    typefinders();
     enumDump(c.gst_tag_image_type_get_type());
     enumDump(c.gst_tag_license_flags_get_type());
     enumDump(c.gst_tag_demux_result_get_type());
