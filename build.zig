@@ -12,6 +12,7 @@ const libs = [_]Lib{
     .{ .name = "gstreamer-1.0", .root = "gst/core.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gmodule-2.0" }, .deps = &.{} },
     .{ .name = "gstbase-1.0", .root = "gst/base.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0" }, .deps = &.{} },
     .{ .name = "gsttag-1.0", .root = "gst/tag.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "zlib" }, .deps = &.{} },
+    .{ .name = "gstaudio-1.0", .root = "gst/audio.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-tag-1.0", "m" }, .deps = &.{}, .dest = "staging" },
     .{ .name = "gstapp-1.0", .root = "gst/app.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0" }, .deps = &.{} },
 };
 
@@ -89,6 +90,13 @@ pub fn build(b: *std.Build) void {
 
     for ([_][]const u8{ "tag", "id3v2", "xmp", "exif", "tagelems", "realtag" }) |name| {
         const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-tag-1.0", "gstreamer-base-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0", "zlib" });
+        m.addImport("c", c_mod);
+        const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
+        diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+    }
+
+    for ([_][]const u8{"audio1"}) |name| {
+        const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-audio-1.0", "gstreamer-tag-1.0", "gstreamer-base-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
         m.addImport("c", c_mod);
         const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
         diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);

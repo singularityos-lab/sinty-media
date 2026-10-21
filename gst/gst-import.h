@@ -28,4 +28,7 @@
 #include <gst/base/base.h>
 #include <gst/app/app.h>
 #include <gst/tag/tag.h>
+#include <gst/audio/audio.h>
+#include <gst/audio/streamvolume.h>
+#include <gst/audio/gstaudioiec61937.h>
 #include <zlib.h>
