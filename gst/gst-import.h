@@ -35,4 +35,7 @@
 #include <gst/video/video-chroma.h>
 #include <gst/video/video-resampler.h>
 #include <gst/video/video-tile.h>
+#include <gst/allocators/allocators.h>
+#include <sys/ioctl.h>
+#include <linux/dma-buf.h>
 #include <zlib.h>

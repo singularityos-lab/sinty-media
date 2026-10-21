@@ -26,4 +26,5 @@ comptime {
     _ = @import("video/interfaces.zig");
     _ = @import("video/sinkfilter.zig");
     _ = @import("video/convertframe.zig");
+    _ = @import("video/dmabufpool.zig");
 }
