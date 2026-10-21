@@ -48,6 +48,8 @@ comptime {
     _ = @import("bin.zig");
     _ = @import("pipeline.zig");
     _ = @import("ghostpad.zig");
+    _ = @import("control.zig");
+    _ = @import("controlbinding.zig");
     _ = @import("pluginfeature.zig");
     _ = @import("plugin.zig");
     _ = @import("elementfactory.zig");
