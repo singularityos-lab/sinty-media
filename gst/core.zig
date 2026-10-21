@@ -61,6 +61,7 @@ comptime {
     _ = @import("tracer.zig");
     _ = @import("preset.zig");
     _ = @import("parse.zig");
+    _ = @import("uri.zig");
 }
 
 var ready = std.atomic.Value(bool).init(false);
