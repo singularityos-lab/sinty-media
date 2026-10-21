@@ -16,6 +16,13 @@ fn gstIncludeDir(b: *std.Build) []const u8 {
     return b.pathJoin(&.{ dir, "gstreamer-1.0" });
 }
 
+fn pkgVar(b: *std.Build, name: []const u8, fallback: []const u8) []const u8 {
+    var code: u8 = 0;
+    const r = b.runAllowFail(&.{ "pkg-config", b.fmt("--variable={s}", .{name}), "gstreamer-1.0" }, &code, .ignore) catch return fallback;
+    const v = std.mem.trim(u8, r, " \n");
+    return if (v.len == 0) fallback else v;
+}
+
 fn gstModule(b: *std.Build, root: []const u8, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, system: []const []const u8) *std.Build.Module {
     const mod = b.createModule(.{
         .root_source_file = b.path(root),
@@ -35,22 +42,30 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     const test_step = b.step("test", "run tests");
 
+    const config = b.addOptions();
+    config.addOption([]const u8, "plugin_dir", b.option([]const u8, "plugin-dir", "system plugin directory") orelse pkgVar(b, "pluginsdir", "/usr/lib/gstreamer-1.0"));
+    config.addOption([]const u8, "scanner_dir", b.option([]const u8, "scanner-dir", "directory of gst-plugin-scanner") orelse pkgVar(b, "pluginscannerdir", "/usr/libexec/gstreamer-1.0"));
+
     for (libs) |l| {
+        const root = gstModule(b, l.root, target, optimize, l.system);
+        root.addOptions("config", config);
         const lib = b.addLibrary(.{
             .name = l.name,
             .linkage = .dynamic,
             .version = .{ .major = 0, .minor = 2802, .patch = 0 },
-            .root_module = gstModule(b, l.root, target, optimize, l.system),
+            .root_module = root,
             .use_llvm = true,
         });
         b.installArtifact(lib);
-        const t = b.addTest(.{ .root_module = gstModule(b, l.root, target, optimize, l.system), .use_llvm = true });
+        const tm = gstModule(b, l.root, target, optimize, l.system);
+        tm.addOptions("config", config);
+        const t = b.addTest(.{ .root_module = tm, .use_llvm = true });
         test_step.dependOn(&b.addRunArtifact(t).step);
     }
 
     const c_mod = gstModule(b, "tests/diff/c.zig", target, optimize, &.{ "gobject-2.0", "glib-2.0" });
     const diff_step = b.step("diff", "build the differential tests");
-    for ([_][]const u8{ "object", "buffer", "caps", "misc", "pool", "taglist", "toc", "streams", "event", "message", "query", "clock", "bus", "task", "pad", "element", "bin", "pipeline", "ghostpad", "registry", "parse", "uri", "extras", "helpers", "logging", "control", "dot" }) |name| {
+    for ([_][]const u8{ "object", "buffer", "caps", "misc", "pool", "taglist", "toc", "streams", "event", "message", "query", "clock", "bus", "task", "pad", "element", "bin", "pipeline", "ghostpad", "registry", "parse", "uri", "extras", "helpers", "logging", "control", "dot", "real" }) |name| {
         const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
         m.addImport("c", c_mod);
         const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });

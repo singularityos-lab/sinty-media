@@ -577,11 +577,7 @@ fn scanAndUpdate(r: [*c]Registry, file: [*c]const u8) void {
         const home = c.g_build_filename(c.g_get_user_data_dir(), "gstreamer-1.0", "plugins", @as([*c]const u8, null));
         changed = scanPath(&s, home) or changed;
         c.g_free(home);
-        const lib = libDir();
-        const sys = if (lib != null) c.g_build_filename(lib, "gstreamer-1.0", @as([*c]const u8, null)) else c.g_strdup("/usr/lib/gstreamer-1.0");
-        changed = scanPath(&s, sys) or changed;
-        c.g_free(sys);
-        c.g_free(lib);
+        changed = scanPath(&s, std.fmt.comptimePrint("{s}", .{@import("config").plugin_dir})) or changed;
     }
     s.clear();
     changed = s.changed or changed;

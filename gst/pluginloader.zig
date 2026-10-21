@@ -86,17 +86,14 @@ fn scannerCandidates() [4][*c]u8 {
         out[0] = c.g_strdup(env);
         return out;
     }
+    const none: [*c]const u8 = null;
+    out[0] = c.g_build_filename(std.fmt.comptimePrint("{s}", .{@import("config").scanner_dir}), "gst-plugin-scanner", none);
     const lib = registry.libDir();
     defer c.g_free(lib);
-    if (lib == null) {
-        out[0] = c.g_strdup("/usr/libexec/gstreamer-1.0/gst-plugin-scanner");
-        return out;
-    }
-    const none: [*c]const u8 = null;
-    out[0] = c.g_build_filename(lib, "gstreamer1.0", "gstreamer-1.0", "gst-plugin-scanner", none);
-    out[1] = c.g_build_filename(lib, "..", "libexec", "gstreamer-1.0", "gst-plugin-scanner", none);
-    out[2] = c.g_build_filename(lib, "gstreamer-1.0", "gst-plugin-scanner", none);
-    out[3] = c.g_strdup("/usr/libexec/gstreamer-1.0/gst-plugin-scanner");
+    if (lib == null) return out;
+    out[1] = c.g_build_filename(lib, "gstreamer1.0", "gstreamer-1.0", "gst-plugin-scanner", none);
+    out[2] = c.g_build_filename(lib, "..", "libexec", "gstreamer-1.0", "gst-plugin-scanner", none);
+    out[3] = c.g_build_filename(lib, "gstreamer-1.0", "gst-plugin-scanner", none);
     return out;
 }
 
