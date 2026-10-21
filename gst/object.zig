@@ -353,3 +353,26 @@ pub export fn gst_object_get_path_string(o: [*c]Obj) [*c]u8 {
     c.g_slist_free(chain);
     return path;
 }
+
+pub export fn gst_object_default_deep_notify(go: [*c]c.GObject, orig: [*c]Obj, pspec: [*c]c.GParamSpec, excluded: [*c][*c]u8) void {
+    _ = go;
+    if (pspec.*.flags & c.G_PARAM_READABLE == 0) {
+        const path = gst_object_get_path_string(orig);
+        c.g_log("GStreamer", c.G_LOG_LEVEL_WARNING, "Parameter %s not readable in %s.", pspec.*.name, path);
+        c.g_free(path);
+        return;
+    }
+    var e = excluded;
+    while (e != null and e.* != null) : (e += 1) {
+        if (std.mem.orderZ(u8, pspec.*.name, e.*) == .eq) return;
+    }
+    var v = std.mem.zeroes(c.GValue);
+    _ = c.g_value_init(&v, pspec.*.value_type);
+    c.g_object_get_property(@ptrCast(orig), pspec.*.name, &v);
+    const text = if (c.g_type_check_value_holds(&v, G_TYPE_STRING) != 0) c.g_value_dup_string(&v) else @import("value.zig").gst_value_serialize(&v);
+    const path = gst_object_get_path_string(orig);
+    c.g_print("%s: %s = %s\n", path, pspec.*.name, text);
+    c.g_free(path);
+    c.g_free(text);
+    c.g_value_unset(&v);
+}

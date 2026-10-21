@@ -42,10 +42,6 @@ var aggregator_quark: c.GQuark = 0;
 var registry: ?*c.GHashTable = null;
 var lock: c.GRWLock = std.mem.zeroes(c.GRWLock);
 
-fn factoryLoad() ?*const fn ([*c]const u8) callconv(.c) [*c]const Info {
-    return @import("gtype.zig").lookup(?*const fn ([*c]const u8) callconv(.c) [*c]const Info, "gst_meta_factory_load");
-}
-
 pub fn initialize() void {
     c.g_rw_lock_init(&lock);
     registry = c.g_hash_table_new_full(c.g_str_hash, c.g_str_equal, null, c.g_free);
@@ -315,7 +311,7 @@ pub export fn gst_meta_deserialize(buf: [*c]Buffer, data: [*c]const c.guint8, si
     consumed.* = total;
     var info = gst_meta_get_info(name);
     if (info == null) {
-        if (factoryLoad()) |load| info = load(name);
+        info = @import("metafactory.zig").gst_meta_factory_load(name);
         if (info == null) return null;
     }
     const de = info[0].deserialize_func orelse return null;

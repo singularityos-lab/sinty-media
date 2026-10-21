@@ -228,7 +228,7 @@ pub export fn gst_debug_level_get_name(level: Level) [*c]const u8 {
     };
 }
 
-const CatPtr = [*c]Category;
+pub const CatPtr = [*c]Category;
 pub export var GST_CAT_DEFAULT: CatPtr = null;
 pub export var GST_CAT_GST_INIT: CatPtr = null;
 pub export var GST_CAT_MEMORY: CatPtr = null;
@@ -549,7 +549,7 @@ fn logGuards(comptime f: []const u8, cat: CatPtr, file: [*c]const u8, func: [*c]
     return check.that(text != null, f, text_name ++ " != NULL");
 }
 
-fn logVa(cat: CatPtr, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, object: [*c]c.GObject, id: [*c]const u8, format: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+pub fn logVa(cat: CatPtr, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, object: [*c]c.GObject, id: [*c]const u8, format: [*c]const u8, ap: *va.VaList) callconv(.c) void {
     if (!check.that(cat != null, "gst_debug_log_full_valist", "category != NULL")) return;
     if (level > gst_debug_category_get_threshold(cat)) return;
     if (!logGuards("gst_debug_log_full_valist", cat, file, func, format, "format")) return;
@@ -580,7 +580,7 @@ pub export fn gst_debug_log_id_valist(cat: CatPtr, level: Level, file: [*c]const
     logVa(cat, level, file, func, line, null, id, format, va.fromC(ap));
 }
 
-fn logText(cat: CatPtr, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, object: [*c]c.GObject, id: [*c]const u8, text: [*c]const u8) void {
+pub fn logText(cat: CatPtr, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, object: [*c]c.GObject, id: [*c]const u8, text: [*c]const u8) void {
     if (!check.that(cat != null, "gst_debug_log_literal_full", "category != NULL")) return;
     if (level > gst_debug_category_get_threshold(cat)) return;
     if (!logGuards("gst_debug_log_literal_full", cat, file, func, text, "message_string")) return;

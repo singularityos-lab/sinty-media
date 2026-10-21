@@ -1264,6 +1264,14 @@ const AsyncCall = struct {
 var async_pool: ?*c.GThreadPool = null;
 var async_lock: c.GMutex = std.mem.zeroes(c.GMutex);
 
+pub fn shutdownAsync() void {
+    c.g_mutex_lock(&async_lock);
+    const pool = async_pool;
+    async_pool = null;
+    c.g_mutex_unlock(&async_lock);
+    if (pool) |p| c.g_thread_pool_free(p, 0, 1);
+}
+
 fn runAsync(raw: c.gpointer, _: c.gpointer) callconv(.c) void {
     const d: *AsyncCall = @ptrCast(@alignCast(raw));
     if (d.object != null) {

@@ -68,6 +68,8 @@ comptime {
     _ = @import("setters.zig");
     _ = @import("protection.zig");
     _ = @import("helpers.zig");
+    _ = @import("metafactory.zig");
+    _ = @import("logcontext.zig");
 }
 
 var ready = std.atomic.Value(bool).init(false);
@@ -291,6 +293,29 @@ pub export fn gst_init(argc: [*c]c_int, argv: [*c][*c][*c]u8) void {
         if (err != null) c.g_error_free(err);
         std.c.exit(1);
     }
+}
+
+var deinitialized = false;
+
+pub export fn gst_deinit() void {
+    c.g_rec_mutex_lock(&init_guard);
+    defer c.g_rec_mutex_unlock(&init_guard);
+    if (!ready.load(.acquire)) return;
+    if (deinitialized) c.g_log("GStreamer", c.G_LOG_LEVEL_ERROR, "GStreamer should not be deinitialized a second time.");
+    c.g_thread_pool_set_max_unused_threads(0);
+    @import("element.zig").shutdownAsync();
+    @import("task.zig").gst_task_cleanup_all();
+    c.g_slist_free_full(preload_plugins, c.g_free);
+    preload_plugins = null;
+    c.g_list_free_full(plugin_paths, c.g_free);
+    plugin_paths = null;
+    const slot = executableSlot();
+    c.g_free(slot.*);
+    slot.* = null;
+    c.gst_object_unref(c.gst_system_clock_obtain());
+    @import("registry.zig").cleanup();
+    @import("tracer.zig").deinit();
+    deinitialized = true;
 }
 
 pub export fn gst_is_initialized() c.gboolean {
