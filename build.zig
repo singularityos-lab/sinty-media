@@ -11,6 +11,11 @@ const libs = [_]Lib{
     .{ .name = "gstreamer-1.0", .root = "gst/core.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gmodule-2.0" }, .deps = &.{} },
 };
 
+fn gstIncludeDir(b: *std.Build) []const u8 {
+    const dir = std.mem.trim(u8, b.run(&.{ "pkg-config", "--variable=includedir", "gstreamer-1.0" }), " \n");
+    return b.pathJoin(&.{ dir, "gstreamer-1.0" });
+}
+
 fn gstModule(b: *std.Build, root: []const u8, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, system: []const []const u8) *std.Build.Module {
     const mod = b.createModule(.{
         .root_source_file = b.path(root),
@@ -19,7 +24,7 @@ fn gstModule(b: *std.Build, root: []const u8, target: std.Build.ResolvedTarget, 
         .pic = true,
         .link_libc = true,
     });
-    mod.addIncludePath(b.path("include"));
+    mod.addIncludePath(.{ .cwd_relative = gstIncludeDir(b) });
     mod.addIncludePath(b.path("gst"));
     for (system) |s| mod.linkSystemLibrary(s, .{});
     return mod;
