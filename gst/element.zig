@@ -1,6 +1,7 @@
 const std = @import("std");
 const c = @import("c.zig").c;
 const check = @import("check.zig");
+const tracer = @import("tracer.zig");
 const gtype = @import("gtype.zig");
 const object = @import("object.zig");
 const info = @import("info.zig");
@@ -157,6 +158,7 @@ fn instanceInit(instance: [*c]c.GTypeInstance, _: c.gpointer) callconv(.c) void 
 }
 
 fn constructed(o: [*c]c.GObject) callconv(.c) void {
+    tracer.emit(.element_new, .{@as([*c]Element, @ptrCast(@alignCast(o)))});
     parent_class.?.constructed.?(o);
 }
 
@@ -295,6 +297,7 @@ pub export fn gst_element_add_pad(e: [*c]Element, p: [*c]Pad) c.gboolean {
     unlock(e);
     if (activate) _ = pad.gst_pad_set_active(p, 1);
     c.g_signal_emit(e, pad_added, 0, p);
+    tracer.emit(.element_add_pad, .{ e, pad.h(p) });
     return 1;
 }
 
@@ -337,6 +340,7 @@ pub export fn gst_element_remove_pad(e: [*c]Element, p: [*c]Pad) c.gboolean {
     e[0].pads_cookie +%= 1;
     unlock(e);
     c.g_signal_emit(e, pad_removed, 0, p);
+    tracer.emit(.element_remove_pad, .{ e, pad.h(p) });
     c.gst_object_unparent(@ptrCast(p));
     return 1;
 }
@@ -734,8 +738,10 @@ fn queryDefault(e: [*c]Element, q: [*c]c.GstQuery) callconv(.c) c.gboolean {
 pub export fn gst_element_query(e: [*c]Element, q: [*c]c.GstQuery) c.gboolean {
     if (!check.that(isElement(e), "gst_element_query", "GST_IS_ELEMENT (element)")) return 0;
     if (!check.that(q != null, "gst_element_query", "query != NULL")) return 0;
-    if (classOf(e).query) |f| return f(e, q);
-    return 0;
+    tracer.emit(.element_query_pre, .{ e, q });
+    const res: c.gboolean = if (classOf(e).query) |f| f(e, q) else 0;
+    tracer.emit(.element_query_post, .{ e, q, res });
+    return res;
 }
 
 fn postDefault(e: [*c]Element, m: [*c]c.GstMessage) callconv(.c) c.gboolean {
@@ -757,9 +763,13 @@ fn postDefault(e: [*c]Element, m: [*c]c.GstMessage) callconv(.c) c.gboolean {
 pub export fn gst_element_post_message(e: [*c]Element, m: [*c]c.GstMessage) c.gboolean {
     if (!check.that(isElement(e), "gst_element_post_message", "GST_IS_ELEMENT (element)")) return 0;
     if (!check.that(m != null, "gst_element_post_message", "message != NULL")) return 0;
-    if (classOf(e).post_message) |f| return f(e, m);
-    c.gst_mini_object_unref(@ptrCast(m));
-    return 0;
+    tracer.emit(.element_post_message_pre, .{ e, m });
+    var res: c.gboolean = 0;
+    if (classOf(e).post_message) |f| {
+        res = f(e, m);
+    } else c.gst_mini_object_unref(@ptrCast(m));
+    tracer.emit(.element_post_message_post, .{ e, res });
+    return res;
 }
 
 pub export fn _gst_element_error_printf(fmt: [*c]const u8, ...) callconv(.c) [*c]u8 {
@@ -982,7 +992,9 @@ fn setStateDefault(e: [*c]Element, state: c.GstState) callconv(.c) c.GstStateCha
 }
 
 pub export fn gst_element_change_state(e: [*c]Element, t: c.GstStateChange) c.GstStateChangeReturn {
+    tracer.emit(.element_change_state_pre, .{ e, t });
     var ret: c.GstStateChangeReturn = if (classOf(e).change_state) |f| f(e, t) else c.GST_STATE_CHANGE_FAILURE;
+    tracer.emit(.element_change_state_post, .{ e, t, ret });
     switch (ret) {
         c.GST_STATE_CHANGE_FAILURE => gst_element_abort_state(e),
         c.GST_STATE_CHANGE_ASYNC => {

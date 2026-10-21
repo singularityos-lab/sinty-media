@@ -58,6 +58,7 @@ comptime {
     _ = @import("dynamictype.zig");
     _ = @import("device.zig");
     _ = @import("devicemonitor.zig");
+    _ = @import("tracer.zig");
 }
 
 var ready = std.atomic.Value(bool).init(false);
@@ -134,6 +135,7 @@ fn post(_: ?*c.GOptionContext, _: ?*c.GOptionGroup, _: c.gpointer, _: [*c][*c]c.
     initStaticPlugins();
     _ = @import("registry.zig").gst_update_registry();
     @import("pluginfeature.zig").applyRankEnv();
+    @import("tracer.zig").initialize();
     return 1;
 }
 

@@ -2,6 +2,7 @@ const std = @import("std");
 const c = @import("c.zig").c;
 const check = @import("check.zig");
 const pad = @import("pad.zig");
+const tracer = @import("tracer.zig");
 const info = @import("info.zig");
 
 comptime {
@@ -384,9 +385,11 @@ fn pushSticky(p: [*c]Pad, ev: *PadEvent, data: ?*anyopaque) bool {
         d.ret = SUCCESS_1;
     } else {
         unlock(p);
+        tracer.emit(.pad_push_event_pre, .{ h(p), e });
         lock(p);
         d.ret = pushEventUnchecked(p, @ptrCast(c.gst_mini_object_ref(@ptrCast(e))), c.GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM);
         unlock(p);
+        tracer.emit(.pad_push_event_post, .{ h(p), @as(c.gboolean, @intFromBool(d.ret >= c.GST_FLOW_OK)) });
         lock(p);
         if (d.ret == SUCCESS_1) d.ret = c.GST_FLOW_OK;
     }
@@ -415,9 +418,11 @@ fn checkSticky(p: [*c]Pad, e: [*c]Event) Flow {
         if (pad.findByType(p, c.GST_EVENT_EOS, 0)) |ev| if (ev.received == 0) {
             const eos: [*c]Event = @ptrCast(c.gst_mini_object_ref(@ptrCast(ev.event)));
             unlock(p);
+            tracer.emit(.pad_push_event_pre, .{ h(p), eos });
             lock(p);
             d.ret = pushEventUnchecked(p, eos, c.GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM);
             unlock(p);
+            tracer.emit(.pad_push_event_post, .{ h(p), @as(c.gboolean, @intFromBool(d.ret >= c.GST_FLOW_OK)) });
             lock(p);
             if (d.ret == c.GST_FLOW_CUSTOM_SUCCESS) d.ret = c.GST_FLOW_OK;
         };
@@ -440,6 +445,14 @@ pub export fn gst_pad_query(p: [*c]Pad, q: [*c]Query) c.gboolean {
         if (queryFlags(q) & c.GST_QUERY_TYPE_DOWNSTREAM == 0) return wrongQuery(p, q);
         kind = c.GST_PAD_PROBE_TYPE_QUERY_DOWNSTREAM;
     } else return badDirection(p);
+    tracer.emit(.pad_query_pre, .{ h(p), q });
+    var res: c.gboolean = 0;
+    const ret = queryBody(p, q, kind, &res);
+    tracer.emit(.pad_query_post, .{ h(p), q, res });
+    return ret;
+}
+
+fn queryBody(p: [*c]Pad, q: [*c]Query, kind: c.GstPadProbeType, res_out: *c.gboolean) c.gboolean {
     const serialized = queryFlags(q) & c.GST_QUERY_TYPE_SERIALIZED != 0;
     if (serialized) pad.streamLock(p);
     defer if (serialized) pad.streamUnlock(p);
@@ -462,6 +475,7 @@ pub export fn gst_pad_query(p: [*c]Pad, q: [*c]Query) c.gboolean {
         return 0;
     };
     const res = func(h(p), parent, q);
+    res_out.* = res;
     pad.releaseParent(parent);
     if (res != 1) return 0;
     lock(p);
@@ -548,6 +562,14 @@ fn foldStop(r: Flow) Flow {
 }
 
 fn chainData(p: [*c]Pad, kind: c.GstPadProbeType, data_in: c.gpointer) Flow {
+    const list = kind & c.GST_PAD_PROBE_TYPE_BUFFER_LIST != 0;
+    if (list) tracer.emit(.pad_chain_list_pre, .{ h(p), @as(?*c.GstBufferList, @ptrCast(data_in)) }) else tracer.emit(.pad_chain_pre, .{ h(p), @as([*c]c.GstBuffer, @ptrCast(@alignCast(data_in))) });
+    const ret = chainBody(p, kind, data_in);
+    if (list) tracer.emit(.pad_chain_list_post, .{ h(p), ret }) else tracer.emit(.pad_chain_post, .{ h(p), ret });
+    return ret;
+}
+
+fn chainBody(p: [*c]Pad, kind: c.GstPadProbeType, data_in: c.gpointer) Flow {
     var data = data_in;
     pad.streamLock(p);
     defer pad.streamUnlock(p);
@@ -690,14 +712,20 @@ pub export fn gst_pad_push(p: [*c]Pad, b: [*c]c.GstBuffer) Flow {
     if (!check.that(pad.isPad(p), "gst_pad_push", "GST_IS_PAD (pad)")) return c.GST_FLOW_ERROR;
     if (!check.that(isSrc(p), "gst_pad_push", "GST_PAD_IS_SRC (pad)")) return c.GST_FLOW_ERROR;
     if (!check.that(isBuffer(b), "gst_pad_push", "GST_IS_BUFFER (buffer)")) return c.GST_FLOW_ERROR;
-    return pushData(p, c.GST_PAD_PROBE_TYPE_BUFFER | c.GST_PAD_PROBE_TYPE_PUSH, b);
+    tracer.emit(.pad_push_pre, .{ h(p), b });
+    const r = pushData(p, c.GST_PAD_PROBE_TYPE_BUFFER | c.GST_PAD_PROBE_TYPE_PUSH, b);
+    tracer.emit(.pad_push_post, .{ h(p), r });
+    return r;
 }
 
 pub export fn gst_pad_push_list(p: [*c]Pad, l: ?*c.GstBufferList) Flow {
     if (!check.that(pad.isPad(p), "gst_pad_push_list", "GST_IS_PAD (pad)")) return c.GST_FLOW_ERROR;
     if (!check.that(isSrc(p), "gst_pad_push_list", "GST_PAD_IS_SRC (pad)")) return c.GST_FLOW_ERROR;
     if (!check.that(isList(l), "gst_pad_push_list", "GST_IS_BUFFER_LIST (list)")) return c.GST_FLOW_ERROR;
-    return pushData(p, c.GST_PAD_PROBE_TYPE_BUFFER_LIST | c.GST_PAD_PROBE_TYPE_PUSH, l);
+    tracer.emit(.pad_push_list_pre, .{ h(p), l });
+    const r = pushData(p, c.GST_PAD_PROBE_TYPE_BUFFER_LIST | c.GST_PAD_PROBE_TYPE_PUSH, l);
+    tracer.emit(.pad_push_list_post, .{ h(p), r });
+    return r;
 }
 
 fn pullProbe(p: [*c]Pad, mask: c.GstPadProbeType, buf: *[*c]c.GstBuffer, offset: u64, size: c.guint) Probe {
@@ -810,6 +838,13 @@ pub export fn gst_pad_pull_range(p: [*c]Pad, offset: c.guint64, size: c.guint, o
     if (!check.that(pad.isPad(p), f, "GST_IS_PAD (pad)")) return c.GST_FLOW_ERROR;
     if (!check.that(isSink(p), f, "GST_PAD_IS_SINK (pad)")) return c.GST_FLOW_ERROR;
     if (!rangeArgs(f, out, size)) return c.GST_FLOW_ERROR;
+    tracer.emit(.pad_pull_range_pre, .{ h(p), offset, size });
+    const r = pullRange(p, offset, size, out);
+    tracer.emit(.pad_pull_range_post, .{ h(p), if (r == c.GST_FLOW_OK) out.* else null, r });
+    return r;
+}
+
+fn pullRange(p: [*c]Pad, offset: c.guint64, size: c.guint, out: [*c][*c]c.GstBuffer) Flow {
     lock(p);
     if (has(p, c.GST_PAD_FLAG_FLUSHING)) {
         pad.lastFlow(p).* = c.GST_FLOW_FLUSHING;
@@ -1055,6 +1090,13 @@ fn eventDirection(comptime f: []const u8, comptime verb: []const u8, p: [*c]Pad,
 pub export fn gst_pad_push_event(p: [*c]Pad, e: [*c]Event) c.gboolean {
     if (!check.that(pad.isPad(p), "gst_pad_push_event", "GST_IS_PAD (pad)")) return 0;
     if (!check.that(isEvent(e), "gst_pad_push_event", "GST_IS_EVENT (event)")) return 0;
+    tracer.emit(.pad_push_event_pre, .{ h(p), e });
+    const r = pushEvent(p, e);
+    tracer.emit(.pad_push_event_post, .{ h(p), r });
+    return r;
+}
+
+fn pushEvent(p: [*c]Pad, e: [*c]Event) c.gboolean {
     var kind: c.GstPadProbeType = undefined;
     if (isSrc(p)) {
         if (e[0].type & c.GST_EVENT_TYPE_DOWNSTREAM == 0) return @intFromBool(eventDirection("gst_pad_push_event", "pushing", p, e));
@@ -1099,6 +1141,13 @@ fn preEventCheck(p: [*c]Pad, e: [*c]Event) Flow {
 }
 
 fn sendEventUnchecked(p: [*c]Pad, e_in: [*c]Event, kind_in: c.GstPadProbeType) Flow {
+    tracer.emit(.pad_send_event_pre, .{ h(p), e_in });
+    const r = sendEventBody(p, e_in, kind_in);
+    tracer.emit(.pad_send_event_post, .{ h(p), r });
+    return r;
+}
+
+fn sendEventBody(p: [*c]Pad, e_in: [*c]Event, kind_in: c.GstPadProbeType) Flow {
     var kind = kind_in;
     var need_unlock = false;
     lock(p);

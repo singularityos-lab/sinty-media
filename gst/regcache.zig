@@ -184,6 +184,7 @@ pub const kinds = [_]Kind{
     @import("typefind.zig").kind,
     @import("dynamictype.zig").kind,
     @import("device.zig").kind,
+    @import("tracer.zig").kind,
 };
 
 fn kindFor(f: [*c]Feature) ?*const Kind {

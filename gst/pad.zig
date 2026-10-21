@@ -6,6 +6,7 @@ const object = @import("object.zig");
 const info = @import("info.zig");
 const padtemplate = @import("padtemplate.zig");
 const flow = @import("padflow.zig");
+const tracer = @import("tracer.zig");
 
 comptime {
     @import("abi.zig").check(@This());
@@ -962,6 +963,7 @@ pub export fn gst_pad_unlink(src: [*c]Pad, sink: [*c]Pad) c.gboolean {
     if (!check.that(isSrc(src), f, "GST_PAD_IS_SRC (srcpad)")) return 0;
     if (!check.that(isPad(sink), f, "GST_IS_PAD (sinkpad)")) return 0;
     if (!check.that(isSink(sink), f, "GST_PAD_IS_SINK (sinkpad)")) return 0;
+    tracer.emit(.pad_unlink_pre, .{ h(src), h(sink) });
     const parent = linkParent(src, sink, c.GST_STRUCTURE_CHANGE_TYPE_PAD_UNLINK);
     var result: c.gboolean = 0;
     lock(src);
@@ -984,6 +986,7 @@ pub export fn gst_pad_unlink(src: [*c]Pad, sink: [*c]Pad) c.gboolean {
         structureChange(sink, c.GST_STRUCTURE_CHANGE_TYPE_PAD_UNLINK, parent, false);
         c.gst_object_unref(parent);
     }
+    tracer.emit(.pad_unlink_post, .{ h(src), h(sink), result });
     return result;
 }
 
@@ -1065,6 +1068,13 @@ pub export fn gst_pad_link_full(src: [*c]Pad, sink: [*c]Pad, fl: c.GstPadLinkChe
     if (!check.that(isSrc(src), f, "GST_PAD_IS_SRC (srcpad)")) return c.GST_PAD_LINK_WRONG_DIRECTION;
     if (!check.that(isPad(sink), f, "GST_IS_PAD (sinkpad)")) return c.GST_PAD_LINK_REFUSED;
     if (!check.that(isSink(sink), f, "GST_PAD_IS_SINK (sinkpad)")) return c.GST_PAD_LINK_WRONG_DIRECTION;
+    tracer.emit(.pad_link_pre, .{ h(src), h(sink) });
+    const r = linkFull(src, sink, fl);
+    tracer.emit(.pad_link_post, .{ h(src), h(sink), r });
+    return r;
+}
+
+fn linkFull(src: [*c]Pad, sink: [*c]Pad, fl: c.GstPadLinkCheck) c.GstPadLinkReturn {
     const parent = linkParent(src, sink, c.GST_STRUCTURE_CHANGE_TYPE_PAD_LINK);
     defer if (parent != null) {
         structureChange(sink, c.GST_STRUCTURE_CHANGE_TYPE_PAD_LINK, parent, false);

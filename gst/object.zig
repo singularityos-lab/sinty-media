@@ -2,6 +2,7 @@ const std = @import("std");
 const c = @import("c.zig").c;
 const gtype = @import("gtype.zig");
 const check = @import("check.zig");
+const tracer = @import("tracer.zig");
 
 comptime {
     @import("abi.zig").check(@This());
@@ -81,6 +82,7 @@ fn classInit(klass: c.gpointer, _: c.gpointer) callconv(.c) void {
 
 fn constructed(o: [*c]c.GObject) callconv(.c) void {
     of(o).flags |= c.GST_OBJECT_FLAG_CONSTRUCTED;
+    tracer.emit(.object_created, .{@as([*c]Obj, of(o))});
     if (base_class.?.constructed) |f| f(o);
 }
 
@@ -103,6 +105,7 @@ fn finalize(go: [*c]c.GObject) callconv(.c) void {
     c.g_signal_handlers_destroy(go);
     c.g_free(o.name);
     c.g_mutex_clear(&o.lock);
+    tracer.emit(.object_destroyed, .{@as([*c]Obj, o)});
     if (base_class.?.finalize) |f| f(go);
 }
 
@@ -119,12 +122,14 @@ fn propertiesChanged(go: [*c]c.GObject, n: c.guint, list: [*c][*c]c.GParamSpec) 
 
 pub export fn gst_object_ref(p: c.gpointer) c.gpointer {
     if (!check.that(p != null, "gst_object_ref", "object != NULL")) return null;
+    tracer.emit(.object_reffed, .{ @as([*c]Obj, @ptrCast(@alignCast(p))), @as(c.gint, @intCast(@as(*c.GObject, @ptrCast(@alignCast(p))).ref_count + 1)) });
     return c.g_object_ref(p);
 }
 
 pub export fn gst_object_unref(p: c.gpointer) void {
     if (!check.that(p != null, "gst_object_unref", "object != NULL")) return;
     if (!check.that(@as(*c.GObject, @ptrCast(@alignCast(p))).ref_count > 0, "gst_object_unref", "((GObject *) object)->ref_count > 0")) return;
+    tracer.emit(.object_unreffed, .{ @as([*c]Obj, @ptrCast(@alignCast(p))), @as(c.gint, @intCast(@as(*c.GObject, @ptrCast(@alignCast(p))).ref_count - 1)) });
     c.g_object_unref(p);
 }
 

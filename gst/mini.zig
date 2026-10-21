@@ -2,6 +2,7 @@ const std = @import("std");
 const c = @import("c.zig").c;
 const gtype = @import("gtype.zig");
 const check = @import("check.zig");
+const tracer = @import("tracer.zig");
 
 comptime {
     @import("abi.zig").check(@This());
@@ -94,6 +95,7 @@ pub export fn gst_mini_object_init(m: [*c]Mini, flags: c.guint, t: c.GType, copy
     m.*.free = free;
     m.*.priv_pointer = null;
     setState(m, .bare);
+    tracer.emit(.mini_object_created, .{m});
 }
 
 pub export fn gst_mini_object_copy(m: [*c]const Mini) [*c]Mini {
@@ -186,7 +188,8 @@ pub export fn gst_mini_object_make_writable(m: [*c]Mini) [*c]Mini {
 
 pub export fn gst_mini_object_ref(m: [*c]Mini) [*c]Mini {
     if (!check.that(m != null, "gst_mini_object_ref", "mini_object != NULL")) return null;
-    _ = @atomicRmw(c.gint, &m.*.refcount, .Add, 1, .acq_rel);
+    const before = @atomicRmw(c.gint, &m.*.refcount, .Add, 1, .acq_rel);
+    tracer.emit(.mini_object_reffed, .{ m, before + 1 });
     return m;
 }
 
@@ -214,11 +217,13 @@ pub export fn gst_mini_object_unref(m: [*c]Mini) void {
     if (!check.that(@atomicLoad(c.gint, &m.*.refcount, .acquire) > 0, func, "GST_MINI_OBJECT_REFCOUNT_VALUE (mini_object) > 0")) return;
     const before = @atomicRmw(c.gint, &m.*.refcount, .Sub, 1, .acq_rel);
     if (!check.that(before > 0, func, "old_refcount > 0")) return;
+    tracer.emit(.mini_object_unreffed, .{ m, before - 1 });
     if (before != 1) return;
     const keep_going = if (m.*.dispose) |d| d(m) != 0 else true;
     if (!keep_going) return;
     if (!check.that((@as(c.guint, @bitCast(@atomicLoad(c.gint, &m.*.lockstate, .acquire))) & (SHARE_ONE - LOCK_ONE)) < 4, func, "(g_atomic_int_get (&mini_object->lockstate) & LOCK_MASK) < 4")) return;
     release(m);
+    tracer.emit(.mini_object_destroyed, .{m});
     if (m.*.free) |f| f(m);
 }
 

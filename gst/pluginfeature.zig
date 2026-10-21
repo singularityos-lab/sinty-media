@@ -1,6 +1,7 @@
 const std = @import("std");
 const c = @import("c.zig").c;
 const check = @import("check.zig");
+const tracer = @import("tracer.zig");
 const gtype = @import("gtype.zig");
 const object = @import("object.zig");
 const plugin = @import("plugin.zig");
@@ -84,6 +85,7 @@ pub export fn gst_plugin_feature_load(f: [*c]Feature) [*c]Feature {
         c.gst_object_unref(real);
         return null;
     }
+    tracer.emit(.plugin_feature_loaded, .{real});
     return real;
 }
 

@@ -274,6 +274,49 @@ fn devices() void {
     c.gst_object_unref(m2);
 }
 
+fn tracing() void {
+    const active = c.gst_tracing_get_active_tracers();
+    out("active tracers {d}", .{c.g_list_length(active)});
+    var l: ?*c.GList = active;
+    while (l) |n| : (l = n.next) {
+        var params: [*c]u8 = null;
+        c.g_object_get(n.data, "params", &params, @as([*c]const u8, null));
+        out("  tracer {s} params {s}", .{ str(c.g_type_name(c.G_TYPE_FROM_INSTANCE(n.data))), str(params) });
+        c.g_free(params);
+    }
+    c.g_list_free_full(active, c.gst_object_unref);
+    const list = c.gst_tracer_factory_get_list();
+    l = list;
+    while (l) |n| : (l = n.next) if (c.strstr(name(n.data).ptr, "sinty") != null) out("  tracer factory {s} type {s}", .{ name(n.data), str(c.g_type_name(c.gst_tracer_factory_get_tracer_type(@ptrCast(@alignCast(n.data))))) });
+    c.gst_plugin_feature_list_free(list);
+    const spec = c.gst_structure_new("value", "type", c.g_gtype_get_type(), @as(c.GType, 7 << c.G_TYPE_FUNDAMENTAL_SHIFT), "related", c.gst_tracer_value_scope_get_type(), c.GST_TRACER_VALUE_SCOPE_PROCESS, @as([*c]const u8, null));
+    const rec = c.gst_tracer_record_new("sinty.class", "value", c.gst_structure_get_type(), spec, @as([*c]const u8, null));
+    out("record {d} bad {d}", .{ @intFromBool(rec != null), @intFromBool(c.gst_tracer_record_new("bad.class", "x", c.G_TYPE_INT, @as(c_int, 1), @as([*c]const u8, null)) == null) });
+    c.gst_object_unref(rec);
+    const pipe = c.gst_pipeline_new("tp");
+    const src = c.gst_element_factory_make("sintytestsrc", "tsrc");
+    _ = c.gst_bin_add(@ptrCast(pipe), src);
+    const s = c.gst_pad_new("tsrcpad", c.GST_PAD_SRC);
+    _ = c.gst_object_ref(s);
+    _ = c.gst_element_add_pad(src, s);
+    const k = c.gst_pad_new("k", c.GST_PAD_SINK);
+    _ = c.gst_pad_link(s, k);
+    _ = c.gst_pad_set_active(s, 1);
+    _ = c.gst_pad_set_active(k, 1);
+    _ = c.gst_pad_push_event(s, c.gst_event_new_stream_start("tt"));
+    out("push {d}", .{c.gst_pad_push(s, c.gst_buffer_new_allocate(null, 3, null))});
+    const q = c.gst_query_new_latency();
+    out("peer query {d}", .{c.gst_pad_peer_query(k, q)});
+    c.gst_query_unref(q);
+    _ = c.gst_pad_unlink(s, k);
+    out("state {d}", .{c.gst_element_set_state(pipe, c.GST_STATE_READY)});
+    out("state {d}", .{c.gst_element_set_state(pipe, c.GST_STATE_NULL)});
+    _ = c.gst_bin_remove(@ptrCast(pipe), src);
+    c.gst_object_unref(s);
+    c.gst_object_unref(k);
+    c.gst_object_unref(pipe);
+}
+
 fn printErr(label: []const u8, e: [*c]c.GError) void {
     if (e == null) {
         out("{s}: no error", .{label});
@@ -403,6 +446,8 @@ pub fn main() void {
     _ = c.unsetenv("GST_PLUGIN_PATH");
     _ = c.unsetenv("GST_PLUGIN_PATH_1_0");
     if (stage == '3') _ = c.setenv("GST_REGISTRY_UPDATE", "no", 1);
+    if (stage == '2') _ = c.setenv("GST_TRACERS", "sintytracer(hello);nosuchtracer", 1);
+    if (stage == '3') _ = c.unsetenv("GST_TRACERS");
     out("stage {c}", .{stage});
     c.gst_init(null, null);
     dumpPlugins();
@@ -416,6 +461,7 @@ pub fn main() void {
         return;
     }
     if (stage == '2') {
+        tracing();
         exercise();
         again(exe_z, "3");
         return;

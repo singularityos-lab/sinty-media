@@ -146,7 +146,97 @@ fn providerType() c.GType {
     return S.t;
 }
 
+fn say(comptime fmt: []const u8, args: anytype) void {
+    var buf: [1024]u8 = undefined;
+    const t = std.fmt.bufPrint(&buf, "  [trace] " ++ fmt ++ "\n", args) catch return;
+    _ = std.c.write(1, t.ptr, t.len);
+}
+
+fn nm(o: anytype) []const u8 {
+    if (o == null) return "(null)";
+    const n = @as(*c.GstObject, @ptrCast(@alignCast(o))).name;
+    return if (n == null) "(null)" else std.mem.span(n);
+}
+
+fn onPushPre(_: ?*c.GObject, _: u64, pad: ?*c.GstPad, buf: [*c]c.GstBuffer) callconv(.c) void {
+    say("push-pre {s} size {d}", .{ nm(pad), c.gst_buffer_get_size(buf) });
+}
+
+fn onPushPost(_: ?*c.GObject, _: u64, pad: ?*c.GstPad, res: c.GstFlowReturn) callconv(.c) void {
+    say("push-post {s} {d}", .{ nm(pad), res });
+}
+
+fn onLinkPost(_: ?*c.GObject, _: u64, src: ?*c.GstPad, sink: ?*c.GstPad, res: c.GstPadLinkReturn) callconv(.c) void {
+    say("link-post {s}->{s} {d}", .{ nm(src), nm(sink), res });
+}
+
+fn onUnlinkPost(_: ?*c.GObject, _: u64, src: ?*c.GstPad, sink: ?*c.GstPad, res: c.gboolean) callconv(.c) void {
+    say("unlink-post {s}->{s} {d}", .{ nm(src), nm(sink), res });
+}
+
+fn onElementNew(_: ?*c.GObject, _: u64, e: ?*c.GstElement) callconv(.c) void {
+    say("element-new {s}", .{std.mem.span(c.g_type_name(c.G_TYPE_FROM_INSTANCE(e)))});
+}
+
+fn onBinAddPost(_: ?*c.GObject, _: u64, b: ?*c.GstBin, e: ?*c.GstElement, res: c.gboolean) callconv(.c) void {
+    say("bin-add-post {s} {s} {d}", .{ nm(b), nm(e), res });
+}
+
+fn onBinRemovePost(_: ?*c.GObject, _: u64, b: ?*c.GstBin, res: c.gboolean) callconv(.c) void {
+    say("bin-remove-post {s} {d}", .{ nm(b), res });
+}
+
+fn onPost(_: ?*c.GObject, _: u64, e: ?*c.GstElement, m: [*c]c.GstMessage) callconv(.c) void {
+    say("post-pre {s} {s}", .{ nm(e), std.mem.span(c.gst_message_type_get_name(m.*.type)) });
+}
+
+fn onStatePost(_: ?*c.GObject, _: u64, e: ?*c.GstElement, t: c.GstStateChange, r: c.GstStateChangeReturn) callconv(.c) void {
+    say("state-post {s} {s} {d}", .{ nm(e), std.mem.span(c.gst_state_change_get_name(t)), r });
+}
+
+fn onQueryPost(_: ?*c.GObject, _: u64, pad: ?*c.GstPad, q: [*c]c.GstQuery, res: c.gboolean) callconv(.c) void {
+    say("pad-query-post {s} {s} {d}", .{ nm(pad), std.mem.span(c.gst_query_type_get_name(q.*.type)), res });
+}
+
+fn onEventPre(_: ?*c.GObject, _: u64, pad: ?*c.GstPad, e: [*c]c.GstEvent) callconv(.c) void {
+    say("push-event-pre {s} {s}", .{ nm(pad), std.mem.span(c.gst_event_type_get_name(e.*.type)) });
+}
+
+fn onSendEventPost(_: ?*c.GObject, _: u64, pad: ?*c.GstPad, r: c.GstFlowReturn) callconv(.c) void {
+    say("send-event-post {s} {d}", .{ nm(pad), r });
+}
+
+fn onFeature(_: ?*c.GObject, _: u64, f: ?*c.GstPluginFeature) callconv(.c) void {
+    say("feature-loaded {s}", .{nm(f)});
+}
+
+fn tracerInit(instance: [*c]c.GTypeInstance, _: c.gpointer) callconv(.c) void {
+    const t: ?*c.GstTracer = @ptrCast(@alignCast(instance));
+    c.gst_tracing_register_hook(t, "pad-push-pre", @ptrCast(&onPushPre));
+    c.gst_tracing_register_hook(t, "pad-push-post", @ptrCast(&onPushPost));
+    c.gst_tracing_register_hook(t, "pad-link-post", @ptrCast(&onLinkPost));
+    c.gst_tracing_register_hook(t, "pad-unlink-post", @ptrCast(&onUnlinkPost));
+    c.gst_tracing_register_hook(t, "element-new", @ptrCast(&onElementNew));
+    c.gst_tracing_register_hook(t, "bin-add-post", @ptrCast(&onBinAddPost));
+    c.gst_tracing_register_hook(t, "bin-remove-post", @ptrCast(&onBinRemovePost));
+    c.gst_tracing_register_hook(t, "element-post-message-pre", @ptrCast(&onPost));
+    c.gst_tracing_register_hook(t, "element-change-state-post", @ptrCast(&onStatePost));
+    c.gst_tracing_register_hook(t, "pad-query-post", @ptrCast(&onQueryPost));
+    c.gst_tracing_register_hook(t, "pad-push-event-pre", @ptrCast(&onEventPre));
+    c.gst_tracing_register_hook(t, "pad-send-event-post", @ptrCast(&onSendEventPost));
+    c.gst_tracing_register_hook(t, "plugin-feature-loaded", @ptrCast(&onFeature));
+}
+
+fn tracerType() c.GType {
+    const S = struct {
+        var t: c.GType = 0;
+    };
+    if (S.t == 0) S.t = c.g_type_register_static_simple(c.gst_tracer_get_type(), "SintyTestTracer", @sizeOf(c.GstTracerClass), null, @sizeOf(c.GstTracer), tracerInit, 0);
+    return S.t;
+}
+
 fn init(p: ?*c.GstPlugin) callconv(.c) c.gboolean {
+    _ = c.gst_tracer_register(p, "sintytracer", tracerType());
     _ = c.gst_device_provider_register(p, "sintydevprov", c.GST_RANK_PRIMARY, providerType());
     _ = c.gst_type_find_register(p, "sintytypefind", c.GST_RANK_PRIMARY, typefind, "sty,sinty", c.gst_caps_from_string("application/x-sinty"), null, null);
     _ = c.gst_type_find_register(p, "sintyhint", c.GST_RANK_PRIMARY, typefind, null, null, @constCast("text/x-sinty-hint"), null);

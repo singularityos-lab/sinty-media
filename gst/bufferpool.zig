@@ -1,6 +1,7 @@
 const std = @import("std");
 const c = @import("c.zig").c;
 const check = @import("check.zig");
+const tracer = @import("tracer.zig");
 const gtype = @import("gtype.zig");
 const object = @import("object.zig");
 const info = @import("info.zig");
@@ -206,6 +207,7 @@ fn defaultStop(p: [*c]Pool) callconv(.c) c.gboolean {
     c.g_mutex_lock(&d.queue_lock);
     while (c.gst_vec_deque_pop_head(d.queue)) |b| {
         c.g_mutex_unlock(&d.queue_lock);
+        tracer.emit(.pool_buffer_dequeued, .{ p, @as([*c]Buffer, @ptrCast(@alignCast(b))) });
         freeOne(p, @ptrCast(@alignCast(b)));
         c.g_mutex_lock(&d.queue_lock);
     }
@@ -440,7 +442,10 @@ fn defaultAcquire(p: [*c]Pool, out: [*c][*c]Buffer, params: [*c]Params) callconv
         }
         out.* = @ptrCast(@alignCast(c.gst_vec_deque_pop_head(d.queue)));
         c.g_mutex_unlock(&d.queue_lock);
-        if (out.* != null) return c.GST_FLOW_OK;
+        if (out.* != null) {
+            tracer.emit(.pool_buffer_dequeued, .{ p, out.* });
+            return c.GST_FLOW_OK;
+        }
         const r = allocOne(p, out, params);
         if (r != c.GST_FLOW_EOS) return r;
         if (params != null and params[0].flags & c.GST_BUFFER_POOL_ACQUIRE_FLAG_DONTWAIT != 0) return r;
@@ -512,6 +517,7 @@ fn defaultRelease(p: [*c]Pool, b: [*c]Buffer) callconv(.c) void {
     c.gst_vec_deque_push_tail(d.queue, b);
     c.g_cond_signal(&d.queue_cond);
     c.g_mutex_unlock(&d.queue_lock);
+    tracer.emit(.pool_buffer_queued, .{ p, b });
 }
 
 pub export fn gst_buffer_pool_release_buffer(p: [*c]Pool, b: [*c]Buffer) void {

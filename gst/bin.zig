@@ -1,6 +1,7 @@
 const std = @import("std");
 const c = @import("c.zig").c;
 const check = @import("check.zig");
+const tracer = @import("tracer.zig");
 const gtype = @import("gtype.zig");
 const object = @import("object.zig");
 const info = @import("info.zig");
@@ -633,7 +634,10 @@ pub export fn gst_bin_add(b: [*c]Bin, e: [*c]Element) c.gboolean {
         c.gst_object_unref(e);
         return 0;
     };
-    return add(b, e);
+    tracer.emit(.bin_add_pre, .{ b, e });
+    const r = add(b, e);
+    tracer.emit(.bin_add_post, .{ b, e, r });
+    return r;
 }
 
 fn removeFunc(b: [*c]Bin, e: [*c]Element) callconv(.c) c.gboolean {
@@ -768,7 +772,10 @@ pub export fn gst_bin_remove(b: [*c]Bin, e: [*c]Element) c.gboolean {
     if (!check.that(element.isElement(e), f, "GST_IS_ELEMENT (element)")) return 0;
     if (!check.that(el(b) != e, f, "GST_ELEMENT_CAST (bin) != element")) return 0;
     const rm = classOf(b).remove_element orelse return 0;
-    return rm(b, e);
+    tracer.emit(.bin_remove_pre, .{ b, e });
+    const r = rm(b, e);
+    tracer.emit(.bin_remove_post, .{ b, r });
+    return r;
 }
 
 pub export fn gst_bin_add_many(b: [*c]Bin, first: [*c]Element, ...) callconv(.c) void {

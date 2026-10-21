@@ -2,6 +2,7 @@ const std = @import("std");
 const c = @import("c.zig").c;
 const gtype = @import("gtype.zig");
 const check = @import("check.zig");
+const tracer = @import("tracer.zig");
 const mini = @import("mini.zig");
 const object = @import("object.zig");
 
@@ -77,7 +78,9 @@ fn release(m: [*c]c.GstMiniObject) callconv(.c) void {
         mini.gst_mini_object_unref(@ptrCast(mem.parent));
     }
     const a = mem.allocator;
+    tracer.emit(.memory_free_pre, .{@as([*c]Memory, mem)});
     gst_allocator_free(a, mem);
+    tracer.emit(.memory_free_post, .{@as([*c]Memory, mem)});
     object.gst_object_unref(a);
 }
 
@@ -93,6 +96,7 @@ pub export fn gst_memory_init(mem: [*c]Memory, flags: c.GstMemoryFlags, a: [*c]A
     mem.*.@"align" = alignment;
     mem.*.offset = offset;
     mem.*.size = size;
+    tracer.emit(.memory_init, .{mem});
 }
 
 pub export fn gst_memory_is_type(mem: [*c]Memory, mem_type: [*c]const u8) c.gboolean {
