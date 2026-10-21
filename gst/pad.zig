@@ -1554,7 +1554,7 @@ pub export fn gst_pad_get_parent_element(p: [*c]Pad) [*c]c.GstElement {
     return @ptrCast(@alignCast(o));
 }
 
-pub export fn gst_pad_check_link(src: [*c]Pad, sink: [*c]Pad) c.gboolean {
+pub fn checkLink(src: [*c]Pad, sink: [*c]Pad) c.gboolean {
     if (!check.that(isPad(src), "gst_pad_check_link", "GST_IS_PAD (srcpad)")) return 0;
     if (!check.that(isPad(sink), "gst_pad_check_link", "GST_IS_PAD (sinkpad)")) return 0;
     if (src[0].peer != null or sink[0].peer != null) return 0;
