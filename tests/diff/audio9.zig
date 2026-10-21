@@ -113,7 +113,7 @@ fn decode(label: []const u8, desc: [*c]const u8, max: usize) void {
     var all: u64 = 0xcbf29ce484222325;
     while (true) {
         var sample: ?*c.GstSample = null;
-        c.g_signal_emit_by_name(sink, "pull-sample", &sample);
+        c.g_signal_emit_by_name(sink, "try-pull-sample", @as(u64, 5 * c.GST_SECOND), &sample);
         if (sample == null) break;
         const b = c.gst_sample_get_buffer(sample);
         const h = hashBuf(b);
@@ -363,7 +363,7 @@ pub fn main() void {
     custom(2, "delayed");
     custom(3, "tags-tolerance");
     decode("flac", "filesrc location=tests/data/tone.flac ! flacparse ! flacdec ! appsink name=out", 6);
-    decode("opus", "filesrc location=tests/data/tone.opus.ogg ! oggdemux ! opusparse ! opusdec ! appsink name=out", 6);
+    decode("opus", "filesrc location=tests/data/tone.opus.ogg ! oggdemux ! opusdec ! appsink name=out", 6);
     decode("mp3", "filesrc location=tests/data/tone.mp3 ! mpegaudioparse ! mpg123audiodec ! appsink name=out", 6);
     decode("alaw", "filesrc location=tests/data/tone.alaw blocksize=800 ! audio/x-alaw,rate=8000,channels=1 ! alawdec ! appsink name=out", 6);
 }

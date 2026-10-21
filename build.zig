@@ -102,7 +102,7 @@ pub fn build(b: *std.Build) void {
         diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
     }
 
-    for ([_][]const u8{ "audio6", "audio7", "audio8", "audio9" }) |name| {
+    for ([_][]const u8{ "audio6", "audio7", "audio8", "audio9", "audio10" }) |name| {
         const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-audio-1.0", "gstreamer-app-1.0", "gstreamer-tag-1.0", "gstreamer-base-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
         m.addImport("c", c_mod);
         const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
