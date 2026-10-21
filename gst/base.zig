@@ -12,4 +12,5 @@ comptime {
     _ = @import("base/pushsrc.zig");
     _ = @import("base/basesink.zig");
     _ = @import("base/basetransform.zig");
+    _ = @import("base/aggregator.zig");
 }
