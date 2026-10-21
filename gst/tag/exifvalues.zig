@@ -37,10 +37,11 @@ pub fn orientationFromExif(v: c.gint) ?[*:0]const u8 {
     return fromExif(&ORIENTATION, v);
 }
 
-pub const Kind = enum { exposure_program, exposure_mode, scene, gain, light, contrast, saturation, sharpness, metering, source, white_balance };
+pub const Kind = enum { orientation, exposure_program, exposure_mode, scene, gain, light, contrast, saturation, sharpness, metering, source, white_balance };
 
 pub fn to(k: Kind, s: [*c]const u8) c.gint {
     return switch (k) {
+        .orientation => toExif(&ORIENTATION, s),
         .exposure_program => toExif(&EXPOSURE_PROGRAM, s),
         .exposure_mode => toExif(&EXPOSURE_MODE, s),
         .scene => toExif(&SCENE, s),
@@ -56,6 +57,7 @@ pub fn to(k: Kind, s: [*c]const u8) c.gint {
 
 pub fn from(k: Kind, v: c.gint) ?[*:0]const u8 {
     return switch (k) {
+        .orientation => fromExif(&ORIENTATION, v),
         .exposure_program => fromExif(&EXPOSURE_PROGRAM, v),
         .exposure_mode => fromExif(&EXPOSURE_MODE, v),
         .scene => fromExif(&SCENE, v),
