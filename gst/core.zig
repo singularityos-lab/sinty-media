@@ -39,6 +39,9 @@ comptime {
     _ = @import("poll.zig");
     _ = @import("bus.zig");
     _ = @import("task.zig");
+    _ = @import("padtemplate.zig");
+    _ = @import("pad.zig");
+    _ = @import("padflow.zig");
 }
 
 var ready = std.atomic.Value(bool).init(false);

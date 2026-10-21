@@ -5,8 +5,8 @@ fail=0
 if [ ! -e zig-out/lib/libgstreamer-1.0.so.0 ]; then echo "missing zig-out/lib/libgstreamer-1.0.so.0"; exit 1; fi
 for t in zig-out/bin/diff-*; do
     n=$(basename "$t")
-    want=$("$t" 2>&1 | sed -E 's/\(([^:()]+):[0-9]+\)/(\1:PID)/; s/[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}:/TIME:/')
-    got=$(LD_LIBRARY_PATH="$PWD/zig-out/lib" "$t" 2>&1 | sed -E 's/\(([^:()]+):[0-9]+\)/(\1:PID)/; s/[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}:/TIME:/')
+    want=$("$t" 2>&1 | sed -E 's/\(([^:()]+):[0-9]+\)/(\1:PID)/; s/[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}:/TIME:/; s/0x[0-9a-f]+/PTR/g')
+    got=$(LD_LIBRARY_PATH="$PWD/zig-out/lib" "$t" 2>&1 | sed -E 's/\(([^:()]+):[0-9]+\)/(\1:PID)/; s/[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}:/TIME:/; s/0x[0-9a-f]+/PTR/g')
     if [ "$want" = "$got" ]; then
         echo "same $n"
     else
