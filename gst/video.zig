@@ -6,4 +6,7 @@ comptime {
     _ = @import("video/chroma.zig");
     _ = @import("video/multiview.zig");
     _ = @import("video/info.zig");
+    _ = @import("video/dma.zig");
+    _ = @import("video/hdr.zig");
+    _ = @import("video/misc.zig");
 }
