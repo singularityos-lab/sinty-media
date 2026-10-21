@@ -7,4 +7,8 @@ comptime {
     _ = @import("audio/buffer.zig");
     _ = @import("audio/meta.zig");
     _ = @import("audio/volume.zig");
+    _ = @import("audio/iec61937.zig");
+    _ = @import("audio/dsd.zig");
+    _ = @import("audio/streamalign.zig");
+    _ = @import("audio/clock.zig");
 }
