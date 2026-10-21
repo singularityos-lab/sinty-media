@@ -44,6 +44,8 @@ comptime {
     _ = @import("padflow.zig");
     _ = @import("element.zig");
     _ = @import("elementlink.zig");
+    _ = @import("childproxy.zig");
+    _ = @import("bin.zig");
 }
 
 var ready = std.atomic.Value(bool).init(false);
