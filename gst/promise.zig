@@ -134,7 +134,7 @@ pub export fn gst_promise_expire(p: [*c]Promise) void {
 
 fn freeHook(m: [*c]c.GstMiniObject) callconv(.c) void {
     const d = impl(m);
-    if (d.result == c.GST_PROMISE_RESULT_PENDING) c.g_log("GStreamer", c.G_LOG_LEVEL_WARNING, "%s: runtime check failed: (%s)", "gst_promise_free", "GST_PROMISE_RESULT (promise) != GST_PROMISE_RESULT_PENDING");
+    if (d.result == c.GST_PROMISE_RESULT_PENDING) c.g_warn_message("GStreamer", "../gst/gstpromise.c", 325, "gst_promise_free", "GST_PROMISE_RESULT (promise) != GST_PROMISE_RESULT_PENDING");
     if (d.notify) |n| n(d.user_data);
     if (d.reply != null) {
         _ = c.gst_structure_set_parent_refcount(d.reply, null);

@@ -1384,7 +1384,7 @@ fn defaultSinkQueryPreQueue(s: [*c]Agg, sp: ?*c.GstAggregatorPad, q: [*c]Query) 
     c.g_queue_push_head(&p.priv.data, q);
     srcBroadcast(x);
     srcUnlock(x);
-    if (p.priv.query_in_proccess) c.g_log("GStreamer-Base", c.G_LOG_LEVEL_WARNING, "%s: runtime check failed: (%s)", "gst_aggregator_default_sink_query_pre_queue", "!aggpad->priv->query_in_proccess");
+    if (p.priv.query_in_proccess) c.g_warn_message("GStreamer-Base", "../libs/gst/base/gstaggregator.c", 2855, "gst_aggregator_default_sink_query_pre_queue", "!aggpad->priv->query_in_proccess");
     while ((!queueEmpty(p) and p.priv.flow_return == c.GST_FLOW_OK) or p.priv.query_in_proccess) padWait(p);
     const st = c.gst_query_writable_structure(q);
     var ret: c.gboolean = 0;

@@ -1125,7 +1125,7 @@ pub export fn gst_pad_get_allowed_caps(p: [*c]Pad) [*c]Caps {
     if (flow.gst_pad_peer_query(p, q) != 0) {
         c.gst_query_parse_caps_result(q, &caps);
         if (caps == null) {
-            c.g_log("GStreamer", c.G_LOG_LEVEL_WARNING, "%s: runtime check failed: (%s)", "../gst/gstpad.c:2950", "caps != NULL");
+            c.g_warn_message("GStreamer", "../gst/gstpad.c", 2875, "gst_pad_get_allowed_caps", "caps != NULL");
         } else _ = c.gst_caps_ref(caps);
     }
     c.gst_query_unref(q);

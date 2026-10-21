@@ -132,4 +132,7 @@ pub fn main() void {
     c.gst_iterator_resync(single);
     out("single resync next {d}", .{c.gst_iterator_next(single, &item)});
     c.gst_iterator_free(single);
+    const pending = c.gst_promise_new();
+    c.gst_promise_unref(pending);
+    out("pending promise freed", .{});
 }

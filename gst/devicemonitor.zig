@@ -207,7 +207,7 @@ fn dispose(o: [*c]c.GObject) callconv(.c) void {
     const m: [*c]Monitor = @ptrCast(@alignCast(o));
     const d = priv(m);
     if (d.started != 0) c.g_log("GStreamer", c.G_LOG_LEVEL_CRITICAL, "gst_device_monitor_dispose: disposed without stopping, started providers were leaked");
-    if (d.start_thread != null) c.g_log("GStreamer", c.G_LOG_LEVEL_WARNING, "%s: runtime check failed: (%s)", "gst_device_monitor_dispose", "!self->priv->start_thread");
+    if (d.start_thread != null) c.g_warn_message("GStreamer", "../gst/gstdevicemonitor.c", 373, "gst_device_monitor_dispose", "!self->priv->start_thread");
     if (d.providers != null) {
         while (d.providers[0].len > 0) removeProvider(m, d.providers[0].len - 1);
         c.g_ptr_array_unref(d.providers);

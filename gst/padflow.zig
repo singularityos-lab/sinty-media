@@ -953,7 +953,7 @@ fn storeSticky(p: [*c]Pad, e: [*c]Event) Flow {
         }
         if (o < ev.order or (t != et and et == c.GST_EVENT_EOS)) {
             if (ev.order <= pad.order(c.GST_EVENT_SEGMENT) or et == c.GST_EVENT_EOS)
-                c.g_log("GStreamer", c.G_LOG_LEVEL_WARNING, "%s:%s:<%s:%s> Sticky event misordering, got '%s' before '%s'", "../gst/gstpad.c:5803", "store_sticky_event", pad.parentName(p), pad.padName(p), c.gst_event_type_get_name(et), c.gst_event_type_get_name(t));
+                c.g_log("GStreamer", c.G_LOG_LEVEL_WARNING, "%s:%s:<%s:%s> Sticky event misordering, got '%s' before '%s'", "../gst/gstpad.c:5489", "store_sticky_event", pad.parentName(p), pad.padName(p), c.gst_event_type_get_name(et), c.gst_event_type_get_name(t));
             break;
         }
     }
