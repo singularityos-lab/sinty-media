@@ -70,12 +70,20 @@ fn quark(d: Domain) c.GQuark {
     };
 }
 
+pub fn messageAt(e: anytype, kind: c.GstMessageType, d: Domain, code: c.gint, text: [*c]u8, debug: [*c]u8, comptime path: []const u8, comptime func: []const u8, line: c.gint, details: [*c]c.GstStructure) void {
+    c.gst_element_message_full_with_details(@ptrCast(@alignCast(e)), kind, quark(d), code, text, debug, path ++ "", func ++ "", line, details);
+}
+
 pub fn message(e: anytype, kind: c.GstMessageType, d: Domain, code: c.gint, text: [*c]u8, debug: [*c]u8, comptime file: []const u8, comptime func: []const u8, line: c.gint, details: [*c]c.GstStructure) void {
-    c.gst_element_message_full_with_details(@ptrCast(@alignCast(e)), kind, quark(d), code, text, debug, std.fmt.comptimePrint("../libs/gst/base/{s}", .{file}), std.fmt.comptimePrint("{s}", .{func}), line, details);
+    messageAt(e, kind, d, code, text, debug, "../libs/gst/base/" ++ file, func, line, details);
+}
+
+pub fn errAt(e: anytype, d: Domain, code: c.gint, text: [*c]const u8, debug: [*c]u8, comptime textdomain: []const u8, comptime path: []const u8, comptime func: []const u8, line: c.gint) void {
+    messageAt(e, c.GST_MESSAGE_ERROR, d, code, if (text != null) c.g_strdup(c.g_dgettext(textdomain ++ "", text)) else null, debug, path, func, line, null);
 }
 
 pub fn err(e: anytype, d: Domain, code: c.gint, text: [*c]const u8, debug: [*c]u8, comptime file: []const u8, comptime func: []const u8, line: c.gint) void {
-    message(e, c.GST_MESSAGE_ERROR, d, code, if (text != null) c.g_strdup(c.g_dgettext("gstreamer-1.0", text)) else null, debug, file, func, line, null);
+    errAt(e, d, code, text, debug, "gstreamer-1.0", "../libs/gst/base/" ++ file, func, line);
 }
 
 pub fn flowError(e: anytype, flow: c.GstFlowReturn, comptime file: []const u8, comptime func: []const u8, line: c.gint) void {
@@ -84,8 +92,12 @@ pub fn flowError(e: anytype, flow: c.GstFlowReturn, comptime file: []const u8, c
     message(e, c.GST_MESSAGE_ERROR, .stream, c.GST_STREAM_ERROR_FAILED, text, debug, file, func, line, c.gst_make_element_message_details("flow-return", c.G_TYPE_INT, flow, @as(?*anyopaque, null)));
 }
 
+pub fn badPropertyAt(o: [*c]c.GObject, id: c.guint, pspec: [*c]c.GParamSpec, comptime domain: []const u8, comptime path: []const u8, line: c.gint) void {
+    c.g_log(domain ++ "", c.G_LOG_LEVEL_WARNING, "%s:%d: invalid %s id %u for \"%s\" of type '%s' in '%s'", path ++ "", line, "property", id, pspec[0].name, c.g_type_name(pspec[0].g_type_instance.g_class.*.g_type), c.g_type_name(gtype.typeOf(o)));
+}
+
 pub fn badProperty(o: [*c]c.GObject, id: c.guint, pspec: [*c]c.GParamSpec, comptime file: []const u8, line: c.gint) void {
-    c.g_log("GStreamer-Base", c.G_LOG_LEVEL_WARNING, "%s:%d: invalid %s id %u for \"%s\" of type '%s' in '%s'", std.fmt.comptimePrint("../libs/gst/base/{s}", .{file}), line, "property", id, pspec[0].name, c.g_type_name(pspec[0].g_type_instance.g_class.*.g_type), c.g_type_name(gtype.typeOf(o)));
+    badPropertyAt(o, id, pspec, "GStreamer-Base", "../libs/gst/base/" ++ file, line);
 }
 
 pub fn padSetCaps(p: ?*c.GstPad, caps: [*c]c.GstCaps) bool {

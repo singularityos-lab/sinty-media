@@ -26,3 +26,4 @@
 #include <gmodule.h>
 #include <gst/gst.h>
 #include <gst/base/base.h>
+#include <gst/app/app.h>
