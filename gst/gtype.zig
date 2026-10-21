@@ -52,3 +52,12 @@ pub fn classPeek(comptime Class: type, ptr: anytype) *Class {
     const inst: *c.GTypeInstance = @ptrCast(@alignCast(ptr));
     return @ptrCast(@alignCast(inst.g_class));
 }
+
+pub fn lookup(comptime T: type, comptime symbol: [:0]const u8) T {
+    return @ptrCast(@alignCast(c.dlsym(null, symbol.ptr)));
+}
+
+pub fn weakType(comptime symbol: [:0]const u8) c.GType {
+    const f = lookup(?*const fn () callconv(.c) c.GType, symbol) orelse return 0;
+    return f();
+}

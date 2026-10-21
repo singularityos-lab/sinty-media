@@ -33,7 +33,9 @@ pub export var _gst_buffer_type: c.GType = 0;
 var type_once: gtype.Once = .{};
 var meta_seq = std.atomic.Value(i64).init(0);
 
-const pool_release = @extern(?*const fn ([*c]c.GstBufferPool, [*c]Buffer) callconv(.c) void, .{ .name = "gst_buffer_pool_release_buffer", .linkage = .weak });
+fn poolRelease() ?*const fn ([*c]c.GstBufferPool, [*c]Buffer) callconv(.c) void {
+    return @import("gtype.zig").lookup(?*const fn ([*c]c.GstBufferPool, [*c]Buffer) callconv(.c) void, "gst_buffer_pool_release_buffer");
+}
 
 fn impl(b: anytype) *Impl {
     return @ptrCast(@alignCast(@constCast(b)));
@@ -355,7 +357,7 @@ fn disposeHook(m: [*c]Mini) callconv(.c) c.gboolean {
     const pool = b[0].pool;
     if (pool == null) return 1;
     _ = gst_buffer_ref(b);
-    if (pool_release) |rel| rel(pool, b);
+    if (poolRelease()) |rel| rel(pool, b);
     return 0;
 }
 

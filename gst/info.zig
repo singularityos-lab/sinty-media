@@ -489,7 +489,9 @@ pub export fn gst_debug_message_get(m: ?*c.GstDebugMessage) [*c]const u8 {
     return msg.text;
 }
 
-const pad_type = @extern(?*const fn () callconv(.c) c.GType, .{ .name = "gst_pad_get_type", .linkage = .weak });
+fn padType() ?*const fn () callconv(.c) c.GType {
+    return @import("gtype.zig").lookup(?*const fn () callconv(.c) c.GType, "gst_pad_get_type");
+}
 
 fn isA(obj: ?*anyopaque, t: c.GType) bool {
     if (obj == null or t == 0) return false;
@@ -497,7 +499,7 @@ fn isA(obj: ?*anyopaque, t: c.GType) bool {
 }
 
 fn isPad(obj: ?*anyopaque) bool {
-    const f = pad_type orelse return false;
+    const f = padType() orelse return false;
     return isA(obj, f());
 }
 

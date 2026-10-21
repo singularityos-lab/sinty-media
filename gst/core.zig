@@ -24,6 +24,13 @@ comptime {
     _ = @import("segment.zig");
     _ = @import("sample.zig");
     _ = @import("taglist.zig");
+    _ = @import("context.zig");
+    _ = @import("error.zig");
+    _ = @import("toc.zig");
+    _ = @import("streams.zig");
+    _ = @import("streamcollection.zig");
+    _ = @import("event.zig");
+    _ = @import("message.zig");
 }
 
 var ready = std.atomic.Value(bool).init(false);
@@ -37,7 +44,9 @@ pub var preload_plugins: ?*c.GSList = null;
 pub var registry_disabled = false;
 pub var registry_update_disabled = false;
 
-const fork_set_enabled = @extern(?*const fn (c.gboolean) callconv(.c) void, .{ .name = "gst_registry_fork_set_enabled", .linkage = .weak });
+fn forkSetEnabled() ?*const fn (c.gboolean) callconv(.c) void {
+    return @import("gtype.zig").lookup(?*const fn (c.gboolean) callconv(.c) void, "gst_registry_fork_set_enabled");
+}
 
 fn findExecutablePath() void {
     if (_gst_executable_path != null) return;
@@ -77,7 +86,11 @@ fn post(_: ?*c.GOptionContext, _: ?*c.GOptionGroup, _: c.gpointer, _: [*c][*c]c.
     @import("segment.zig").initialize();
     @import("sample.zig").initialize();
     @import("datetime.zig").initialize();
+    @import("context.zig").initialize();
     @import("taglist.zig").initialize();
+    @import("toc.zig").initialize();
+    @import("event.zig").initialize();
+    @import("message.zig").initialize();
     ready.store(true, .release);
     return 1;
 }
@@ -145,7 +158,7 @@ fn onOption(name: [*c]const u8, arg: [*c]const u8, _: c.gpointer, err: [*c][*c]c
         .registry_update_disable => if (!registry_disabled) {
             registry_update_disabled = true;
         },
-        .registry_fork_disable => if (fork_set_enabled) |f| f(0),
+        .registry_fork_disable => if (forkSetEnabled()) |f| f(0),
         .none => {
             c.g_set_error(err, c.g_option_error_quark(), c.G_OPTION_ERROR_UNKNOWN_OPTION, c.g_dgettext("gstreamer-1.0", "Unknown option"));
             return 0;

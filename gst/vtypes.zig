@@ -822,7 +822,7 @@ pub fn flagsetDeserialize(dest: [*c]Value, s_in: [*c]const u8) callconv(.c) c.gb
     if (tail != null) {
         const base = c.g_strndup(set_name, @intFromPtr(tail) - @intFromPtr(set_name));
         const ft = c.g_type_from_name(base);
-        if (ft == 0) if (@import("value.zig").dynamic_load) |load| {
+        if (ft == 0) if (@import("value.zig").dynamicLoad()) |load| {
             _ = load(base);
         };
         if (ft != 0) fk = @ptrCast(@alignCast(c.g_type_class_ref(ft)));

@@ -457,7 +457,9 @@ pub export fn gst_value_get_caps_features(v: [*c]const Value) ?*const c.GstCapsF
     return @ptrCast(@alignCast(c.g_value_get_boxed(v)));
 }
 
-pub const dynamic_load = @extern(?*const fn ([*c]const u8) callconv(.c) c.GType, .{ .name = "gst_dynamic_type_factory_load", .linkage = .weak });
+pub fn dynamicLoad() ?*const fn ([*c]const u8) callconv(.c) c.GType {
+    return @import("gtype.zig").lookup(?*const fn ([*c]const u8) callconv(.c) c.GType, "gst_dynamic_type_factory_load");
+}
 
 const Abbr = struct { name: [:0]const u8, t: *const fn () callconv(.c) c.GType };
 
@@ -507,7 +509,7 @@ pub fn typeFromAbbr(name: [*c]const u8) c.GType {
     for (abbreviations) |a| if (std.mem.eql(u8, s, a.name)) return a.t();
     const t = c.g_type_from_name(name);
     if (t != 0) return t;
-    const load = dynamic_load orelse return 0;
+    const load = dynamicLoad() orelse return 0;
     return load(name);
 }
 

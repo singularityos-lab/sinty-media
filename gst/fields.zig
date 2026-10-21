@@ -9,7 +9,9 @@ const G_TYPE_INT64: c.GType = 10 << c.G_TYPE_FUNDAMENTAL_SHIFT;
 const G_TYPE_UINT64: c.GType = 11 << c.G_TYPE_FUNDAMENTAL_SHIFT;
 const G_TYPE_STRING: c.GType = 16 << c.G_TYPE_FUNDAMENTAL_SHIFT;
 
-pub fn set(s: [*c]c.GstStructure, name: [*c]const u8, t: c.GType, v: anytype) void {
+pub fn set(s: [*c]c.GstStructure, name: [*c]const u8, t: c.GType, raw: anytype) void {
+    var v: if (@TypeOf(raw) == comptime_int) i64 else @TypeOf(raw) = raw;
+    _ = &v;
     var gv = std.mem.zeroes(c.GValue);
     _ = c.g_value_init(&gv, t);
     switch (@typeInfo(@TypeOf(v))) {
