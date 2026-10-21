@@ -14,3 +14,7 @@ pub fn fail(comptime func: []const u8, comptime expr: []const u8) void {
 pub fn reached(comptime file: []const u8, line: c_int, comptime func: []const u8) void {
     c.g_log(DOMAIN, c.G_LOG_LEVEL_CRITICAL, "file %s: line %d (%s): should not be reached", @as([*c]const u8, "../gst-libs/gst/audio/" ++ file), line, @as([*c]const u8, func ++ ""));
 }
+
+pub fn warnReached(comptime file: []const u8, comptime func: []const u8) void {
+    c.g_log(DOMAIN, c.G_LOG_LEVEL_WARNING, "%s", @as([*c]const u8, "(../gst-libs/gst/video/" ++ file ++ ":0):" ++ func ++ ": code should not be reached"));
+}
