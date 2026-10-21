@@ -601,11 +601,11 @@ fn noChain(p: [*c]Pad, parent: [*c]Obj, data: c.gpointer) Flow {
     return c.GST_FLOW_NOT_SUPPORTED;
 }
 
-fn isBuffer(b: anytype) bool {
+pub fn isBuffer(b: anytype) bool {
     return b != null and @as([*c]c.GstMiniObject, @ptrCast(@alignCast(b)))[0].type == c._gst_buffer_type;
 }
 
-fn isList(b: anytype) bool {
+pub fn isList(b: anytype) bool {
     return b != null and @as([*c]c.GstMiniObject, @ptrCast(@alignCast(b)))[0].type == c._gst_buffer_list_type;
 }
 

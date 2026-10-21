@@ -47,6 +47,7 @@ comptime {
     _ = @import("childproxy.zig");
     _ = @import("bin.zig");
     _ = @import("pipeline.zig");
+    _ = @import("ghostpad.zig");
 }
 
 var ready = std.atomic.Value(bool).init(false);

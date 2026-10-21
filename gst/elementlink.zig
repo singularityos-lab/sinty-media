@@ -173,13 +173,11 @@ fn commonRoot(a: [*c]Obj, b: [*c]Obj) [*c]Obj {
 }
 
 var ghost_index = std.atomic.Value(c.gint).init(0);
-var ghost_new: ?*const fn ([*c]const u8, [*c]Pad) callconv(.c) [*c]Pad = null;
 
 fn ghostUp(e: [*c]Element, p: [*c]Pad) [*c]Pad {
     const parent: [*c]Element = @ptrCast(@alignCast(parentOf(e)));
     const n = c.g_strdup_printf("ghost%d", ghost_index.fetchAdd(1, .seq_cst));
-    if (ghost_new == null) ghost_new = gtype.lookup(?*const fn ([*c]const u8, [*c]Pad) callconv(.c) [*c]Pad, "gst_ghost_pad_new");
-    const g = if (ghost_new) |f| f(n, p) else null;
+    const g = @import("ghostpad.zig").gst_ghost_pad_new(n, p);
     c.g_free(n);
     if (g == null) return null;
     c.g_rec_mutex_lock(@ptrCast(&parent[0].state_lock));
