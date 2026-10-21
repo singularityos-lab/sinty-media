@@ -34,6 +34,8 @@ comptime {
     _ = @import("query.zig");
     _ = @import("vecdeque.zig");
     _ = @import("bufferpool.zig");
+    _ = @import("clock.zig");
+    _ = @import("sysclock.zig");
 }
 
 var ready = std.atomic.Value(bool).init(false);

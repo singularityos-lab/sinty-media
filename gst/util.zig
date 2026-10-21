@@ -351,3 +351,103 @@ pub export fn gst_util_get_timestamp() c.GstClockTime {
     _ = c.clock_gettime(c.CLOCK_MONOTONIC, &ts);
     return @as(u64, @intCast(ts.tv_sec)) * c.GST_SECOND + @as(u64, @intCast(ts.tv_nsec));
 }
+
+pub export fn gst_calculate_linear_regression(xy: [*c]const c.GstClockTime, temp: [*c]c.GstClockTime, n: c.guint, m_num: [*c]c.GstClockTime, m_denom: [*c]c.GstClockTime, b: [*c]c.GstClockTime, xbase: [*c]c.GstClockTime, r_squared: [*c]c.gdouble) c.gboolean {
+    const f = "gst_calculate_linear_regression";
+    if (!check.that(xy != null, f, "xy != NULL")) return 0;
+    if (!check.that(m_num != null, f, "m_num != NULL")) return 0;
+    if (!check.that(m_denom != null, f, "m_denom != NULL")) return 0;
+    if (!check.that(b != null, f, "b != NULL")) return 0;
+    if (!check.that(xbase != null, f, "xbase != NULL")) return 0;
+    if (!check.that(r_squared != null, f, "r_squared != NULL")) return 0;
+    var xmin: u64 = std.math.maxInt(u64);
+    var ymin: u64 = std.math.maxInt(u64);
+    var xmax: u64 = 0;
+    var ymax: u64 = 0;
+    var i: usize = 0;
+    while (i < n) : (i += 1) {
+        xmin = @min(xmin, xy[2 * i]);
+        ymin = @min(ymin, xy[2 * i + 1]);
+        xmax = @max(xmax, xy[2 * i]);
+        ymax = @max(ymax, xy[2 * i + 1]);
+    }
+    const scratch: [*c]u64 = if (temp != null) temp else @ptrCast(@alignCast(c.g_malloc(@max(1, 2 * @as(usize, n)) * 8)));
+    defer if (temp == null) c.g_free(scratch);
+    var xbar: u64 = 0;
+    var ybar: u64 = 0;
+    i = 0;
+    while (i < n) : (i += 1) {
+        const dx = xy[2 * i] - xmin;
+        const dy = xy[2 * i + 1] - ymin;
+        scratch[2 * i] = dx;
+        scratch[2 * i + 1] = dy;
+        if ((dx > 0 and std.math.maxInt(u64) - xbar <= dx) or (dy > 0 and std.math.maxInt(u64) - ybar <= dy)) return 0;
+        xbar += dx;
+        ybar += dy;
+    }
+    xbar /= n;
+    ybar /= n;
+    const spread = @max(1, @max(xmax - xmin, ymax - ymin));
+    const bits: u32 = 64 - @clz(spread);
+    var shift: u6 = if (bits > 31) @intCast(bits - 31) else 0;
+    var sums: [3]i64 = undefined;
+    while (true) {
+        if (accumulate(scratch, n, xbar, ybar, &shift, &sums)) break;
+    }
+    const sxx = sums[0];
+    const syy = sums[1];
+    const sxy = sums[2];
+    if (sxx == 0) return 0;
+    m_num.* = @bitCast(sxy);
+    m_denom.* = @bitCast(sxx);
+    b.* = (ymin + ybar) -% gst_util_uint64_scale_round(xbar, m_num.*, m_denom.*);
+    xbase.* = xmax;
+    b.* +%= gst_util_uint64_scale_round(xmax - xmin, m_num.*, m_denom.*);
+    const fxy: f64 = @floatFromInt(sxy);
+    r_squared.* = (fxy * fxy) / (@as(f64, @floatFromInt(sxx)) * @as(f64, @floatFromInt(syy)));
+    return 1;
+}
+
+fn fits(sum: *i64, term: i64, shift: *u6) bool {
+    const max = std.math.maxInt(i64);
+    const min = std.math.minInt(i64);
+    if (term > 0 and sum.* > 0 and max - sum.* <= term) {
+        var s = sum.*;
+        var t = term;
+        while (true) {
+            shift.* += 1;
+            s = @divTrunc(s, 4);
+            t = @divTrunc(t, 4);
+            if (max - s > t) break;
+        }
+        return false;
+    }
+    if (term < 0 and sum.* < 0 and min - sum.* >= term) {
+        var s = sum.*;
+        var t = term;
+        while (true) {
+            shift.* += 1;
+            s = @divTrunc(s, 4);
+            t = @divTrunc(t, 4);
+            if (min - s < t) break;
+        }
+        return false;
+    }
+    sum.* += term;
+    return true;
+}
+
+fn accumulate(d: [*c]const u64, n: c.guint, xbar: u64, ybar: u64, shift: *u6, out: *[3]i64) bool {
+    const xb = xbar >> shift.*;
+    const yb = ybar >> shift.*;
+    out.* = .{ 0, 0, 0 };
+    var i: usize = 0;
+    while (i < n) : (i += 1) {
+        const x = d[2 * i] >> shift.*;
+        const y = d[2 * i + 1] >> shift.*;
+        if (!fits(&out[0], @bitCast((x +% xb) *% (x -% xb)), shift)) return false;
+        if (!fits(&out[1], @bitCast(y *% y -% yb *% yb), shift)) return false;
+        if (!fits(&out[2], @bitCast(x *% y -% xb *% yb), shift)) return false;
+    }
+    return true;
+}
