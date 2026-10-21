@@ -279,12 +279,8 @@ pub export fn gst_data_queue_get_level(q: [*c]Queue, level: [*c]c.GstDataQueueSi
     level.* = priv(q).level;
 }
 
-fn badProp(o: [*c]c.GObject, id: c.guint, pspec: [*c]c.GParamSpec) void {
-    c.g_log("GStreamer-Base", c.G_LOG_LEVEL_WARNING, "%s:%d: invalid %s id %u for \"%s\" of type '%s' in '%s'", "../libs/gst/base/gstdataqueue.c", @as(c_int, 0), "property", id, pspec[0].name, c.g_type_name(pspec[0].g_type_instance.g_class.*.g_type), c.g_type_name(gtype.typeOf(o)));
-}
-
 fn setProp(o: [*c]c.GObject, id: c.guint, _: [*c]const c.GValue, pspec: [*c]c.GParamSpec) callconv(.c) void {
-    badProp(o, id, pspec);
+    @import("el.zig").badProperty(o, id, pspec, "gstdataqueue.c", 782);
 }
 
 fn getProp(o: [*c]c.GObject, id: c.guint, v: [*c]c.GValue, pspec: [*c]c.GParamSpec) callconv(.c) void {
@@ -295,6 +291,6 @@ fn getProp(o: [*c]c.GObject, id: c.guint, v: [*c]c.GValue, pspec: [*c]c.GParamSp
         PROP_BYTES => c.g_value_set_uint(v, p.level.bytes),
         PROP_VISIBLE => c.g_value_set_uint(v, p.level.visible),
         PROP_TIME => c.g_value_set_uint64(v, p.level.time),
-        else => badProp(o, id, pspec),
+        else => @import("el.zig").badProperty(o, id, pspec, "gstdataqueue.c", 807),
     }
 }

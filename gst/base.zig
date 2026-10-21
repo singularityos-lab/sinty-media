@@ -8,4 +8,6 @@ comptime {
     _ = @import("base/adapter.zig");
     _ = @import("base/dataqueue.zig");
     _ = @import("base/typefindhelper.zig");
+    _ = @import("base/basesrc.zig");
+    _ = @import("base/pushsrc.zig");
 }

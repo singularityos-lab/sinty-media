@@ -44,8 +44,9 @@ pub fn typeOf(ptr: anytype) c.GType {
 }
 
 pub fn instanceOf(ptr: anytype, t: c.GType) bool {
-    if (ptr == null) return false;
-    return c.g_type_check_instance_is_a(@ptrCast(@alignCast(ptr)), t) != 0;
+    const p: ?*const anyopaque = @ptrCast(ptr);
+    if (p == null) return false;
+    return c.g_type_check_instance_is_a(@ptrCast(@alignCast(@constCast(p))), t) != 0;
 }
 
 pub fn classPeek(comptime Class: type, ptr: anytype) *Class {
