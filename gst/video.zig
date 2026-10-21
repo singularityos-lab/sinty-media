@@ -29,4 +29,5 @@ comptime {
     _ = @import("video/dmabufpool.zig");
     _ = @import("video/vdecoder.zig");
     _ = @import("video/vencoder.zig");
+    _ = @import("video/vaggregator.zig");
 }
