@@ -232,11 +232,11 @@ pub export fn gst_vec_deque_find(h: Handle, func: c.GCompareFunc, data: c.gpoint
 
 fn sortedIndex(d: *Deque, item: c.gpointer, func: c.GCompareDataFunc, user: c.gpointer) usize {
     const f = func orelse return d.len;
-    var i: usize = d.len;
-    while (i > 0) : (i -= 1) {
-        if (f(element(d, i - 1), item, user) <= 0) break;
+    var i: usize = 0;
+    while (i < d.len) : (i += 1) {
+        if (f(element(d, i), item, user) > 0) return i;
     }
-    return i;
+    return d.len;
 }
 
 pub export fn gst_vec_deque_push_sorted(h: Handle, data: c.gpointer, func: c.GCompareDataFunc, user: c.gpointer) void {
@@ -249,6 +249,7 @@ pub export fn gst_vec_deque_push_sorted(h: Handle, data: c.gpointer, func: c.GCo
 
 pub export fn gst_vec_deque_push_sorted_struct(h: Handle, p: c.gpointer, func: c.GCompareDataFunc, user: c.gpointer) void {
     if (!check.that(h != null, "gst_vec_deque_push_sorted_struct", "array != NULL")) return;
+    if (!check.that(p != null, "gst_vec_deque_push_sorted_struct", "p_struct != NULL")) return;
     if (!check.that(func != null, "gst_vec_deque_push_sorted_struct", "func != NULL")) return;
     const d = of(h);
     insertAt(d, sortedIndex(d, p, func, user), @ptrCast(p));
