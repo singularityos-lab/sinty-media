@@ -18,4 +18,5 @@ comptime {
     _ = @import("video/resampler.zig");
     _ = @import("video/scaler.zig");
     _ = @import("video/dither.zig");
+    _ = @import("video/converter.zig");
 }
