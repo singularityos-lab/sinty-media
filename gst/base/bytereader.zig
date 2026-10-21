@@ -12,14 +12,14 @@ fn remaining(r: *const Reader) c.guint {
     return r.size - r.byte;
 }
 
-const Kind = struct {
+pub const Kind = struct {
     name: []const u8,
     T: type,
     bytes: comptime_int,
     big: bool,
 };
 
-const KINDS = [_]Kind{
+pub const KINDS = [_]Kind{
     .{ .name = "uint8", .T = u8, .bytes = 1, .big = false },
     .{ .name = "int8", .T = i8, .bytes = 1, .big = false },
     .{ .name = "uint16_le", .T = u16, .bytes = 2, .big = false },
