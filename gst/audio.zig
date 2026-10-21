@@ -18,4 +18,6 @@ comptime {
     _ = @import("audio/ringbuffer.zig");
     _ = @import("audio/basesink.zig");
     _ = @import("audio/sink.zig");
+    _ = @import("audio/basesrc.zig");
+    _ = @import("audio/src.zig");
 }
