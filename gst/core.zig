@@ -46,6 +46,7 @@ comptime {
     _ = @import("elementlink.zig");
     _ = @import("childproxy.zig");
     _ = @import("bin.zig");
+    _ = @import("pipeline.zig");
 }
 
 var ready = std.atomic.Value(bool).init(false);
