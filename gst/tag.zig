@@ -8,4 +8,7 @@ comptime {
     _ = @import("tag/id3v2.zig");
     _ = @import("tag/xmp.zig");
     _ = @import("tag/exif.zig");
+    _ = @import("tag/xmpwriter.zig");
+    _ = @import("tag/tagdemux.zig");
+    _ = @import("tag/tagmux.zig");
 }
