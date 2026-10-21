@@ -87,3 +87,11 @@ pub fn flowError(e: anytype, flow: c.GstFlowReturn, comptime file: []const u8, c
 pub fn badProperty(o: [*c]c.GObject, id: c.guint, pspec: [*c]c.GParamSpec, comptime file: []const u8, line: c.gint) void {
     c.g_log("GStreamer-Base", c.G_LOG_LEVEL_WARNING, "%s:%d: invalid %s id %u for \"%s\" of type '%s' in '%s'", std.fmt.comptimePrint("../libs/gst/base/{s}", .{file}), line, "property", id, pspec[0].name, c.g_type_name(pspec[0].g_type_instance.g_class.*.g_type), c.g_type_name(gtype.typeOf(o)));
 }
+
+pub fn padSetCaps(p: ?*c.GstPad, caps: [*c]c.GstCaps) bool {
+    if (!@import("check.zig").that(gtype.instanceOf(p, c.gst_pad_get_type()), "gst_pad_set_caps", "GST_IS_PAD (pad)")) return false;
+    if (!@import("check.zig").that(caps != null and c.gst_caps_is_fixed(caps) != 0, "gst_pad_set_caps", "caps != NULL && gst_caps_is_fixed (caps)")) return false;
+    const ev = c.gst_event_new_caps(caps);
+    if (pad(p).direction == c.GST_PAD_SRC) return c.gst_pad_push_event(p, ev) != 0;
+    return c.gst_pad_send_event(p, ev) != 0;
+}

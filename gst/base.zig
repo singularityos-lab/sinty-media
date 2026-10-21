@@ -10,4 +10,6 @@ comptime {
     _ = @import("base/typefindhelper.zig");
     _ = @import("base/basesrc.zig");
     _ = @import("base/pushsrc.zig");
+    _ = @import("base/basesink.zig");
+    _ = @import("base/basetransform.zig");
 }
