@@ -9,6 +9,8 @@ fn out(comptime fmt: []const u8, args: anytype) void {
 
 const NONE = @as(?*anyopaque, null);
 
+extern fn gst_g_thread_get_type() c.GType;
+
 const FRAMES = 4410;
 const BUFFERS = 6;
 
@@ -19,6 +21,7 @@ var samples: [FRAMES * BUFFERS * 2 + 64]i16 = undefined;
 var nsamples: usize = 0;
 var fail_prepare = false;
 var spec_buf: [256]u8 = undefined;
+var status_ok: u32 = 0;
 var spec_line: []const u8 = "";
 
 fn note(s: []const u8) void {
@@ -161,7 +164,7 @@ fn busDrain(pipe: [*c]c.GstElement, sink: [*c]c.GstElement, until: c.GstMessageT
             c.gst_message_parse_stream_status(m, &st, &owner);
             if (owner == sink) {
                 const v = c.gst_message_get_stream_status_object(m);
-                out("  stream-status {d} src {s} obj {s}", .{ st, c.g_type_name(@as(*c.GTypeInstance, @ptrCast(@alignCast(m.*.src))).g_class.*.g_type), if (v != null) std.mem.span(c.g_type_name(v.*.g_type)) else "none" });
+                if (std.mem.eql(u8, std.mem.span(c.g_type_name(@as(*c.GTypeInstance, @ptrCast(@alignCast(m.*.src))).g_class.*.g_type)), "GstAudioSinkRingBuffer") and v != null and v.*.g_type == gst_g_thread_get_type()) status_ok += 1;
                 if (st == c.GST_STREAM_STATUS_TYPE_ENTER) enter += 1;
                 if (st == c.GST_STREAM_STATUS_TYPE_LEAVE) leave += 1;
             }
@@ -233,6 +236,8 @@ fn run(sync: bool, slave: c_int) void {
     out("  to playing {d}", .{c.gst_element_set_state(pipe, c.GST_STATE_PLAYING)});
     busDrain(pipe, sink, c.GST_MESSAGE_EOS);
     out("  to null {d}", .{c.gst_element_set_state(pipe, c.GST_STATE_NULL)});
+    out("  thread stream-status seen {d}", .{@intFromBool(status_ok > 0)});
+    status_ok = 0;
     c.g_mutex_lock(&mutex);
     var h: u64 = 0xcbf29ce484222325;
     for (samples[0..nsamples]) |v| h = (h ^ @as(u16, @bitCast(v))) *% 0x100000001b3;
