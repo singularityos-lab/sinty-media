@@ -632,7 +632,7 @@ fn makeElement(g: *Graph, name: [*c]const u8, values: []const [*c]u8, presets: [
     const loaded = factory.of(feature.gst_plugin_feature_load(@ptrCast(f)));
     c.gst_object_unref(f);
     const et = factory.gst_element_factory_get_element_type(loaded);
-    const klass: *c.GObjectClass = @ptrCast(@alignCast(c.g_type_class_ref(et)));
+    const klass: [*c]c.GObjectClass = @ptrCast(@alignCast(c.g_type_class_ref(et)));
     defer c.g_type_class_unref(klass);
     defer c.gst_object_unref(loaded);
     const proxy = c.g_type_is_a(et, c.gst_child_proxy_get_type()) != 0;
@@ -665,7 +665,7 @@ fn makeElement(g: *Graph, name: [*c]const u8, values: []const [*c]u8, presets: [
         names.append(alloc, raw) catch {};
         vals.append(alloc, v) catch {};
     }
-    const ret = factory.gst_element_factory_create_with_properties(loaded, @intCast(names.items.len), @ptrCast(names.items.ptr), vals.items.ptr);
+    const ret = factory.gst_element_factory_create_with_properties(f, @intCast(names.items.len), @ptrCast(names.items.ptr), vals.items.ptr);
     for (proxied.items) |pp| {
         var target: [*c]c.GObject = null;
         var pspec: [*c]c.GParamSpec = null;
