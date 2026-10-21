@@ -231,6 +231,7 @@ fn messages(bus: ?*c.GstBus, until: c.GstMessageType, timeout: u64) void {
         if (!std.mem.eql(u8, from, "sink")) {
             if (ty & until == 0) continue;
         }
+        if (ty == c.GST_MESSAGE_LATENCY) continue;
         switch (ty) {
             c.GST_MESSAGE_STATE_CHANGED => {
                 var o: c.GstState = 0;
