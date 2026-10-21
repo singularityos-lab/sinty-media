@@ -15,6 +15,7 @@ const libs = [_]Lib{
     .{ .name = "gstaudio-1.0", .root = "gst/audio.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-tag-1.0", "m" }, .deps = &.{} },
     .{ .name = "gstapp-1.0", .root = "gst/app.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0" }, .deps = &.{} },
     .{ .name = "gstvideo-1.0", .root = "gst/video.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-allocators-1.0", "m" }, .deps = &.{} },
+    .{ .name = "gstpbutils-1.0", .root = "gst/pbutils.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-tag-1.0", "gstreamer-audio-1.0", "gstreamer-video-1.0" }, .deps = &.{}, .dest = "staging" },
 };
 
 fn gstIncludeDir(b: *std.Build) []const u8 {
@@ -50,6 +51,7 @@ pub fn build(b: *std.Build) void {
 
     const config = b.addOptions();
     config.addOption([]const u8, "plugin_dir", b.option([]const u8, "plugin-dir", "system plugin directory") orelse pkgVar(b, "pluginsdir", "/usr/lib/gstreamer-1.0"));
+    config.addOption([]const u8, "locale_dir", b.option([]const u8, "locale-dir", "gettext locale directory") orelse "/usr/share/locale");
     config.addOption([]const u8, "scanner_dir", b.option([]const u8, "scanner-dir", "directory of gst-plugin-scanner") orelse pkgVar(b, "pluginscannerdir", "/usr/libexec/gstreamer-1.0"));
 
     for (libs) |l| {
@@ -117,6 +119,13 @@ pub fn build(b: *std.Build) void {
         diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
     }
 
+    for ([_][]const u8{"pbutils1"}) |name| {
+        const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-pbutils-1.0", "gstreamer-video-1.0", "gstreamer-audio-1.0", "gstreamer-tag-1.0", "gstreamer-base-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
+        m.addImport("c", c_mod);
+        const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
+        diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+    }
+
     for ([_][]const u8{"video17"}) |name| {
         const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-video-1.0", "gstreamer-app-1.0", "gstreamer-base-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
         m.addImport("c", c_mod);
@@ -129,6 +138,13 @@ pub fn build(b: *std.Build) void {
         m.addImport("c", c_mod);
         const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
         diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+    }
+
+    {
+        const m = gstModule(b, "tools/pbdesc.zig", target, optimize, &.{ "gstreamer-pbutils-1.0", "gstreamer-tag-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
+        m.addImport("c", c_mod);
+        const exe = b.addExecutable(.{ .name = "pbdesc", .root_module = m, .use_llvm = true });
+        b.step("pbdesc", "build the codec description table extractor").dependOn(&b.addInstallArtifact(exe, .{}).step);
     }
 
     {

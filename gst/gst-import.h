@@ -22,6 +22,7 @@
 #include <sys/wait.h>
 #include <sys/auxv.h>
 #include <glib.h>
+#include <libintl.h>
 #include <glib-object.h>
 #include <gmodule.h>
 #include <gst/gst.h>
@@ -36,6 +37,8 @@
 #include <gst/video/video-resampler.h>
 #include <gst/video/video-tile.h>
 #include <gst/allocators/allocators.h>
+#include <gst/pbutils/pbutils.h>
+#include <gst/pbutils/gstaudiovisualizer.h>
 #include <sys/ioctl.h>
 #include <linux/dma-buf.h>
 #include <zlib.h>
