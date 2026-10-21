@@ -3,6 +3,10 @@ const l = @import("line.zig");
 const check = @import("check.zig");
 const format = @import("format.zig");
 
+comptime {
+    @import("../abi.zig").check(@This());
+}
+
 const Info = l.Info;
 const Flags = l.Flags;
 const Data = l.Data;
@@ -18,7 +22,7 @@ fn yTiles(stride: c.gint) c.gint {
     return stride >> 16;
 }
 
-pub fn index(mode: c.GstVideoTileMode, x: c.gint, y: c.gint, x_tiles: c.gint, y_tiles: c.gint) c.guint {
+pub fn tileIndex(mode: c.GstVideoTileMode, x: c.gint, y: c.gint, x_tiles: c.gint, y_tiles: c.gint) c.guint {
     if (!check.that(mode & 0xffff == c.GST_VIDEO_TILE_TYPE_INDEXED, "gst_video_tile_get_index", "GST_VIDEO_TILE_MODE_IS_INDEXED (mode)")) return 0;
     var off: c.gint = 0;
     switch (mode) {
@@ -37,15 +41,15 @@ pub fn index(mode: c.GstVideoTileMode, x: c.gint, y: c.gint, x_tiles: c.gint, y_
 }
 
 export fn gst_video_tile_get_index(mode: c.GstVideoTileMode, x: c.gint, y: c.gint, x_tiles: c.gint, y_tiles: c.gint) c.guint {
-    return index(mode, x, y, x_tiles, y_tiles);
+    return tileIndex(mode, x, y, x_tiles, y_tiles);
 }
 
 fn tileNV12(info: [*c]const Info, tx: c.gint, ty: c.gint, data: anytype, stride: Stride, tdata: *[4]c.gpointer, tstride: *[4]c.gint) void {
     const mode = info[0].tile_mode;
     const sub = info[0].flags & c.GST_VIDEO_FORMAT_FLAG_SUBTILES != 0;
-    var off: usize = @as(usize, index(mode, tx, ty, xTiles(stride[0]), yTiles(stride[0]))) * info[0].tile_info[0].size;
+    var off: usize = @as(usize, tileIndex(mode, tx, ty, xTiles(stride[0]), yTiles(stride[0]))) * info[0].tile_info[0].size;
     tdata[0] = l.offset(data[0], @intCast(off));
-    off = @as(usize, index(mode, tx, if (sub) ty else @divTrunc(ty, 2), xTiles(stride[1]), yTiles(stride[1]))) * info[0].tile_info[1].size;
+    off = @as(usize, tileIndex(mode, tx, if (sub) ty else @divTrunc(ty, 2), xTiles(stride[1]), yTiles(stride[1]))) * info[0].tile_info[1].size;
     if (!sub and ty & 1 != 0) off += info[0].tile_info[1].size / 2;
     tdata[1] = l.offset(data[1], @intCast(off));
     tstride[0] = @intCast(info[0].tile_info[0].stride);
@@ -206,8 +210,8 @@ fn part(y: c.gint) Part {
 }
 
 fn tiles(info: [*c]const Info, data: anytype, stride: Stride, tx: c.gint, p: Part) [2][*]u8 {
-    const yo = @as(usize, index(info[0].tile_mode, tx, p.ty, xTiles(stride[0]), yTiles(stride[0]))) * TILE;
-    const uo = @as(usize, index(info[0].tile_mode, tx, p.ty, xTiles(stride[1]), yTiles(stride[1]))) * (TILE / 2);
+    const yo = @as(usize, tileIndex(info[0].tile_mode, tx, p.ty, xTiles(stride[0]), yTiles(stride[0]))) * TILE;
+    const uo = @as(usize, tileIndex(info[0].tile_mode, tx, p.ty, xTiles(stride[1]), yTiles(stride[1]))) * (TILE / 2);
     return .{ l.offset(data[0], @intCast(yo + p.skip_luma)), l.offset(data[1], @intCast(uo + p.skip_chroma)) };
 }
 

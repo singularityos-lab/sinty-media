@@ -6,6 +6,10 @@ const p8 = @import("pack8.zig");
 const p16 = @import("pack16.zig");
 const tiled = @import("tiled.zig");
 
+comptime {
+    @import("../abi.zig").check(@This());
+}
+
 const Info = c.GstVideoFormatInfo;
 const Unpack = c.GstVideoFormatUnpack;
 const Pack = c.GstVideoFormatPack;
@@ -161,7 +165,7 @@ pub export fn gst_video_format_from_string(format: [*c]const u8) c.GstVideoForma
     return c.GST_VIDEO_FORMAT_UNKNOWN;
 }
 
-pub export fn gst_video_format_to_fourcc(format: c.GstVideoFormat) u32 {
+pub export fn gst_video_format_to_fourcc(format: c.GstVideoFormat) c.guint {
     if (!check.that(format != c.GST_VIDEO_FORMAT_UNKNOWN, "gst_video_format_to_fourcc", "format != GST_VIDEO_FORMAT_UNKNOWN")) return 0;
     if (format >= N) return 0;
     return table.rows[@intCast(format)].fourcc;
@@ -198,7 +202,7 @@ const fourccs = [_]struct { [4]u8, c.GstVideoFormat }{
     .{ "AR30".*, c.GST_VIDEO_FORMAT_BGR10A2_LE },
 };
 
-pub export fn gst_video_format_from_fourcc(code: u32) c.GstVideoFormat {
+pub export fn gst_video_format_from_fourcc(code: c.guint) c.GstVideoFormat {
     inline for (fourccs) |e| {
         if (code == fourcc(&e[0])) return e[1];
     }

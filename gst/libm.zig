@@ -10,6 +10,7 @@ var exp_f: ?F1 = null;
 var log2_f: ?F1 = null;
 var log10_f: ?F1 = null;
 var pow_f: ?F2 = null;
+var log_f: ?F1 = null;
 
 fn resolve(comptime T: type, slot: *?T, name: [*:0]const u8) T {
     if (slot.*) |f| return f;
@@ -37,6 +38,10 @@ pub fn log2(x: f64) f64 {
 
 pub fn log10(x: f64) f64 {
     return resolve(F1, &log10_f, "log10")(x);
+}
+
+pub fn log(x: f64) f64 {
+    return resolve(F1, &log_f, "log")(x);
 }
 
 pub fn pow(x: f64, y: f64) f64 {
