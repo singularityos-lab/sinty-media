@@ -28,3 +28,4 @@
 #include <gst/base/base.h>
 #include <gst/app/app.h>
 #include <gst/tag/tag.h>
+#include <zlib.h>
