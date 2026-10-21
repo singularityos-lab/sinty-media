@@ -23,4 +23,5 @@ comptime {
     _ = @import("audio/filter.zig");
     _ = @import("audio/decoder.zig");
     _ = @import("audio/encoder.zig");
+    _ = @import("audio/aggregator.zig");
 }
