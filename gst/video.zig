@@ -15,4 +15,6 @@ comptime {
     _ = @import("video/event.zig");
     _ = @import("video/pool.zig");
     _ = @import("video/codecutils.zig");
+    _ = @import("video/resampler.zig");
+    _ = @import("video/scaler.zig");
 }
