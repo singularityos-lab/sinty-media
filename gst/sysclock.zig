@@ -108,7 +108,7 @@ fn sleepUntil(end: i64) bool {
 pub export fn gst_system_clock_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(clock.gst_clock_get_type(), "GstSystemClock", c.GstSystemClockClass, SysClock, classInit, instanceInit, 0);
+            const t = gtype.object(clock.gst_clock_get_type, "GstSystemClock", c.GstSystemClockClass, SysClock, classInit, instanceInit, 0);
             private_offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             return t;
         }

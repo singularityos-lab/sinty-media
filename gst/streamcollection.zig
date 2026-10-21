@@ -40,7 +40,7 @@ fn isCollection(p: anytype) bool {
 pub export fn gst_stream_collection_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(object.gst_object_get_type(), "GstStreamCollection", c.GstStreamCollectionClass, Collection, classInit, instanceInit, 0);
+            const t = gtype.object(object.gst_object_get_type, "GstStreamCollection", c.GstStreamCollectionClass, Collection, classInit, instanceInit, 0);
             private_offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             debug_cat = info._gst_debug_category_new("streamcollection", c.GST_DEBUG_BOLD, "debugging info for the stream collection objects");
             return t;

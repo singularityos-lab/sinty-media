@@ -97,8 +97,6 @@ var value_table: c.GstValueTable = .{};
 pub fn initialize() void {
     _gst_structure_type = gst_structure_get_type();
     c.g_value_register_transform_func(_gst_structure_type, G_TYPE_STRING, toString);
-    value_table = .{ .type = _gst_structure_type, .compare = compareValues, .serialize = serializeValue, .deserialize = deserializeValue, .hash = @import("vhash.zig").structure };
-    value.gst_value_register(&value_table);
     debug_cat = @import("info.zig").newCategory("structure", 0, "GstStructure debug");
 }
 
@@ -1585,4 +1583,9 @@ pub export fn gst_structure_set_list(s: [*c]Structure, name: [*c]const u8, arr: 
 pub export fn gst_structure_is_writable(s: [*c]const Structure) c.gboolean {
     if (!check.that(isStructure(s), "gst_structure_is_writable", "GST_IS_STRUCTURE (structure)")) return 0;
     return @intFromBool(mutable(s));
+}
+
+pub fn registerValue() void {
+    value_table = .{ .type = gst_structure_get_type(), .compare = compareValues, .serialize = serializeValue, .deserialize = deserializeValue, .hash = @import("vhash.zig").structure };
+    value.gst_value_register(&value_table);
 }

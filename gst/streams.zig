@@ -43,7 +43,7 @@ fn isStream(s: anytype) bool {
 pub export fn gst_stream_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(object.gst_object_get_type(), "GstStream", c.GstStreamClass, Stream, classInit, instanceInit, 0);
+            const t = gtype.object(object.gst_object_get_type, "GstStream", c.GstStreamClass, Stream, classInit, instanceInit, 0);
             private_offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             debug_cat = info._gst_debug_category_new("streams", c.GST_DEBUG_BOLD, "debugging info for the stream and stream collection objects");
             return t;

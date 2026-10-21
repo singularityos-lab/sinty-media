@@ -450,6 +450,9 @@ var value_table: c.GstValueTable = .{};
 
 pub fn initialize() void {
     _gst_date_time_type = gst_date_time_get_type();
-    value_table = .{ .type = _gst_date_time_type, .compare = compareValues, .serialize = serializeValue, .deserialize = deserializeValue, .hash = @import("vhash.zig").dateTime };
+}
+
+pub fn registerValue() void {
+    value_table = .{ .type = gst_date_time_get_type(), .compare = compareValues, .serialize = serializeValue, .deserialize = deserializeValue, .hash = @import("vhash.zig").dateTime };
     value.gst_value_register(&value_table);
 }

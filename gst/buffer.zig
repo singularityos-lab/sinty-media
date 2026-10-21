@@ -217,7 +217,6 @@ pub export fn gst_buffer_get_type() c.GType {
 pub fn initialize() void {
     _gst_buffer_type = gst_buffer_get_type();
     _ = gst_reference_timestamp_meta_get_info();
-    registerValue();
 }
 
 pub export fn gst_buffer_get_max_memory() c.guint {
@@ -1270,6 +1269,6 @@ fn deserializeValue(dest: [*c]c.GValue, s: [*c]const u8) callconv(.c) c.gboolean
 var value_table: c.GstValueTable = .{};
 
 pub fn registerValue() void {
-    value_table = .{ .type = _gst_buffer_type, .compare = compareValues, .serialize = serializeValue, .deserialize = deserializeValue, .hash = @import("vhash.zig").buffer };
+    value_table = .{ .type = gst_buffer_get_type(), .compare = compareValues, .serialize = serializeValue, .deserialize = deserializeValue, .hash = @import("vhash.zig").buffer };
     @import("value.zig").gst_value_register(&value_table);
 }

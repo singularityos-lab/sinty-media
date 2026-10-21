@@ -31,7 +31,7 @@ pub fn isTemplate(p: anytype) bool {
 pub export fn gst_pad_template_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            return gtype.object(object.gst_object_get_type(), "GstPadTemplate", c.GstPadTemplateClass, Template, classInit, instanceInit, 0);
+            return gtype.object(object.gst_object_get_type, "GstPadTemplate", c.GstPadTemplateClass, Template, classInit, instanceInit, 0);
         }
     }.f);
 }

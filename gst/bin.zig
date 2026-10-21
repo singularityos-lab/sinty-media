@@ -110,7 +110,7 @@ fn nextState(cur: c.GstState, pending: c.GstState) c.GstState {
 pub export fn gst_bin_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(element.gst_element_get_type(), "GstBin", Class, Bin, classInit, instanceInit, 0);
+            const t = gtype.object(element.gst_element_get_type, "GstBin", Class, Bin, classInit, instanceInit, 0);
             private_offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             const iface = c.GInterfaceInfo{ .interface_init = proxyInit, .interface_finalize = null, .interface_data = null };
             c.g_type_add_interface_static(t, childproxy.gst_child_proxy_get_type(), &iface);

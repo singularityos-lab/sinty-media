@@ -72,7 +72,7 @@ fn freeFilter(p: c.gpointer) callconv(.c) void {
 pub export fn gst_device_monitor_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(object.gst_object_get_type(), "GstDeviceMonitor", c.GstDeviceMonitorClass, Monitor, classInit, instanceInit, 0);
+            const t = gtype.object(object.gst_object_get_type, "GstDeviceMonitor", c.GstDeviceMonitorClass, Monitor, classInit, instanceInit, 0);
             private_offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             return t;
         }

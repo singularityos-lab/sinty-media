@@ -48,7 +48,7 @@ pub export fn gst_allocation_params_get_type() c.GType {
 pub export fn gst_allocator_get_type() c.GType {
     return allocator_type.get(struct {
         fn f() c.GType {
-            const t = gtype.object(object.gst_object_get_type(), "GstAllocator", c.GstAllocatorClass, Allocator, null, allocatorInit, c.G_TYPE_FLAG_ABSTRACT);
+            const t = gtype.object(object.gst_object_get_type, "GstAllocator", c.GstAllocatorClass, Allocator, null, allocatorInit, c.G_TYPE_FLAG_ABSTRACT);
             allocator_priv = c.g_type_add_instance_private(t, @sizeOf(c.gpointer));
             return t;
         }
@@ -350,7 +350,7 @@ const SysMem = extern struct {
 fn sysmemType() c.GType {
     return sysmem_type.get(struct {
         fn f() c.GType {
-            return gtype.object(gst_allocator_get_type(), "GstAllocatorSysmem", c.GstAllocatorClass, Allocator, sysmemClassInit, sysmemInit, 0);
+            return gtype.object(gst_allocator_get_type, "GstAllocatorSysmem", c.GstAllocatorClass, Allocator, sysmemClassInit, sysmemInit, 0);
         }
     }.f);
 }
@@ -462,6 +462,9 @@ pub export fn gst_memory_new_wrapped(flags: c.GstMemoryFlags, data: c.gpointer, 
 
 pub fn initialize() void {
     _gst_memory_type = gst_memory_get_type();
+}
+
+pub fn initializeAllocator() void {
     registry = c.g_hash_table_new_full(c.g_str_hash, c.g_str_equal, c.g_free, object.gst_object_unref);
     sysmem = @ptrCast(@alignCast(c.g_object_new(sysmemType(), @as([*c]const u8, null))));
     _ = object.gst_object_ref_sink(sysmem);

@@ -72,7 +72,7 @@ fn acquire(p: [*c]Pad) [*c]Pad {
 pub export fn gst_proxy_pad_get_type() c.GType {
     return proxy_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(pad.gst_pad_get_type(), "GstProxyPad", ProxyPadClass, ProxyPad, proxyClassInit, proxyInit, 0);
+            const t = gtype.object(pad.gst_pad_get_type, "GstProxyPad", ProxyPadClass, ProxyPad, proxyClassInit, proxyInit, 0);
             proxy_offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             return t;
         }
@@ -159,7 +159,7 @@ fn target(p: [*c]Pad) [*c]Pad {
 pub export fn gst_ghost_pad_get_type() c.GType {
     return ghost_once.get(struct {
         fn f() c.GType {
-            return gtype.object(gst_proxy_pad_get_type(), "GstGhostPad", GhostPadClass, GhostPad, ghostClassInit, ghostInit, 0);
+            return gtype.object(gst_proxy_pad_get_type, "GstGhostPad", GhostPadClass, GhostPad, ghostClassInit, ghostInit, 0);
         }
     }.f);
 }

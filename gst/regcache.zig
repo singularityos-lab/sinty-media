@@ -365,9 +365,27 @@ pub fn write(reg: [*c]registry.Registry, path: [*c]const u8) bool {
 }
 
 pub fn read(reg: [*c]registry.Registry, path: [*c]const u8) bool {
+    _ = c.gst_element_factory_get_type();
+    _ = c.gst_type_find_factory_get_type();
+    _ = c.gst_device_provider_factory_get_type();
+    _ = c.gst_dynamic_type_factory_get_type();
+    _ = c.gst_meta_factory_get_type();
+    var err: [*c]c.GError = null;
+    const mapped = c.g_mapped_file_new(path, 0, &err);
+    if (err != null) {
+        c.g_error_free(err);
+        err = null;
+    }
     var contents: [*c]u8 = null;
     var len: c.gsize = 0;
-    if (c.g_file_get_contents(path, &contents, &len, null) == 0) return false;
+    if (mapped != null) {
+        contents = @ptrCast(c.g_memdup2(c.g_mapped_file_get_contents(mapped), c.g_mapped_file_get_length(mapped)));
+        len = c.g_mapped_file_get_length(mapped);
+        c.g_mapped_file_unref(mapped);
+    } else if (c.g_file_get_contents(path, &contents, &len, &err) == 0) {
+        if (err != null) c.g_error_free(err);
+        return false;
+    }
     defer c.g_free(contents);
     var r = Reader{ .data = contents[0..len] };
     if (!checkHeader(&r)) return false;

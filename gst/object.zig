@@ -25,7 +25,7 @@ var name_guard: c.GMutex = std.mem.zeroes(c.GMutex);
 var name_counters: ?*c.GHashTable = null;
 
 fn registerType() c.GType {
-    return gtype.object(c.g_initially_unowned_get_type(), "GstObject", c.GstObjectClass, Obj, classInit, instanceInit, c.G_TYPE_FLAG_ABSTRACT);
+    return gtype.object(c.g_initially_unowned_get_type, "GstObject", c.GstObjectClass, Obj, classInit, instanceInit, c.G_TYPE_FLAG_ABSTRACT);
 }
 
 pub export fn gst_object_get_type() c.GType {

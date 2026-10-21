@@ -168,7 +168,7 @@ fn isList(o: anytype) bool {
 pub export fn gst_base_sink_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(c.gst_element_get_type(), "GstBaseSink", Class, Sink, classInit, init, c.G_TYPE_FLAG_ABSTRACT);
+            const t = gtype.object(c.gst_element_get_type, "GstBaseSink", Class, Sink, classInit, init, c.G_TYPE_FLAG_ABSTRACT);
             offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             return t;
         }

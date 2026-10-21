@@ -36,7 +36,7 @@ fn classInit(_: c.gpointer, _: c.gpointer) callconv(.c) void {
 pub export fn gst_meta_factory_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            return gtype.object(feature.gst_plugin_feature_get_type(), "GstMetaFactory", FactoryClass, Factory, classInit, null, 0);
+            return gtype.object(feature.gst_plugin_feature_get_type, "GstMetaFactory", FactoryClass, Factory, classInit, null, 0);
         }
     }.f);
 }

@@ -90,7 +90,7 @@ fn stateName(s: c.GstTaskState) [*c]const u8 {
 pub export fn gst_task_get_type() c.GType {
     return task_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(object.gst_object_get_type(), "GstTask", c.GstTaskClass, Task, taskClassInit, taskInit, 0);
+            const t = gtype.object(object.gst_object_get_type, "GstTask", c.GstTaskClass, Task, taskClassInit, taskInit, 0);
             task_offset = c.g_type_add_instance_private(t, @sizeOf(TaskPrivate));
             task_cat = info._gst_debug_category_new("task", 0, "Processing tasks");
             return t;
@@ -375,7 +375,7 @@ fn poolClass(p: [*c]Pool) *c.GstTaskPoolClass {
 pub export fn gst_task_pool_get_type() c.GType {
     return pool_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(object.gst_object_get_type(), "GstTaskPool", c.GstTaskPoolClass, Pool, poolClassInit, null, 0);
+            const t = gtype.object(object.gst_object_get_type, "GstTaskPool", c.GstTaskPoolClass, Pool, poolClassInit, null, 0);
             pool_cat = info._gst_debug_category_new("taskpool", 0, "Thread pool");
             return t;
         }
@@ -516,7 +516,7 @@ fn sharedPriv(p: anytype) *SharedPrivate {
 pub export fn gst_shared_task_pool_get_type() c.GType {
     return shared_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(gst_task_pool_get_type(), "GstSharedTaskPool", c.GstSharedTaskPoolClass, Shared, sharedClassInit, sharedInit, 0);
+            const t = gtype.object(gst_task_pool_get_type, "GstSharedTaskPool", c.GstSharedTaskPoolClass, Shared, sharedClassInit, sharedInit, 0);
             shared_offset = c.g_type_add_instance_private(t, @sizeOf(SharedPrivate));
             return t;
         }

@@ -84,7 +84,7 @@ pub fn impl(id: c.GstClockID) *EntryImpl {
 pub export fn gst_clock_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(object.gst_object_get_type(), "GstClock", Class, Clock, classInit, instanceInit, c.G_TYPE_FLAG_ABSTRACT);
+            const t = gtype.object(object.gst_object_get_type, "GstClock", Class, Clock, classInit, instanceInit, c.G_TYPE_FLAG_ABSTRACT);
             private_offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             return t;
         }

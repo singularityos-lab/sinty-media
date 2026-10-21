@@ -56,7 +56,7 @@ fn warn(b: ?*anyopaque, text: [*c]const u8) void {
 pub export fn gst_control_binding_get_type() c.GType {
     return binding_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(object.gst_object_get_type(), "GstControlBinding", BindingClass, Binding, bindingClassInit, bindingInit, c.G_TYPE_FLAG_ABSTRACT);
+            const t = gtype.object(object.gst_object_get_type, "GstControlBinding", BindingClass, Binding, bindingClassInit, bindingInit, c.G_TYPE_FLAG_ABSTRACT);
             binding_offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             binding_cat = info._gst_debug_category_new("gstcontrolbinding", 0, "dynamic parameter control source attachment");
             return t;
@@ -236,7 +236,7 @@ pub export fn gst_control_binding_is_disabled(b: [*c]Binding) c.gboolean {
 pub export fn gst_control_source_get_type() c.GType {
     return source_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(object.gst_object_get_type(), "GstControlSource", c.GstControlSourceClass, Source, null, null, c.G_TYPE_FLAG_ABSTRACT);
+            const t = gtype.object(object.gst_object_get_type, "GstControlSource", c.GstControlSourceClass, Source, null, null, c.G_TYPE_FLAG_ABSTRACT);
             source_cat = info._gst_debug_category_new("gstcontrolsource", 0, "dynamic parameter control sources");
             return t;
         }

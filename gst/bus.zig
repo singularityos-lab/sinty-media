@@ -75,7 +75,7 @@ fn log(p: [*c]Bus, comptime func: [:0]const u8, comptime text: [:0]const u8) voi
 pub export fn gst_bus_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(object.gst_object_get_type(), "GstBus", c.GstBusClass, Bus, classInit, instanceInit, 0);
+            const t = gtype.object(object.gst_object_get_type, "GstBus", c.GstBusClass, Bus, classInit, instanceInit, 0);
             private_offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             return t;
         }

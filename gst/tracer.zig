@@ -172,7 +172,7 @@ fn fire(comptime id: Id, args: anytype) void {
 pub export fn gst_tracer_get_type() c.GType {
     return tracer_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(object.gst_object_get_type(), "GstTracer", TracerClass, Tracer, tracerClassInit, tracerInit, c.G_TYPE_FLAG_ABSTRACT);
+            const t = gtype.object(object.gst_object_get_type, "GstTracer", TracerClass, Tracer, tracerClassInit, tracerInit, c.G_TYPE_FLAG_ABSTRACT);
             tracer_offset = c.g_type_add_instance_private(t, @sizeOf(TracerPrivate));
             c.g_type_add_class_private(t, @sizeOf(ClassPrivate));
             return t;
@@ -247,7 +247,7 @@ fn fof(p: anytype) [*c]Factory {
 pub export fn gst_tracer_factory_get_type() c.GType {
     return factory_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(feature.gst_plugin_feature_get_type(), "GstTracerFactory", FactoryClass, Factory, null, null, 0);
+            const t = gtype.object(feature.gst_plugin_feature_get_type, "GstTracerFactory", FactoryClass, Factory, null, null, 0);
             debug_cat = info._gst_debug_category_new("GST_TRACER", c.GST_DEBUG_FG_BLUE, "tracing subsystem");
             return t;
         }
@@ -287,7 +287,7 @@ pub export fn gst_tracer_factory_get_tracer_type(f: [*c]Factory) c.GType {
 pub export fn gst_tracer_record_get_type() c.GType {
     return record_once.get(struct {
         fn f() c.GType {
-            return gtype.object(object.gst_object_get_type(), "GstTracerRecord", RecordClass, Record, recordClassInit, null, 0);
+            return gtype.object(object.gst_object_get_type, "GstTracerRecord", RecordClass, Record, recordClassInit, null, 0);
         }
     }.f);
 }

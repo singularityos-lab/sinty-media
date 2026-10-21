@@ -32,7 +32,7 @@ fn of(p: anytype) [*c]Factory {
 pub export fn gst_dynamic_type_factory_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(feature.gst_plugin_feature_get_type(), "GstDynamicTypeFactory", FactoryClass, Factory, null, null, 0);
+            const t = gtype.object(feature.gst_plugin_feature_get_type, "GstDynamicTypeFactory", FactoryClass, Factory, null, null, 0);
             debug_cat = info._gst_debug_category_new("GST_DYNAMIC_TYPE_FACTORY", c.GST_DEBUG_BOLD, "dynamic type factories allow automatically loading a type from a plugin");
             return t;
         }

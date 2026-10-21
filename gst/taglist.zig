@@ -97,7 +97,6 @@ pub fn initialize() void {
         };
         gst_tag_register_static(d.name.ptr, d.flag, d.t(), c.g_dgettext("gstreamer-1.0", d.nick.ptr), c.g_dgettext("gstreamer-1.0", d.blurb.ptr), merge);
     }
-    registerValue();
 }
 
 fn registerGuard(comptime f: []const u8, name: [*c]const u8, nick: [*c]const u8, blurb: [*c]const u8, t: c.GType) bool {
@@ -669,6 +668,6 @@ fn hashValue(v: [*c]const Value, res: [*c]c.guint) callconv(.c) c.gboolean {
 var value_table: c.GstValueTable = .{};
 
 pub fn registerValue() void {
-    value_table = .{ .type = _gst_tag_list_type, .compare = compareValues, .serialize = serializeValue, .deserialize = deserializeValue, .hash = hashValue };
+    value_table = .{ .type = gst_tag_list_get_type(), .compare = compareValues, .serialize = serializeValue, .deserialize = deserializeValue, .hash = hashValue };
     value.gst_value_register(&value_table);
 }

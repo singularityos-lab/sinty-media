@@ -505,6 +505,9 @@ pub fn initialize() void {
     idstr.gst_id_str_set_static_str(&sysmem, c.GST_CAPS_FEATURE_MEMORY_SYSTEM_MEMORY);
     _gst_caps_features_memory_system_memory = gst_caps_features_new_id_str(&sysmem, @as([*c]const IdStr, null));
     _ = gst_caps_features_set_parent_refcount(_gst_caps_features_memory_system_memory, &forever);
-    value_table = .{ .type = _gst_caps_features_type, .serialize = serializeValue, .deserialize = deserializeValue, .hash = @import("vhash.zig").capsFeatures };
+}
+
+pub fn registerValue() void {
+    value_table = .{ .type = gst_caps_features_get_type(), .serialize = serializeValue, .deserialize = deserializeValue, .hash = @import("vhash.zig").capsFeatures };
     value.gst_value_register(&value_table);
 }

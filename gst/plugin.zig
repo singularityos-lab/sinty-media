@@ -73,7 +73,7 @@ pub fn isPlugin(p: anytype) bool {
 pub export fn gst_plugin_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(object.gst_object_get_type(), "GstPlugin", PluginClass, Plugin, classInit, instanceInit, 0);
+            const t = gtype.object(object.gst_object_get_type, "GstPlugin", PluginClass, Plugin, classInit, instanceInit, 0);
             private_offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             return t;
         }

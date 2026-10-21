@@ -77,7 +77,7 @@ fn isRegistry(p: anytype) bool {
 pub export fn gst_registry_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(object.gst_object_get_type(), "GstRegistry", RegistryClass, Registry, classInit, instanceInit, 0);
+            const t = gtype.object(object.gst_object_get_type, "GstRegistry", RegistryClass, Registry, classInit, instanceInit, 0);
             private_offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             return t;
         }

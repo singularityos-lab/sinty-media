@@ -238,12 +238,12 @@ pub export fn gst_pad_mode_get_name(mode: c.GstPadMode) [*c]const u8 {
 pub export fn gst_pad_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            for (flows, 0..) |fl, i| flow_quarks[i] = c.g_quark_from_static_string(fl.name.ptr);
+            const t = gtype.object(object.gst_object_get_type, "GstPad", c.GstPadClass, Pad, classInit, instanceInit, 0);
+            private_offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             _ = c.g_quark_from_static_string("buffer");
             _ = c.g_quark_from_static_string("bufferlist");
             _ = c.g_quark_from_static_string("event");
-            const t = gtype.object(object.gst_object_get_type(), "GstPad", c.GstPadClass, Pad, classInit, instanceInit, 0);
-            private_offset = c.g_type_add_instance_private(t, @sizeOf(Private));
+            for (flows, 0..) |fl, i| flow_quarks[i] = c.g_quark_from_static_string(fl.name.ptr);
             return t;
         }
     }.f);

@@ -109,7 +109,7 @@ fn providerClass(p: anytype) *ProviderClass {
 pub export fn gst_device_get_type() c.GType {
     return device_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(object.gst_object_get_type(), "GstDevice", c.GstDeviceClass, Device, deviceClassInit, deviceInit, c.G_TYPE_FLAG_ABSTRACT);
+            const t = gtype.object(object.gst_object_get_type, "GstDevice", c.GstDeviceClass, Device, deviceClassInit, deviceInit, c.G_TYPE_FLAG_ABSTRACT);
             device_offset = c.g_type_add_instance_private(t, @sizeOf(DevicePrivate));
             return t;
         }
@@ -573,7 +573,7 @@ pub export fn gst_device_provider_is_started(p: [*c]Provider) c.gboolean {
 pub export fn gst_device_provider_factory_get_type() c.GType {
     return factory_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(feature.gst_plugin_feature_get_type(), "GstDeviceProviderFactory", FactoryClass, Factory, factoryClassInit, null, 0);
+            const t = gtype.object(feature.gst_plugin_feature_get_type, "GstDeviceProviderFactory", FactoryClass, Factory, factoryClassInit, null, 0);
             factory_cat = info._gst_debug_category_new("GST_DEVICE_PROVIDER_FACTORY", c.GST_DEBUG_BOLD | c.GST_DEBUG_FG_WHITE | c.GST_DEBUG_BG_RED, "device provider factories keep information about installed device providers");
             return t;
         }

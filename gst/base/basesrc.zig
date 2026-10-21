@@ -105,7 +105,7 @@ fn clearPendingEos(s: *Src) void {
 pub export fn gst_base_src_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(c.gst_element_get_type(), "GstBaseSrc", Class, Src, classInit, init, c.G_TYPE_FLAG_ABSTRACT);
+            const t = gtype.object(c.gst_element_get_type, "GstBaseSrc", Class, Src, classInit, init, c.G_TYPE_FLAG_ABSTRACT);
             offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             return t;
         }

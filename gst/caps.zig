@@ -1203,6 +1203,9 @@ pub fn initialize() void {
     _gst_caps_any = gst_caps_new_any();
     _gst_caps_none = gst_caps_new_empty();
     c.g_value_register_transform_func(_gst_caps_type, c.G_TYPE_STRING, toString);
-    value_table = .{ .type = _gst_caps_type, .compare = compareValues, .serialize = serializeValue, .deserialize = deserializeValue, .hash = @import("vhash.zig").caps };
+}
+
+pub fn registerValue() void {
+    value_table = .{ .type = gst_caps_get_type(), .compare = compareValues, .serialize = serializeValue, .deserialize = deserializeValue, .hash = @import("vhash.zig").caps };
     value.gst_value_register(&value_table);
 }

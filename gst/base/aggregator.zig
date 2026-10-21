@@ -1544,7 +1544,7 @@ fn init(instance: [*c]c.GTypeInstance, g_class: c.gpointer) callconv(.c) void {
 pub export fn gst_aggregator_get_type() c.GType {
     return agg_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(c.gst_element_get_type(), "GstAggregator", Class, Agg, classInit, init, c.G_TYPE_FLAG_ABSTRACT);
+            const t = gtype.object(c.gst_element_get_type, "GstAggregator", Class, Agg, classInit, init, c.G_TYPE_FLAG_ABSTRACT);
             agg_offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             return t;
         }
@@ -1763,7 +1763,7 @@ fn padInit(instance: [*c]c.GTypeInstance, _: c.gpointer) callconv(.c) void {
 pub export fn gst_aggregator_pad_get_type() c.GType {
     return pad_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(c.gst_pad_get_type(), "GstAggregatorPad", PadClass, AggPad, padClassInit, padInit, 0);
+            const t = gtype.object(c.gst_pad_get_type, "GstAggregatorPad", PadClass, AggPad, padClassInit, padInit, 0);
             pad_offset = c.g_type_add_instance_private(t, @sizeOf(PadPriv));
             return t;
         }

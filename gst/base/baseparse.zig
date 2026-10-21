@@ -316,7 +316,7 @@ fn init(instance: [*c]c.GTypeInstance, g_class: c.gpointer) callconv(.c) void {
 pub export fn gst_base_parse_get_type() c.GType {
     return once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(c.gst_element_get_type(), "GstBaseParse", Class, Parse, classInit, init, c.G_TYPE_FLAG_ABSTRACT);
+            const t = gtype.object(c.gst_element_get_type, "GstBaseParse", Class, Parse, classInit, init, c.G_TYPE_FLAG_ABSTRACT);
             offset_ = c.g_type_add_instance_private(t, @sizeOf(Private));
             return t;
         }

@@ -173,7 +173,7 @@ fn init(instance: [*c]c.GTypeInstance, _: c.gpointer) callconv(.c) void {
 pub export fn gst_collect_pads_get_type() c.GType {
     return once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(c.gst_object_get_type(), "GstCollectPads", c.GstCollectPadsClass, Pads, classInit, init, 0);
+            const t = gtype.object(c.gst_object_get_type, "GstCollectPads", c.GstCollectPadsClass, Pads, classInit, init, 0);
             offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             return t;
         }

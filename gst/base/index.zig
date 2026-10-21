@@ -197,7 +197,7 @@ fn indexInit(instance: [*c]c.GTypeInstance, _: c.gpointer) callconv(.c) void {
 fn indexType() c.GType {
     return index_once.get(struct {
         fn f() c.GType {
-            return gtype.object(c.gst_object_get_type(), "GstIndex", Class, Index, indexClassInit, indexInit, 0);
+            return gtype.object(c.gst_object_get_type, "GstIndex", Class, Index, indexClassInit, indexInit, 0);
         }
     }.f);
 }
@@ -423,7 +423,7 @@ fn memInit(instance: [*c]c.GTypeInstance, _: c.gpointer) callconv(.c) void {
 fn memType() c.GType {
     return mem_once.get(struct {
         fn f() c.GType {
-            return gtype.object(indexType(), "GstMemIndex", Class, Mem, memClassInit, memInit, 0);
+            return gtype.object(indexType, "GstMemIndex", Class, Mem, memClassInit, memInit, 0);
         }
     }.f);
 }

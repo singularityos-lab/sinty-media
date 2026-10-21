@@ -895,20 +895,27 @@ fn add(tb: Table) void {
 
 pub fn initialize() void {
     by_type = c.g_hash_table_new(null, null);
-    vsets.initialize();
     const h = vhash;
     add(entry(gst_int_range_get_type(), vtypes.intRangeCompare, vtypes.intRangeSerialize, vtypes.unimplemented, null, h.intRange));
     add(entry(gst_int64_range_get_type(), vtypes.int64RangeCompare, vtypes.int64RangeSerialize, vtypes.unimplemented, null, h.int64Range));
     add(entry(gst_double_range_get_type(), vtypes.doubleRangeCompare, vtypes.doubleRangeSerialize, vtypes.unimplemented, null, h.doubleRange));
     add(entry(gst_fraction_range_get_type(), vtypes.fractionRangeCompare, vtypes.fractionRangeSerialize, vtypes.unimplemented, null, h.fractionRange));
     add(entry(c.g_value_array_get_type(), compareValueArray, serializeValueArray, deserializeValueArray, null, h.valueArray));
+    @import("buffer.zig").registerValue();
+    @import("sample.zig").registerValue();
     add(entry(gst_fraction_get_type(), vtypes.fractionCompare, vtypes.fractionSerialize, vtypes.fractionDeserialize, null, h.fraction));
+    @import("caps.zig").registerValue();
+    @import("taglist.zig").registerValue();
     add(entry(c.g_date_get_type(), compareDate, serializeDate, deserializeDate, null, h.date));
     add(entry(c.g_bytes_get_type(), compareBytes, serializeBytes, deserializeBytes, null, h.bytes));
+    @import("datetime.zig").registerValue();
     add(entry(c.g_date_time_get_type(), compareGDateTime, serializeGDateTime, deserializeGDateTime, null, h.gDateTime));
     add(entry(gst_bitmask_get_type(), vtypes.bitmaskCompare, vtypes.bitmaskSerialize, vtypes.bitmaskDeserialize, null, h.bitmask));
+    @import("structure.zig").registerValue();
     add(entry(gst_flagset_get_type(), vtypes.flagsetCompare, vtypes.flagsetSerialize, vtypes.flagsetDeserialize, null, h.flagset));
     add(entry(c.g_gtype_get_type(), vbasic.compareGType, vbasic.serializeGType, vbasic.deserializeGType, null, h.gtype));
+    @import("segment.zig").registerValue();
+    @import("capsfeatures.zig").registerValue();
     add(entry(c.g_strv_get_type(), null, serializeStrv, deserializeStrv, null, h.strv));
     add(entry(c.gst_allocation_params_get_type(), compareAllocationParams, null, null, null, h.allocationParams));
     add(entry(c.G_TYPE_OBJECT, compareObject, null, null, null, h.object));
@@ -959,4 +966,5 @@ pub fn initialize() void {
     reg(_gst_flagset_type, S, vtypes.flagsetToString);
     reg(S, _gst_flagset_type, vtypes.stringToFlagset);
     reg(c.gst_allocation_params_get_type(), S, allocationParamsStr);
+    vsets.initialize();
 }

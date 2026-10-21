@@ -53,7 +53,7 @@ pub fn isFactory(p: anytype) bool {
 pub export fn gst_element_factory_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(feature.gst_plugin_feature_get_type(), "GstElementFactory", FactoryClass, Factory, classInit, instanceInit, 0);
+            const t = gtype.object(feature.gst_plugin_feature_get_type, "GstElementFactory", FactoryClass, Factory, classInit, instanceInit, 0);
             debug_cat = info._gst_debug_category_new("GST_ELEMENT_FACTORY", c.GST_DEBUG_BOLD | c.GST_DEBUG_FG_WHITE | c.GST_DEBUG_BG_RED, "element factories keep information about installed elements");
             return t;
         }

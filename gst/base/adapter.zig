@@ -48,7 +48,7 @@ var parent: ?*c.GObjectClass = null;
 pub export fn gst_adapter_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(c.g_object_get_type(), "GstAdapter", AdapterClass, Adapter, classInit, init, 0);
+            const t = gtype.object(c.g_object_get_type, "GstAdapter", AdapterClass, Adapter, classInit, init, 0);
             _ = c._gst_debug_category_new("adapter", 0, "object to splice and merge buffers to desired size");
             return t;
         }

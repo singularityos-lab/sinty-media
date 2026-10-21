@@ -65,7 +65,7 @@ fn parentElement() *c.GstElementClass {
 pub export fn gst_pipeline_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(bin.gst_bin_get_type(), "GstPipeline", c.GstPipelineClass, Pipeline, classInit, instanceInit, 0);
+            const t = gtype.object(bin.gst_bin_get_type, "GstPipeline", c.GstPipelineClass, Pipeline, classInit, instanceInit, 0);
             private_offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             debug_cat = info._gst_debug_category_new("pipeline", c.GST_DEBUG_BOLD, "debugging info for the 'pipeline' container element");
             return t;

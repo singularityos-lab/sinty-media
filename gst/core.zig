@@ -118,32 +118,60 @@ fn pre(_: ?*c.GOptionContext, _: ?*c.GOptionGroup, _: c.gpointer, _: [*c][*c]c.G
     return 1;
 }
 
+const CLASS_REFS = [_]*const fn () callconv(.c) c.GType{
+    c.gst_object_get_type,                c.gst_pad_get_type,                 c.gst_element_factory_get_type,     c.gst_element_get_type,
+    c.gst_tracer_factory_get_type,        c.gst_type_find_factory_get_type,   c.gst_bin_get_type,                 c.gst_bus_get_type,
+    c.gst_task_get_type,                  c.gst_clock_get_type,               c.gst_debug_color_mode_get_type,
+    c.gst_object_flags_get_type,          c.gst_bin_flags_get_type,           c.gst_buffer_flags_get_type,        c.gst_buffer_copy_flags_get_type,
+    c.gst_bus_flags_get_type,             c.gst_bus_sync_reply_get_type,      c.gst_caps_flags_get_type,          c.gst_clock_return_get_type,
+    c.gst_clock_entry_type_get_type,      c.gst_clock_flags_get_type,         c.gst_clock_type_get_type,          c.gst_debug_graph_details_get_type,
+    c.gst_state_get_type,                 c.gst_state_change_return_get_type, c.gst_state_change_get_type,        c.gst_element_flags_get_type,
+    c.gst_tracer_value_scope_get_type,    c.gst_tracer_value_flags_get_type,  c.gst_core_error_get_type,          c.gst_library_error_get_type,
+    c.gst_resource_error_get_type,        c.gst_stream_error_get_type,        c.gst_event_type_flags_get_type,    c.gst_event_type_get_type,
+    c.gst_seek_type_get_type,             c.gst_seek_flags_get_type,          c.gst_qos_type_get_type,            c.gst_format_get_type,
+    c.gst_debug_level_get_type,           c.gst_debug_color_flags_get_type,   c.gst_iterator_result_get_type,     c.gst_iterator_item_get_type,
+    c.gst_message_type_get_type,          c.gst_mini_object_flags_get_type,   c.gst_pad_link_return_get_type,     c.gst_pad_link_check_get_type,
+    c.gst_flow_return_get_type,           c.gst_pad_mode_get_type,            c.gst_pad_direction_get_type,       c.gst_pad_flags_get_type,
+    c.gst_pad_presence_get_type,          c.gst_pad_template_flags_get_type,  c.gst_pipeline_flags_get_type,      c.gst_plugin_error_get_type,
+    c.gst_plugin_flags_get_type,          c.gst_plugin_dependency_flags_get_type, c.gst_rank_get_type,            c.gst_query_type_flags_get_type,
+    c.gst_query_type_get_type,            c.gst_buffering_mode_get_type,      c.gst_stream_status_type_get_type,  c.gst_structure_change_type_get_type,
+    c.gst_tag_merge_mode_get_type,        c.gst_tag_flag_get_type,            c.gst_tag_scope_get_type,           c.gst_task_pool_get_type,
+    c.gst_task_state_get_type,            c.gst_toc_entry_type_get_type,      c.gst_type_find_probability_get_type, c.gst_uri_error_get_type,
+    c.gst_uri_type_get_type,              c.gst_parse_error_get_type,         c.gst_parse_flags_get_type,         c.gst_search_mode_get_type,
+    c.gst_progress_type_get_type,         c.gst_buffer_pool_acquire_flags_get_type, c.gst_memory_flags_get_type,  c.gst_map_flags_get_type,
+    c.gst_caps_intersect_mode_get_type,   c.gst_pad_probe_type_get_type,      c.gst_pad_probe_return_get_type,    c.gst_segment_flags_get_type,
+    c.gst_scheduling_flags_get_type,      c.gst_meta_flags_get_type,          c.gst_toc_entry_type_get_type,      c.gst_toc_scope_get_type,
+    c.gst_toc_loop_type_get_type,         c.gst_control_binding_get_type,     c.gst_control_source_get_type,      c.gst_lock_flags_get_type,
+    c.gst_allocator_flags_get_type,       c.gst_stream_flags_get_type,        c.gst_stream_type_get_type,         c.gst_stack_trace_flags_get_type,
+    c.gst_promise_result_get_type,
+};
+
 fn post(_: ?*c.GOptionContext, _: ?*c.GOptionGroup, _: c.gpointer, _: [*c][*c]c.GError) callconv(.c) c.gboolean {
     if (ready.load(.acquire)) return 1;
     @import("mini.zig").initialize();
+    @import("memory.zig").initializeAllocator();
     @import("memory.zig").initialize();
     @import("format.zig").initialize();
-    @import("value.zig").initialize();
+    @import("query.zig").initialize();
     @import("structure.zig").initialize();
     @import("caps.zig").initialize();
     @import("capsfeatures.zig").initialize();
     @import("meta.zig").initialize();
-    _ = c.g_type_class_ref(@import("object.zig").gst_object_get_type());
-    _ = c.g_type_class_ref(c.gst_format_get_type());
+    @import("message.zig").initialize();
+    for (CLASS_REFS[0..11]) |f| _ = c.g_type_class_ref(f());
+    _ = c.gst_uri_handler_get_type();
+    for (CLASS_REFS[11..]) |f| _ = c.g_type_class_ref(f());
+    @import("event.zig").initialize();
     @import("buffer.zig").initialize();
     @import("bufferlist.zig").initialize();
-    @import("segment.zig").initialize();
     @import("sample.zig").initialize();
-    @import("datetime.zig").initialize();
     @import("context.zig").initialize();
+    @import("datetime.zig").initialize();
+    @import("value.zig").initialize();
     @import("taglist.zig").initialize();
     @import("toc.zig").initialize();
-    @import("event.zig").initialize();
-    @import("message.zig").initialize();
-    @import("query.zig").initialize();
-    _ = c.g_type_class_ref(c.gst_plugin_error_get_type());
-    _ = c.g_type_class_ref(c.gst_plugin_flags_get_type());
-    _ = c.g_type_class_ref(c.gst_plugin_dependency_flags_get_type());
+    _ = c.g_type_class_ref(c.gst_param_spec_fraction_get_type());
+    _ = c.gst_parse_context_get_type();
     @import("plugin.zig").initialize();
     _ = @import("plugin.zig").gst_plugin_register_static(1, 28, "staticelements", "core elements linked into the GStreamer library", registerCore, "1.28.2", "LGPL", "gstreamer", "sinty-media", "https://sinty.dev");
     ready.store(true, .release);

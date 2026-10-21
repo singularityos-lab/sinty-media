@@ -56,7 +56,7 @@ pub export fn gst_type_find_get_type() c.GType {
 pub export fn gst_type_find_factory_get_type() c.GType {
     return factory_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(feature.gst_plugin_feature_get_type(), "GstTypeFindFactory", FactoryClass, Factory, classInit, instanceInit, 0);
+            const t = gtype.object(feature.gst_plugin_feature_get_type, "GstTypeFindFactory", FactoryClass, Factory, classInit, instanceInit, 0);
             debug_cat = info._gst_debug_category_new("GST_TYPEFIND", c.GST_DEBUG_FG_GREEN, "typefinding subsystem");
             return t;
         }

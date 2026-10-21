@@ -6,4 +6,5 @@ comptime {
     _ = @import("tag/id3.zig");
     _ = @import("tag/vorbis.zig");
     _ = @import("tag/id3v2.zig");
+    _ = @import("tag/xmp.zig");
 }

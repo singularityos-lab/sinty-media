@@ -17,7 +17,7 @@ var parent: ?*c.GstBaseSrcClass = null;
 pub export fn gst_push_src_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(basesrc.gst_base_src_get_type(), "GstPushSrc", Class, Push, classInit, null, 0);
+            const t = gtype.object(basesrc.gst_base_src_get_type, "GstPushSrc", Class, Push, classInit, null, 0);
             _ = c._gst_debug_category_new("pushsrc", 0, "pushsrc element");
             return t;
         }

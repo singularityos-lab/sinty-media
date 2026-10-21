@@ -30,8 +30,9 @@ pub const Once = struct {
     }
 };
 
-pub fn object(parent: c.GType, name: [*:0]const u8, comptime Class: type, comptime Instance: type, class_init: c.GClassInitFunc, instance_init: c.GInstanceInitFunc, flags: c.GTypeFlags) c.GType {
-    return c.g_type_register_static_simple(parent, name, @sizeOf(Class), class_init, @sizeOf(Instance), instance_init, flags);
+pub fn object(parent: anytype, name: [*:0]const u8, comptime Class: type, comptime Instance: type, class_init: c.GClassInitFunc, instance_init: c.GInstanceInitFunc, flags: c.GTypeFlags) c.GType {
+    const interned = c.g_intern_static_string(name);
+    return c.g_type_register_static_simple(parent(), interned, @sizeOf(Class), class_init, @sizeOf(Instance), instance_init, flags);
 }
 
 pub fn boxed(name: [*:0]const u8, copy: c.GBoxedCopyFunc, free: c.GBoxedFreeFunc) c.GType {

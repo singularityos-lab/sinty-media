@@ -45,7 +45,7 @@ pub fn nameOf(f: anytype) [*c]const u8 {
 pub export fn gst_plugin_feature_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            return gtype.object(object.gst_object_get_type(), "GstPluginFeature", FeatureClass, Feature, classInit, null, c.G_TYPE_FLAG_ABSTRACT);
+            return gtype.object(object.gst_object_get_type, "GstPluginFeature", FeatureClass, Feature, classInit, null, c.G_TYPE_FLAG_ABSTRACT);
         }
     }.f);
 }

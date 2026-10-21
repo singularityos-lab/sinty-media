@@ -1163,7 +1163,7 @@ pub export fn gst_app_sink_get_type() c.GType {
     return once.get(struct {
         var iface = c.GInterfaceInfo{ .interface_init = uriInit, .interface_finalize = null, .interface_data = null };
         fn f() c.GType {
-            const t = gtype.object(c.gst_base_sink_get_type(), "GstAppSink", Class, Sink, classInit, init, 0);
+            const t = gtype.object(c.gst_base_sink_get_type, "GstAppSink", Class, Sink, classInit, init, 0);
             offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             c.g_type_add_interface_static(t, c.gst_uri_handler_get_type(), &iface);
             return t;

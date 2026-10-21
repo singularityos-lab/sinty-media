@@ -46,7 +46,7 @@ fn isQueue(q: anytype) bool {
 pub export fn gst_data_queue_get_type() c.GType {
     return type_once.get(struct {
         fn f() c.GType {
-            const t = gtype.object(c.g_object_get_type(), "GstDataQueue", c.GstDataQueueClass, Queue, classInit, init, 0);
+            const t = gtype.object(c.g_object_get_type, "GstDataQueue", c.GstDataQueueClass, Queue, classInit, init, 0);
             offset = c.g_type_add_instance_private(t, @sizeOf(Private));
             _ = c._gst_debug_category_new("dataqueue", 0, "data queue object");
             _ = c._gst_debug_category_new("data_queue_dataflow", 0, "dataflow inside the data queue object");

@@ -492,7 +492,8 @@ fn deserializeValue(dest: [*c]c.GValue, s: [*c]const u8) callconv(.c) c.gboolean
 
 var value_table: c.GstValueTable = .{};
 
-pub fn initialize() void {
+
+pub fn registerValue() void {
     value_table = .{ .type = gst_segment_get_type(), .serialize = serializeValue, .deserialize = deserializeValue, .hash = @import("vhash.zig").segment };
     value.gst_value_register(&value_table);
 }
