@@ -13,4 +13,5 @@ comptime {
     _ = @import("base/basesink.zig");
     _ = @import("base/basetransform.zig");
     _ = @import("base/aggregator.zig");
+    _ = @import("base/collectpads.zig");
 }
