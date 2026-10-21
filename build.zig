@@ -93,6 +93,19 @@ pub fn build(b: *std.Build) void {
         diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
     }
 
+    {
+        const m = gstModule(b, "tools/tagdata.zig", target, optimize, &.{ "gstreamer-tag-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
+        m.addImport("c", c_mod);
+        const exe = b.addExecutable(.{ .name = "tagdata", .root_module = m, .use_llvm = true });
+        b.step("tagdata", "build the tag table extractor").dependOn(&b.addInstallArtifact(exe, .{}).step);
+    }
+    {
+        const m = gstModule(b, "tools/gen.zig", target, optimize, &.{ "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
+        m.addImport("c", c_mod);
+        const exe = b.addExecutable(.{ .name = "gen", .root_module = m, .use_llvm = true });
+        b.step("gen", "build the table generator").dependOn(&b.addInstallArtifact(exe, .{}).step);
+    }
+
     for ([_][]const u8{ "sintytest", "sintyfail", "sintycrash", "notaplugin", "sintyparse" }) |name| {
         const m = gstModule(b, b.fmt("tests/plugins/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
         m.addImport("c", c_mod);
