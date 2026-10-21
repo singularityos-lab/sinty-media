@@ -431,6 +431,10 @@ pub fn resamplerMethod(conv: *Converter) c.gint {
     return optEnum(conv, c.GST_VIDEO_CONVERTER_OPT_RESAMPLER_METHOD, c.gst_video_resampler_method_get_type(), c.GST_VIDEO_RESAMPLER_METHOD_CUBIC);
 }
 
+pub fn chromaResamplerMethod(conv: *Converter) c.gint {
+    return optEnum(conv, c.GST_VIDEO_CONVERTER_OPT_CHROMA_RESAMPLER_METHOD, c.gst_video_resampler_method_get_type(), c.GST_VIDEO_RESAMPLER_METHOD_LINEAR);
+}
+
 pub fn resamplerTaps(conv: *Converter) c.guint {
     return optUint(conv, c.GST_VIDEO_CONVERTER_OPT_RESAMPLER_TAPS, 0);
 }
@@ -664,21 +668,25 @@ fn matrix8Table(data: *MatrixData, pixels: c.gpointer) void {
     }
 }
 
+pub fn yuvRgb(y: u8, u: u8, v: u8, k: [5]i16) [3]u8 {
+    const wy = mulhsw(splat(y -% 128), k[0]);
+    const wu = splat(u -% 128);
+    const wv = splat(v -% 128);
+    const r = ssb(wy +% mulhsw(wv, k[1]));
+    const b = ssb(wy +% mulhsw(wu, k[2]));
+    const g = ssb(wy +% mulhsw(wu, k[3]) +% mulhsw(wv, k[4]));
+    return .{ @as(u8, @bitCast(r)) +% 128, @as(u8, @bitCast(g)) +% 128, @as(u8, @bitCast(b)) +% 128 };
+}
+
 pub fn ayuvToArgb(d: [*]u8, s: [*]const u8, n: usize, k: [5]i16) void {
     for (0..n) |i| {
         const px = s + i * 4;
-        const a = px[0] -% 128;
-        const wy = mulhsw(splat(px[1] -% 128), k[0]);
-        const wu = splat(px[2] -% 128);
-        const wv = splat(px[3] -% 128);
-        const r = ssb(wy +% mulhsw(wv, k[1]));
-        const b = ssb(wy +% mulhsw(wu, k[2]));
-        const g = ssb(wy +% mulhsw(wu, k[3]) +% mulhsw(wv, k[4]));
+        const rgb = yuvRgb(px[1], px[2], px[3], k);
         const o = d + i * 4;
-        o[0] = a +% 128;
-        o[1] = @as(u8, @bitCast(r)) +% 128;
-        o[2] = @as(u8, @bitCast(g)) +% 128;
-        o[3] = @as(u8, @bitCast(b)) +% 128;
+        o[0] = px[0];
+        o[1] = rgb[0];
+        o[2] = rgb[1];
+        o[3] = rgb[2];
     }
 }
 
@@ -1311,7 +1319,7 @@ fn initFromConfig(conv: *Converter) void {
     if (conv.pack_rgb and conv.out_info.colorimetry.matrix != c.GST_VIDEO_COLOR_MATRIX_RGB) conv.out_info.colorimetry.matrix = c.GST_VIDEO_COLOR_MATRIX_RGB;
 }
 
-fn fieldHeight(info: *allowzero const Info) c.gint {
+pub fn fieldHeight(info: *allowzero const Info) c.gint {
     if (info.interlace_mode == c.GST_VIDEO_INTERLACE_MODE_ALTERNATE) return @divTrunc((info.height + 1) & ~@as(c.gint, 1), 2);
     return info.height;
 }
