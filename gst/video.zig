@@ -24,4 +24,5 @@ comptime {
     _ = @import("video/anc.zig");
     _ = @import("video/navigation.zig");
     _ = @import("video/interfaces.zig");
+    _ = @import("video/sinkfilter.zig");
 }
