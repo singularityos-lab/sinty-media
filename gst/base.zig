@@ -5,4 +5,5 @@ comptime {
     _ = @import("base/bitwriter.zig");
     _ = @import("base/queuearray.zig");
     _ = @import("base/flowcombiner.zig");
+    _ = @import("base/adapter.zig");
 }
