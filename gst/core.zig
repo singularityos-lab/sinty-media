@@ -31,6 +31,9 @@ comptime {
     _ = @import("streamcollection.zig");
     _ = @import("event.zig");
     _ = @import("message.zig");
+    _ = @import("query.zig");
+    _ = @import("vecdeque.zig");
+    _ = @import("bufferpool.zig");
 }
 
 var ready = std.atomic.Value(bool).init(false);
@@ -91,6 +94,7 @@ fn post(_: ?*c.GOptionContext, _: ?*c.GOptionGroup, _: c.gpointer, _: [*c][*c]c.
     @import("toc.zig").initialize();
     @import("event.zig").initialize();
     @import("message.zig").initialize();
+    @import("query.zig").initialize();
     ready.store(true, .release);
     return 1;
 }
