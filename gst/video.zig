@@ -9,4 +9,10 @@ comptime {
     _ = @import("video/dma.zig");
     _ = @import("video/hdr.zig");
     _ = @import("video/misc.zig");
+    _ = @import("video/timecode.zig");
+    _ = @import("video/meta.zig");
+    _ = @import("video/frame.zig");
+    _ = @import("video/event.zig");
+    _ = @import("video/pool.zig");
+    _ = @import("video/codecutils.zig");
 }
