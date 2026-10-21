@@ -100,7 +100,54 @@ fn dynType() c.GType {
     return S.t;
 }
 
+fn createElement(_: ?*c.GstDevice, name: [*c]const u8) callconv(.c) ?*c.GstElement {
+    return c.gst_element_factory_make("sintytestsrc", name);
+}
+
+fn devClassInit(k: c.gpointer, _: c.gpointer) callconv(.c) void {
+    const dk: *c.GstDeviceClass = @ptrCast(@alignCast(k));
+    dk.create_element = createElement;
+}
+
+fn devType() c.GType {
+    const S = struct {
+        var t: c.GType = 0;
+    };
+    if (S.t == 0) S.t = c.g_type_register_static_simple(c.gst_device_get_type(), "SintyTestDevice", @sizeOf(c.GstDeviceClass), devClassInit, @sizeOf(c.GstDevice), null, 0);
+    return S.t;
+}
+
+fn makeDevice(name: [*c]const u8, klass: [*c]const u8, caps: [*c]const u8) ?*c.GstDevice {
+    const cp = c.gst_caps_from_string(caps);
+    defer c.gst_caps_unref(cp);
+    const props = c.gst_structure_new("props", "card", c.G_TYPE_INT, @as(c_int, 3), @as([*c]const u8, null));
+    defer c.gst_structure_free(props);
+    return @ptrCast(@alignCast(c.g_object_new(devType(), "display-name", name, "device-class", klass, "caps", cp, "properties", props, @as([*c]const u8, null))));
+}
+
+fn probe(_: ?*c.GstDeviceProvider) callconv(.c) ?*c.GList {
+    var l: ?*c.GList = null;
+    l = c.g_list_append(l, makeDevice("Sinty Mic", "Audio/Source", "audio/x-raw"));
+    l = c.g_list_append(l, makeDevice("Sinty Cam", "Video/Source", "video/x-raw"));
+    return l;
+}
+
+fn providerClassInit(k: c.gpointer, _: c.gpointer) callconv(.c) void {
+    const pk: *c.GstDeviceProviderClass = @ptrCast(@alignCast(k));
+    pk.probe = probe;
+    c.gst_device_provider_class_set_static_metadata(pk, "Sinty devices", "Source/Audio/Video", "Lists test devices", "Sinty");
+}
+
+fn providerType() c.GType {
+    const S = struct {
+        var t: c.GType = 0;
+    };
+    if (S.t == 0) S.t = c.g_type_register_static_simple(c.gst_device_provider_get_type(), "SintyTestProvider", @sizeOf(c.GstDeviceProviderClass), providerClassInit, @sizeOf(c.GstDeviceProvider), null, 0);
+    return S.t;
+}
+
 fn init(p: ?*c.GstPlugin) callconv(.c) c.gboolean {
+    _ = c.gst_device_provider_register(p, "sintydevprov", c.GST_RANK_PRIMARY, providerType());
     _ = c.gst_type_find_register(p, "sintytypefind", c.GST_RANK_PRIMARY, typefind, "sty,sinty", c.gst_caps_from_string("application/x-sinty"), null, null);
     _ = c.gst_type_find_register(p, "sintyhint", c.GST_RANK_PRIMARY, typefind, null, null, @constCast("text/x-sinty-hint"), null);
     _ = c.gst_dynamic_type_register(p, dynType());

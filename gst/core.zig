@@ -56,6 +56,8 @@ comptime {
     _ = @import("pluginloader.zig");
     _ = @import("typefind.zig");
     _ = @import("dynamictype.zig");
+    _ = @import("device.zig");
+    _ = @import("devicemonitor.zig");
 }
 
 var ready = std.atomic.Value(bool).init(false);

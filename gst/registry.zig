@@ -63,6 +63,7 @@ pub const Sorted = struct {
 const sorted = [_]Sorted{
     .{ .get_type = factory.gst_element_factory_get_type, .sort = null },
     .{ .get_type = @import("typefind.zig").gst_type_find_factory_get_type, .sort = @import("typefind.zig").rankCompare },
+    .{ .get_type = @import("device.zig").gst_device_provider_factory_get_type, .sort = null },
 };
 
 fn of(p: anytype) [*c]Registry {

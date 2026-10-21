@@ -136,6 +136,144 @@ fn dumpTypefind() void {
     out("dynamic missing {d}", .{c.gst_dynamic_type_factory_load("NoSuchType")});
 }
 
+fn dumpDevice(d: ?*c.GstDevice) void {
+    const dn = c.gst_device_get_display_name(d);
+    const dc = c.gst_device_get_device_class(d);
+    const caps = c.gst_device_get_caps(d);
+    const cs = c.gst_caps_to_string(caps);
+    const props = c.gst_device_get_properties(d);
+    const ps = c.gst_structure_to_string(props);
+    out("  device {s} [{s}] caps {s} props {s} audio {d} audio/source {d} source/audio {d} null {d}", .{ str(dn), str(dc), str(cs), str(ps), c.gst_device_has_classes(d, "Audio"), c.gst_device_has_classes(d, "Audio/Source"), c.gst_device_has_classes(d, "Source/Audio"), c.gst_device_has_classes(d, null) });
+    c.g_free(dn);
+    c.g_free(dc);
+    c.g_free(cs);
+    c.g_free(ps);
+    c.gst_caps_unref(caps);
+    c.gst_structure_free(props);
+}
+
+fn drainBus(bus: ?*c.GstBus) void {
+    while (true) {
+        const m = c.gst_bus_timed_pop(bus, 2 * c.GST_SECOND);
+        if (m == null) break;
+        const t = m.*.type;
+        if (t == c.GST_MESSAGE_DEVICE_ADDED) {
+            var d: ?*c.GstDevice = null;
+            c.gst_message_parse_device_added(m, &d);
+            const dn = c.gst_device_get_display_name(d);
+            out("  bus device-added {s}", .{str(dn)});
+            c.g_free(dn);
+            c.gst_object_unref(d);
+            c.gst_message_unref(m);
+            continue;
+        }
+        out("  bus {s}", .{str(c.gst_message_type_get_name(t))});
+        const done = t == c.GST_MESSAGE_DEVICE_MONITOR_STARTED;
+        c.gst_message_unref(m);
+        if (done) break;
+    }
+}
+
+fn devices() void {
+    var list = c.gst_device_provider_factory_list_get_device_providers(c.GST_RANK_MARGINAL);
+    var l: ?*c.GList = list;
+    while (l) |n| : (l = n.next) {
+        const f: ?*c.GstDeviceProviderFactory = @ptrCast(@alignCast(n.data));
+        if (c.strstr(name(f).ptr, "sinty") == null) continue;
+        out("provider factory {s} rank {d} klass {s} audio {d} video/source {d} sink {d}", .{ name(f), c.gst_plugin_feature_get_rank(@ptrCast(f)), str(c.gst_device_provider_factory_get_metadata(f, c.GST_ELEMENT_METADATA_KLASS)), c.gst_device_provider_factory_has_classes(f, "Audio"), c.gst_device_provider_factory_has_classes(f, "Video/Source"), c.gst_device_provider_factory_has_classes(f, "Sink") });
+        const keys = c.gst_device_provider_factory_get_metadata_keys(f);
+        if (keys != null) {
+            var i: usize = 0;
+            while (keys[i] != null) : (i += 1) out("  meta {s}", .{str(keys[i])});
+        }
+        c.g_strfreev(keys);
+    }
+    c.gst_plugin_feature_list_free(list);
+    list = null;
+    const p = c.gst_device_provider_factory_get_by_name("sintydevprov");
+    const p2 = c.gst_device_provider_factory_get_by_name("sintydevprov");
+    out("provider same {d} can monitor {d} started {d} longname {s} factory {s}", .{ @intFromBool(p == p2), c.gst_device_provider_can_monitor(p), c.gst_device_provider_is_started(p), str(c.gst_device_provider_get_metadata(p, "long-name")), name(c.gst_device_provider_get_factory(p)) });
+    c.gst_object_unref(p2);
+    const devs = c.gst_device_provider_get_devices(p);
+    l = devs;
+    while (l) |n| : (l = n.next) dumpDevice(@ptrCast(@alignCast(n.data)));
+    const first: ?*c.GstDevice = @ptrCast(@alignCast(devs.*.data));
+    const e = c.gst_device_create_element(first, "fromdev");
+    out("create element {s} {s}", .{ name(e), str(c.g_type_name(c.G_TYPE_FROM_INSTANCE(e))) });
+    c.gst_object_unref(e);
+    out("reconfigure {d}", .{c.gst_device_reconfigure_element(first, null)});
+    c.g_list_free_full(devs, c.gst_object_unref);
+    c.gst_device_provider_hide_provider(p, "otherprov");
+    c.gst_device_provider_hide_provider(p, "otherprov");
+    const hidden = c.gst_device_provider_get_hidden_providers(p);
+    out("hidden", .{});
+    strv(@ptrCast(hidden));
+    c.g_strfreev(hidden);
+    c.gst_device_provider_unhide_provider(p, "otherprov");
+    out("unhidden null {d}", .{@intFromBool(c.gst_device_provider_get_hidden_providers(p) == null)});
+    const bus = c.gst_device_provider_get_bus(p);
+    out("start {d} started {d}", .{ c.gst_device_provider_start(p), c.gst_device_provider_is_started(p) });
+    drainBus(bus);
+    const running = c.gst_device_provider_get_devices(p);
+    out("running devices {d}", .{c.g_list_length(running)});
+    c.g_list_free_full(running, c.gst_object_unref);
+    c.gst_device_provider_stop(p);
+    out("stopped {d}", .{c.gst_device_provider_is_started(p)});
+    c.gst_device_provider_stop(p);
+    c.gst_object_unref(bus);
+    c.gst_object_unref(p);
+
+    const m = c.gst_device_monitor_new();
+    const caps = c.gst_caps_from_string("audio/x-raw");
+    out("filter id {d} none {d}", .{ c.gst_device_monitor_add_filter(m, "Audio/Source", caps), c.gst_device_monitor_add_filter(m, "Nothing/Here", null) });
+    c.gst_caps_unref(caps);
+    const names = c.gst_device_monitor_get_providers(m);
+    var found = false;
+    if (names != null) {
+        var i: usize = 0;
+        while (names[i] != null) : (i += 1) if (c.strcmp(names[i], "sintydevprov") == 0) {
+            found = true;
+        };
+    }
+    c.g_strfreev(names);
+    out("monitor has provider {d} show all {d}", .{ @intFromBool(found), c.gst_device_monitor_get_show_all_devices(m) });
+    const md = c.gst_device_monitor_get_devices(m);
+    l = md;
+    while (l) |n| : (l = n.next) {
+        const dn = c.gst_device_get_display_name(@ptrCast(@alignCast(n.data)));
+        if (c.strstr(dn, "Sinty") != null) out("  monitored {s}", .{str(dn)});
+        c.g_free(dn);
+    }
+    c.g_list_free_full(md, c.gst_object_unref);
+    var sa: c.gboolean = 0;
+    c.g_object_set(m, "show-all", @as(c.gboolean, 1), @as([*c]const u8, null));
+    c.g_object_get(m, "show-all", &sa, @as([*c]const u8, null));
+    out("show all prop {d}", .{sa});
+    out("remove filter {d} {d}", .{ c.gst_device_monitor_remove_filter(m, 2), c.gst_device_monitor_remove_filter(m, 99) });
+    c.gst_object_unref(m);
+    const m2 = c.gst_device_monitor_new();
+    const vcaps = c.gst_caps_from_string("video/x-raw");
+    _ = c.gst_device_monitor_add_filter(m2, "Video", vcaps);
+    c.gst_caps_unref(vcaps);
+    const mbus = c.gst_device_monitor_get_bus(m2);
+    out("monitor start {d}", .{c.gst_device_monitor_start(m2)});
+    drainBus(mbus);
+    out("monitor start again {d}", .{c.gst_device_monitor_start(m2)});
+    const live = c.gst_device_monitor_get_devices(m2);
+    l = live;
+    while (l) |n| : (l = n.next) {
+        const dn = c.gst_device_get_display_name(@ptrCast(@alignCast(n.data)));
+        if (c.strstr(dn, "Sinty") != null) out("  live {s}", .{str(dn)});
+        c.g_free(dn);
+    }
+    c.g_list_free_full(live, c.gst_object_unref);
+    c.gst_device_monitor_stop(m2);
+    c.gst_device_monitor_stop(m2);
+    out("monitor stopped", .{});
+    c.gst_object_unref(mbus);
+    c.gst_object_unref(m2);
+}
+
 fn printErr(label: []const u8, e: [*c]c.GError) void {
     if (e == null) {
         out("{s}: no error", .{label});
@@ -272,6 +410,7 @@ pub fn main() void {
     dumpTypefind();
     if (stage == '1') {
         exercise();
+        devices();
         uris();
         again(exe_z, "2");
         return;

@@ -183,6 +183,7 @@ pub const kinds = [_]Kind{
     .{ .name = "GstElementFactory", .get_type = factory.gst_element_factory_get_type, .save = saveElement, .load = loadElement },
     @import("typefind.zig").kind,
     @import("dynamictype.zig").kind,
+    @import("device.zig").kind,
 };
 
 fn kindFor(f: [*c]Feature) ?*const Kind {
