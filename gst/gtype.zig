@@ -39,7 +39,7 @@ pub fn boxed(name: [*:0]const u8, copy: c.GBoxedCopyFunc, free: c.GBoxedFreeFunc
 }
 
 pub fn typeOf(ptr: anytype) c.GType {
-    const inst: *c.GTypeInstance = @ptrCast(@alignCast(ptr));
+    const inst: *const c.GTypeInstance = @ptrCast(@alignCast(ptr));
     return inst.g_class.*.g_type;
 }
 

@@ -4,8 +4,8 @@ cd "$(dirname "$0")/.."
 fail=0
 for t in zig-out/bin/diff-*; do
     n=$(basename "$t")
-    want=$("$t" 2>&1)
-    got=$(LD_LIBRARY_PATH="$PWD/zig-out/lib" "$t" 2>&1)
+    want=$("$t" 2>&1 | sed -E 's/\(([^:()]+):[0-9]+\)/(\1:PID)/; s/[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}:/TIME:/')
+    got=$(LD_LIBRARY_PATH="$PWD/zig-out/lib" "$t" 2>&1 | sed -E 's/\(([^:()]+):[0-9]+\)/(\1:PID)/; s/[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}:/TIME:/')
     if [ "$want" = "$got" ]; then
         echo "same $n"
     else

@@ -34,7 +34,7 @@ pub fn build(b: *std.Build) void {
         const lib = b.addLibrary(.{
             .name = l.name,
             .linkage = .dynamic,
-            .version = .{ .major = 0, .minor = 2413, .patch = 0 },
+            .version = .{ .major = 0, .minor = 2802, .patch = 0 },
             .root_module = gstModule(b, l.root, target, optimize, l.system),
         });
         b.installArtifact(lib);
@@ -44,7 +44,7 @@ pub fn build(b: *std.Build) void {
 
     const c_mod = gstModule(b, "tests/diff/c.zig", target, optimize, &.{ "gobject-2.0", "glib-2.0" });
     const diff_step = b.step("diff", "build the differential tests");
-    for ([_][]const u8{ "object", "buffer" }) |name| {
+    for ([_][]const u8{ "object", "buffer", "caps" }) |name| {
         const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
         m.addImport("c", c_mod);
         const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m });
