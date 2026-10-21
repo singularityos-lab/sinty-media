@@ -16,4 +16,6 @@ comptime {
     _ = @import("audio/resampler.zig");
     _ = @import("audio/converter.zig");
     _ = @import("audio/ringbuffer.zig");
+    _ = @import("audio/basesink.zig");
+    _ = @import("audio/sink.zig");
 }
