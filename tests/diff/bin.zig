@@ -171,7 +171,9 @@ pub fn main() void {
     async_sink = false;
     out("null again {d}", .{c.gst_element_set_state(@ptrCast(bin), c.GST_STATE_NULL)});
     drain(bus);
+    _ = c.gst_object_ref(k);
     out("remove {d} again {d} children {d} flags 0x{x}", .{ c.gst_bin_remove(bin, k), c.gst_bin_remove(bin, k), bin.*.numchildren, @as(*c.GstObject, @ptrCast(@alignCast(bin))).flags });
+    c.gst_object_unref(k);
     c.gst_bin_set_suppressed_flags(bin, c.GST_ELEMENT_FLAG_SOURCE);
     out("suppressed {d}", .{c.gst_bin_get_suppressed_flags(bin)});
     drain(bus);
