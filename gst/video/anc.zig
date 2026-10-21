@@ -5,6 +5,10 @@ const gtype = @import("../gtype.zig");
 const info = @import("info.zig");
 const meta = @import("meta.zig");
 
+comptime {
+    @import("../abi.zig").check(@This());
+}
+
 const Info = c.GstVideoInfo;
 const Buffer = c.GstBuffer;
 const Meta = c.GstMeta;
@@ -86,7 +90,7 @@ pub export fn gst_video_vbi_encoder_get_type() c.GType {
     }.f);
 }
 
-pub export fn gst_video_vbi_parser_new(fmt: c.GstVideoFormat, pixel_width: u32) ?*c.GstVideoVBIParser {
+pub export fn gst_video_vbi_parser_new(fmt: c.GstVideoFormat, pixel_width: c.guint) ?*c.GstVideoVBIParser {
     if (!check.that(pixel_width > 0, "gst_video_vbi_parser_new", "pixel_width > 0")) return null;
     return @ptrCast(vbiNew(fmt, pixel_width));
 }
@@ -239,7 +243,7 @@ pub export fn gst_video_vbi_parser_get_ancillary(parser: ?*c.GstVideoVBIParser, 
     return findAnc(u8, v, @ptrCast(anc));
 }
 
-pub export fn gst_video_vbi_encoder_new(fmt: c.GstVideoFormat, pixel_width: u32) ?*c.GstVideoVBIEncoder {
+pub export fn gst_video_vbi_encoder_new(fmt: c.GstVideoFormat, pixel_width: c.guint) ?*c.GstVideoVBIEncoder {
     if (!check.that(pixel_width > 0, "gst_video_vbi_encoder_new", "pixel_width > 0")) return null;
     return @ptrCast(vbiNew(fmt, pixel_width));
 }
@@ -435,7 +439,7 @@ pub export fn gst_video_caption_meta_get_info() [*c]const c.GstMetaInfo {
     return infoOnce(&caption_info, makeCaption);
 }
 
-pub export fn gst_buffer_add_video_caption_meta(buffer: [*c]Buffer, caption_type: c.GstVideoCaptionType, data: [*c]const u8, size: usize) [*c]Caption {
+pub export fn gst_buffer_add_video_caption_meta(buffer: [*c]Buffer, caption_type: c.GstVideoCaptionType, data: [*c]const u8, size: c.gsize) [*c]Caption {
     const fname = "gst_buffer_add_video_caption_meta";
     if (!check.that(isBuffer(buffer), fname, "GST_IS_BUFFER (buffer)")) return null;
     if (!check.that(data != null, fname, "data != NULL")) return null;
@@ -680,7 +684,7 @@ pub export fn gst_video_sei_user_data_unregistered_meta_get_info() [*c]const c.G
     return infoOnce(&sei_info, makeSei);
 }
 
-pub export fn gst_buffer_add_video_sei_user_data_unregistered_meta(buffer: [*c]Buffer, uuid: [*c]u8, data: [*c]u8, size: usize) [*c]Sei {
+pub export fn gst_buffer_add_video_sei_user_data_unregistered_meta(buffer: [*c]Buffer, uuid: [*c]u8, data: [*c]u8, size: c.gsize) [*c]Sei {
     if (!check.that(isBuffer(buffer), "gst_buffer_add_video_sei_user_data_unregistered_meta", "GST_IS_BUFFER (buffer)")) return null;
     const m = cast(Sei, c.gst_buffer_add_meta(buffer, gst_video_sei_user_data_unregistered_meta_get_info(), null));
     @memcpy(m.uuid[0..16], uuid[0..16]);
@@ -697,7 +701,7 @@ const MISP = [3][16]u8{
     .{ 0xCF, 0x84, 0x82, 0x78, 0xEE, 0x23, 0x30, 0x6C, 0x92, 0x65, 0xE8, 0xFE, 0xF2, 0x2F, 0xB8, 0xB8 },
 };
 
-pub export fn gst_video_sei_user_data_unregistered_parse_precision_time_stamp(user_data: [*c]Sei, status: [*c]u8, precision_time_stamp: [*c]u64) c.gboolean {
+pub export fn gst_video_sei_user_data_unregistered_parse_precision_time_stamp(user_data: [*c]Sei, status: [*c]u8, precision_time_stamp: [*c]c.guint64) c.gboolean {
     const u = &user_data[0];
     var known = false;
     for (MISP) |id| {

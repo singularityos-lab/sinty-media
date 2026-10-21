@@ -5,6 +5,10 @@ const format = @import("format.zig");
 const info = @import("info.zig");
 const frame = @import("frame.zig");
 
+comptime {
+    @import("../abi.zig").check(@This());
+}
+
 const Info = c.GstVideoInfo;
 const Frame = c.GstVideoFrame;
 

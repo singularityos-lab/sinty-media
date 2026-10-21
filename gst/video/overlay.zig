@@ -7,6 +7,10 @@ const frame = @import("frame.zig");
 const meta = @import("meta.zig");
 const blend = @import("blend.zig");
 
+comptime {
+    @import("../abi.zig").check(@This());
+}
+
 const Info = c.GstVideoInfo;
 const Frame = c.GstVideoFrame;
 const Buffer = c.GstBuffer;
