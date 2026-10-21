@@ -36,6 +36,8 @@ comptime {
     _ = @import("bufferpool.zig");
     _ = @import("clock.zig");
     _ = @import("sysclock.zig");
+    _ = @import("poll.zig");
+    _ = @import("bus.zig");
 }
 
 var ready = std.atomic.Value(bool).init(false);
