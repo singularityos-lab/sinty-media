@@ -59,6 +59,8 @@ comptime {
     _ = @import("device.zig");
     _ = @import("devicemonitor.zig");
     _ = @import("tracer.zig");
+    _ = @import("preset.zig");
+    _ = @import("parse.zig");
 }
 
 var ready = std.atomic.Value(bool).init(false);
