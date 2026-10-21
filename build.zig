@@ -14,6 +14,7 @@ const libs = [_]Lib{
     .{ .name = "gsttag-1.0", .root = "gst/tag.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "zlib" }, .deps = &.{} },
     .{ .name = "gstaudio-1.0", .root = "gst/audio.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-tag-1.0", "m" }, .deps = &.{} },
     .{ .name = "gstapp-1.0", .root = "gst/app.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0" }, .deps = &.{} },
+    .{ .name = "gstvideo-1.0", .root = "gst/video.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "m" }, .deps = &.{}, .dest = "staging" },
 };
 
 fn gstIncludeDir(b: *std.Build) []const u8 {
@@ -109,11 +110,25 @@ pub fn build(b: *std.Build) void {
         diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
     }
 
+    for ([_][]const u8{"video1"}) |name| {
+        const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-video-1.0", "gstreamer-base-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
+        m.addImport("c", c_mod);
+        const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
+        diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+    }
+
     for ([_][]const u8{"app"}) |name| {
         const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-app-1.0", "gstreamer-base-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
         m.addImport("c", c_mod);
         const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
         diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+    }
+
+    {
+        const m = gstModule(b, "tools/vformats.zig", target, optimize, &.{ "gstreamer-video-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
+        m.addImport("c", c_mod);
+        const exe = b.addExecutable(.{ .name = "vformats", .root_module = m, .use_llvm = true });
+        b.step("vformats", "build the video format table extractor").dependOn(&b.addInstallArtifact(exe, .{}).step);
     }
 
     {

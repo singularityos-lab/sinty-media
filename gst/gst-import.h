@@ -31,4 +31,8 @@
 #include <gst/audio/audio.h>
 #include <gst/audio/streamvolume.h>
 #include <gst/audio/gstaudioiec61937.h>
+#include <gst/video/video.h>
+#include <gst/video/video-chroma.h>
+#include <gst/video/video-resampler.h>
+#include <gst/video/video-tile.h>
 #include <zlib.h>
