@@ -62,6 +62,11 @@ comptime {
     _ = @import("preset.zig");
     _ = @import("parse.zig");
     _ = @import("uri.zig");
+    _ = @import("atomicqueue.zig");
+    _ = @import("promise.zig");
+    _ = @import("paramspecs.zig");
+    _ = @import("setters.zig");
+    _ = @import("protection.zig");
 }
 
 var ready = std.atomic.Value(bool).init(false);
