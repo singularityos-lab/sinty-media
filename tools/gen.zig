@@ -47,11 +47,11 @@ fn getTypeNames(text: []const u8, names: *std.ArrayList([]const u8)) void {
     }
 }
 
-fn enums(header: [*:0]const u8, libname: [*:0]const u8) void {
+fn enums(header: [*:0]const u8, libname: [*:0]const u8, prefix: []const u8) void {
     var names = std.ArrayList([]const u8).empty;
     getTypeNames(readFile(header), &names);
     const lib = c.dlopen(libname, c.RTLD_NOW);
-    emit("const c = @import(\"c.zig\").c;\nconst gtype = @import(\"gtype.zig\");\n", .{});
+    emit("const c = @import(\"{s}c.zig\").c;\nconst gtype = @import(\"{s}gtype.zig\");\n", .{ prefix, prefix });
     for (names.items) |fname| {
         const z = std.heap.c_allocator.dupeZ(u8, fname) catch unreachable;
         const sym = c.dlsym(lib, z) orelse continue;
@@ -218,6 +218,6 @@ pub fn main(init: std.process.Init) void {
     const args = init.minimal.args.toSlice(std.heap.c_allocator) catch unreachable;
     c.gst_init(null, null);
     const cmd = args[1];
-    if (std.mem.eql(u8, cmd, "enums")) enums(args[2].ptr, args[3].ptr) else if (std.mem.eql(u8, cmd, "errors")) errors() else if (std.mem.eql(u8, cmd, "tags")) tags(args[2].ptr) else std.process.exit(1);
+    if (std.mem.eql(u8, cmd, "enums")) enums(args[2].ptr, args[3].ptr, if (args.len > 4) args[4] else "") else if (std.mem.eql(u8, cmd, "errors")) errors() else if (std.mem.eql(u8, cmd, "tags")) tags(args[2].ptr) else std.process.exit(1);
     _ = std.c.write(1, &buf, len);
 }
