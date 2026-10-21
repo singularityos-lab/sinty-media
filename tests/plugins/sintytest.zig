@@ -85,7 +85,25 @@ fn badType() c.GType {
     return S.t;
 }
 
+fn typefind(find: ?*c.GstTypeFind, data: c.gpointer) callconv(.c) void {
+    const head = c.gst_type_find_peek(find, 0, 4);
+    if (head == null) return;
+    if (std.mem.eql(u8, head[0..4], "STY1")) c.gst_type_find_suggest_simple(find, c.GST_TYPE_FIND_MAXIMUM, "application/x-sinty", "version", c.G_TYPE_INT, @as(c_int, 1), @as([*c]const u8, null));
+    if (data != null) c.gst_type_find_suggest_empty_simple(find, c.GST_TYPE_FIND_POSSIBLE, @ptrCast(data));
+}
+
+fn dynType() c.GType {
+    const S = struct {
+        var t: c.GType = 0;
+    };
+    if (S.t == 0) S.t = c.g_type_register_static_simple(c.G_TYPE_OBJECT, "SintyDynType", @sizeOf(c.GObjectClass), null, @sizeOf(c.GObject), null, 0);
+    return S.t;
+}
+
 fn init(p: ?*c.GstPlugin) callconv(.c) c.gboolean {
+    _ = c.gst_type_find_register(p, "sintytypefind", c.GST_RANK_PRIMARY, typefind, "sty,sinty", c.gst_caps_from_string("application/x-sinty"), null, null);
+    _ = c.gst_type_find_register(p, "sintyhint", c.GST_RANK_PRIMARY, typefind, null, null, @constCast("text/x-sinty-hint"), null);
+    _ = c.gst_dynamic_type_register(p, dynType());
     _ = c.gst_element_register(p, "sintytestsrc", c.GST_RANK_SECONDARY, srcType());
     _ = c.gst_element_register(p, "sintytestsink", c.GST_RANK_PRIMARY + 1, sinkType());
     _ = c.gst_element_register(p, "sintytestbad", c.GST_RANK_NONE, badType());

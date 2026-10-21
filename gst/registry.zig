@@ -60,7 +60,10 @@ pub const Sorted = struct {
     sort: ?c.GCompareFunc,
 };
 
-pub var sorted = [3]?Sorted{ .{ .get_type = factory.gst_element_factory_get_type, .sort = null }, null, null };
+const sorted = [_]Sorted{
+    .{ .get_type = factory.gst_element_factory_get_type, .sort = null },
+    .{ .get_type = @import("typefind.zig").gst_type_find_factory_get_type, .sort = @import("typefind.zig").rankCompare },
+};
 
 fn of(p: anytype) [*c]Registry {
     return @ptrCast(@alignCast(p));
@@ -324,7 +327,7 @@ fn typeFilter(f: ?*c.GstPluginFeature, data: c.gpointer) callconv(.c) c.gboolean
 pub export fn gst_registry_get_feature_list(r: [*c]Registry, t: c.GType) ?*c.GList {
     if (!check.that(isRegistry(r), "gst_registry_get_feature_list", "GST_IS_REGISTRY (registry)")) return null;
     if (!check.that(c.g_type_is_a(t, feature.gst_plugin_feature_get_type()) != 0, "gst_registry_get_feature_list", "g_type_is_a (type, GST_TYPE_PLUGIN_FEATURE)")) return null;
-    for (sorted, 0..) |s, i| if (s) |entry| if (entry.get_type() == t) return cachedList(r, i, t, entry.sort);
+    for (sorted, 0..) |entry, i| if (entry.get_type() == t) return cachedList(r, i, t, entry.sort);
     return gst_registry_feature_filter(r, typeFilter, 0, @ptrFromInt(t));
 }
 

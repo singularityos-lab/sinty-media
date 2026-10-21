@@ -54,6 +54,8 @@ comptime {
     _ = @import("urihandler.zig");
     _ = @import("registry.zig");
     _ = @import("pluginloader.zig");
+    _ = @import("typefind.zig");
+    _ = @import("dynamictype.zig");
 }
 
 var ready = std.atomic.Value(bool).init(false);

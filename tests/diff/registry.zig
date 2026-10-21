@@ -96,6 +96,46 @@ fn dumpFeatures() void {
     c.gst_plugin_feature_list_free(list);
 }
 
+var suggested: [256]u8 = undefined;
+var suggested_len: usize = 0;
+
+fn peek(data: c.gpointer, offset: i64, size: c.guint) callconv(.c) [*c]const u8 {
+    const bytes: [*]const u8 = @ptrCast(data);
+    if (offset < 0 or offset + size > 8) return null;
+    return bytes + @as(usize, @intCast(offset));
+}
+
+fn suggest(_: c.gpointer, probability: c.guint, caps: ?*c.GstCaps) callconv(.c) void {
+    const s = c.gst_caps_to_string(caps);
+    defer c.g_free(s);
+    const w = std.fmt.bufPrint(suggested[suggested_len..], "{d}:{s};", .{ probability, std.mem.span(s) }) catch return;
+    suggested_len += w.len;
+}
+
+fn dumpTypefind() void {
+    var list = c.gst_type_find_factory_get_list();
+    var l: ?*c.GList = list;
+    while (l) |n| : (l = n.next) {
+        const f: ?*c.GstTypeFindFactory = @ptrCast(@alignCast(n.data));
+        if (c.strstr(name(f).ptr, "sinty") == null) continue;
+        const caps = c.gst_type_find_factory_get_caps(f);
+        const cs = if (caps != null) c.gst_caps_to_string(caps) else null;
+        out("typefind {s} rank {d} caps {s} has fn {d}", .{ name(f), c.gst_plugin_feature_get_rank(@ptrCast(f)), str(cs), c.gst_type_find_factory_has_function(f) });
+        c.g_free(cs);
+        strv(c.gst_type_find_factory_get_extensions(f));
+        var data = "STY1abcd".*;
+        var find = c.GstTypeFind{ .peek = peek, .suggest = suggest, .data = &data, .get_length = null, ._gst_reserved = .{null} ** 4 };
+        suggested_len = 0;
+        c.gst_type_find_factory_call_function(f, &find);
+        out("  suggested {s} length {d}", .{ suggested[0..suggested_len], c.gst_type_find_get_length(&find) });
+    }
+    c.gst_plugin_feature_list_free(list);
+    list = null;
+    const t = c.gst_dynamic_type_factory_load("SintyDynType");
+    out("dynamic {s}", .{str(c.g_type_name(t))});
+    out("dynamic missing {d}", .{c.gst_dynamic_type_factory_load("NoSuchType")});
+}
+
 fn printErr(label: []const u8, e: [*c]c.GError) void {
     if (e == null) {
         out("{s}: no error", .{label});
@@ -175,6 +215,8 @@ fn exercise() void {
     out("no factory {d}", .{@intFromBool(c.gst_element_factory_make("nosuchelement", null) == null)});
     const byp = c.gst_registry_get_feature_list_by_plugin(c.gst_registry_get(), "sintytest");
     out("by plugin {d}", .{c.g_list_length(byp)});
+    const wrong = c.gst_registry_find_feature(c.gst_registry_get(), "sintytestsrc", c.gst_type_find_factory_get_type());
+    out("wrong type null {d}", .{@intFromBool(wrong == null)});
     c.gst_plugin_feature_list_free(byp);
     c.gst_object_unref(p);
 }
@@ -227,6 +269,7 @@ pub fn main() void {
     c.gst_init(null, null);
     dumpPlugins();
     dumpFeatures();
+    dumpTypefind();
     if (stage == '1') {
         exercise();
         uris();

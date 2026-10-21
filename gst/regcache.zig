@@ -179,26 +179,20 @@ fn loadElement(r: *Reader) Error![*c]Feature {
     return @ptrCast(ef);
 }
 
-pub var kinds = [_]?Kind{
+pub const kinds = [_]Kind{
     .{ .name = "GstElementFactory", .get_type = factory.gst_element_factory_get_type, .save = saveElement, .load = loadElement },
-    null, null, null, null, null, null, null,
+    @import("typefind.zig").kind,
+    @import("dynamictype.zig").kind,
 };
-
-pub fn addKind(k: Kind) void {
-    for (&kinds) |*slot| if (slot.* == null) {
-        slot.* = k;
-        return;
-    };
-}
 
 fn kindFor(f: [*c]Feature) ?*const Kind {
     const t = @as(*c.GTypeInstance, @ptrCast(@alignCast(f))).g_class.*.g_type;
-    for (&kinds) |*slot| if (slot.*) |*k| if (k.get_type() == t) return k;
+    for (&kinds) |*k| if (k.get_type() == t) return k;
     return null;
 }
 
 fn kindNamed(name: []const u8) ?*const Kind {
-    for (&kinds) |*slot| if (slot.*) |*k| if (std.mem.eql(u8, k.name, name)) return k;
+    for (&kinds) |*k| if (std.mem.eql(u8, k.name, name)) return k;
     return null;
 }
 

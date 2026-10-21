@@ -1,0 +1,77 @@
+const c = @import("c.zig").c;
+const check = @import("check.zig");
+const gtype = @import("gtype.zig");
+const info = @import("info.zig");
+const feature = @import("pluginfeature.zig");
+const plugin = @import("plugin.zig");
+const registry = @import("registry.zig");
+const regcache = @import("regcache.zig");
+
+comptime {
+    @import("abi.zig").check(@This());
+}
+
+pub const Factory = extern struct {
+    feature: feature.Feature,
+    type: c.GType,
+
+    pub const Header = c.struct__GstDynamicTypeFactory;
+};
+
+const FactoryClass = extern struct {
+    parent: feature.FeatureClass,
+};
+
+var type_once: gtype.Once = .{};
+var debug_cat: [*c]c.GstDebugCategory = null;
+
+fn of(p: anytype) [*c]Factory {
+    return @ptrCast(@alignCast(p));
+}
+
+pub export fn gst_dynamic_type_factory_get_type() c.GType {
+    return type_once.get(struct {
+        fn f() c.GType {
+            const t = gtype.object(feature.gst_plugin_feature_get_type(), "GstDynamicTypeFactory", FactoryClass, Factory, null, null, 0);
+            debug_cat = info._gst_debug_category_new("GST_DYNAMIC_TYPE_FACTORY", c.GST_DEBUG_BOLD, "dynamic type factories allow automatically loading a type from a plugin");
+            return t;
+        }
+    }.f);
+}
+
+pub export fn gst_dynamic_type_factory_load(name: [*c]const u8) c.GType {
+    if (!check.that(name != null, "gst_dynamic_type_factory_find", "name != NULL")) return 0;
+    const found = registry.gst_registry_find_feature(registry.gst_registry_get(), name, gst_dynamic_type_factory_get_type());
+    if (found == null) return 0;
+    const f = of(feature.gst_plugin_feature_load(found));
+    if (f == null) return 0;
+    return f[0].type;
+}
+
+pub export fn gst_dynamic_type_register(p: [*c]plugin.Plugin, t: c.GType) c.gboolean {
+    const name = c.g_type_name(t);
+    if (!check.that(name != null, "gst_dynamic_type_register", "name != NULL")) return 0;
+    const reg = registry.gst_registry_get();
+    const existing = registry.gst_registry_lookup_feature(reg, name);
+    if (existing != null) {
+        existing[0].loaded = 1;
+        of(existing)[0].type = t;
+        c.gst_object_unref(existing);
+        return 1;
+    }
+    const f = of(c.g_object_new(gst_dynamic_type_factory_get_type(), @as([*c]const u8, null)));
+    _ = c.gst_object_set_name(@ptrCast(f), name);
+    feature.bindPlugin(@ptrCast(f), p);
+    f[0].feature.loaded = 1;
+    f[0].type = t;
+    _ = registry.gst_registry_add_feature(reg, @ptrCast(f));
+    return 1;
+}
+
+fn save(_: *regcache.Writer, _: [*c]feature.Feature) void {}
+
+fn load(_: *regcache.Reader) regcache.Error![*c]feature.Feature {
+    return @ptrCast(@alignCast(c.g_object_new(gst_dynamic_type_factory_get_type(), @as([*c]const u8, null))));
+}
+
+pub const kind = regcache.Kind{ .name = "GstDynamicTypeFactory", .get_type = gst_dynamic_type_factory_get_type, .save = save, .load = load };
