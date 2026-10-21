@@ -67,6 +67,7 @@ comptime {
     _ = @import("paramspecs.zig");
     _ = @import("setters.zig");
     _ = @import("protection.zig");
+    _ = @import("helpers.zig");
 }
 
 var ready = std.atomic.Value(bool).init(false);
