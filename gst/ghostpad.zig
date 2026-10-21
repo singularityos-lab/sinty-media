@@ -61,7 +61,7 @@ fn isProxy(p: anytype) bool {
     return gtype.instanceOf(p, gst_proxy_pad_get_type());
 }
 
-fn isGhost(p: anytype) bool {
+pub fn isGhost(p: anytype) bool {
     return gtype.instanceOf(p, gst_ghost_pad_get_type());
 }
 

@@ -50,6 +50,7 @@ comptime {
     _ = @import("ghostpad.zig");
     _ = @import("control.zig");
     _ = @import("controlbinding.zig");
+    _ = @import("debugutils.zig");
     _ = @import("pluginfeature.zig");
     _ = @import("plugin.zig");
     _ = @import("elementfactory.zig");
@@ -112,6 +113,7 @@ fn pre(_: ?*c.GOptionContext, _: ?*c.GOptionGroup, _: c.gpointer, _: [*c][*c]c.G
     findExecutablePath();
     start_time = @import("util.zig").gst_util_get_timestamp();
     @import("info.zig").initialize();
+    @import("debugutils.zig").loadDotDir();
     if (c.g_getenv("GST_REGISTRY_DISABLE")) |v| registry_disabled = std.mem.orderZ(u8, v, "yes") == .eq;
     return 1;
 }
@@ -149,6 +151,7 @@ fn post(_: ?*c.GOptionContext, _: ?*c.GOptionGroup, _: c.gpointer, _: [*c][*c]c.
     _ = @import("registry.zig").gst_update_registry();
     @import("pluginfeature.zig").applyRankEnv();
     @import("tracer.zig").initialize();
+    @import("debugutils.zig").loadDotDir();
     return 1;
 }
 
