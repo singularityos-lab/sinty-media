@@ -11,4 +11,7 @@ comptime {
     _ = @import("audio/dsd.zig");
     _ = @import("audio/streamalign.zig");
     _ = @import("audio/clock.zig");
+    _ = @import("audio/quantize.zig");
+    _ = @import("audio/channelmixer.zig");
+    _ = @import("audio/resampler.zig");
 }

@@ -7,8 +7,9 @@ comptime {
     @import("../abi.zig").check(@This());
 }
 
-extern fn pow(x: f64, y: f64) f64;
-extern fn log10(x: f64) f64;
+const libm = @import("../libm.zig");
+const pow = libm.pow;
+const log10 = libm.log10;
 
 const Vol = c.GstStreamVolume;
 const NONE = @as(?*anyopaque, null);

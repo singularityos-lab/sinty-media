@@ -8,8 +8,9 @@ comptime {
     @import("../abi.zig").check(@This());
 }
 
-extern fn pow(x: f64, y: f64) f64;
-extern fn log2(x: f64) f64;
+const libm = @import("../libm.zig");
+const pow = libm.pow;
+const log2 = libm.log2;
 
 const NONE = @as(?*anyopaque, null);
 const LE: c_int = c.G_LITTLE_ENDIAN;
