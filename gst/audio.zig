@@ -15,4 +15,5 @@ comptime {
     _ = @import("audio/channelmixer.zig");
     _ = @import("audio/resampler.zig");
     _ = @import("audio/converter.zig");
+    _ = @import("audio/ringbuffer.zig");
 }
