@@ -119,6 +119,7 @@ pub fn build(b: *std.Build) void {
         .{ .name = "audiomixer", .root = "plugins/audiomixer.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-audio-1.0" } },
         .{ .name = "rawparse", .root = "plugins/rawparse.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-audio-1.0", "gstreamer-video-1.0" } },
         .{ .name = "gio", .root = "plugins/gio.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gio-2.0", "gstreamer-1.0", "gstreamer-base-1.0" } },
+        .{ .name = "videorate", .root = "plugins/videorate.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0" } },
         .{ .name = "tcp", .root = "plugins/tcp.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gio-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-net-1.0" } },
         .{ .name = "app", .root = "plugins/app.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-app-1.0" } },
     };
@@ -254,7 +255,7 @@ pub fn build(b: *std.Build) void {
 
     const inspect_mod = gstModule(b, "tests/diff/inspect.zig", target, optimize, &.{ "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
     inspect_mod.addImport("c", c_mod);
-    for ([_][]const u8{ "core1", "core2", "base1", "base2", "base3", "base4", "base5", "base6", "vb1", "tf1", "pb1", "pb2", "pb3", "pb4", "pb5", "pb6", "pb7", "pb8", "pb9", "pb10", "pb11", "gio1", "raw1", "mix1", "sub1", "enc1", "add1", "tcp1" }) |name| {
+    for ([_][]const u8{ "core1", "core2", "base1", "base2", "base3", "base4", "base5", "base6", "vb1", "tf1", "pb1", "pb2", "pb3", "pb4", "pb5", "pb6", "pb7", "pb8", "pb9", "pb10", "pb11", "gio1", "raw1", "mix1", "sub1", "enc1", "add1", "tcp1", "vr1" }) |name| {
         const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-pbutils-1.0", "gstreamer-video-1.0", "gstreamer-audio-1.0", "gstreamer-controller-1.0", "gstreamer-base-1.0", "gstreamer-1.0", "gio-2.0", "gobject-2.0", "glib-2.0" });
         m.addImport("c", c_mod);
         m.addImport("inspect", inspect_mod);
