@@ -135,6 +135,23 @@ fn printHandler(msg: [*c]const u8) callconv(.c) void {
     c.g_mutex_unlock(&lock);
 }
 
+fn toSecond(p: ?*c.GstElement) void {
+    const s = c.gst_bin_get_by_name(@ptrCast(@alignCast(p)), "s");
+    const pad = c.gst_element_get_static_pad(s, "src_1");
+    c.g_object_set(s, "active-pad", pad, @as(?*anyopaque, null));
+    var got: ?*c.GstPad = null;
+    c.g_object_get(s, "active-pad", &got, @as(?*anyopaque, null));
+    out("  active {s}", .{z(@as(*c.GstObject, @ptrCast(@alignCast(got))).name)});
+    c.gst_object_unref(got);
+    const sink = c.gst_bin_get_by_name(@ptrCast(@alignCast(p)), "k");
+    const other = c.gst_element_get_static_pad(sink, "sink");
+    c.g_object_set(s, "active-pad", other, @as(?*anyopaque, null));
+    c.gst_object_unref(other);
+    c.gst_object_unref(sink);
+    c.gst_object_unref(pad);
+    c.gst_object_unref(s);
+}
+
 pub fn main() void {
     c.gst_init(null, null);
     _ = c.g_set_print_handler(printHandler);
@@ -246,7 +263,7 @@ pub fn main() void {
     run(c.g_strdup_printf("fdsrc fd=%d ! fdsink fd=%d", cfd, dfd), null);
     _ = c.close(cfd);
     _ = c.close(dfd);
-    run(P ++ "fdsink fd=999", null);
+    run("fakesrc num-buffers=0 ! fdsink fd=999", null);
     const du = [_][*c]const u8{
         "dataurisrc uri=\"data:,Hello%20World\"" ++ S ++ " dump=true",
         "dataurisrc uri=\"data:text/plain;charset=iso-8859-1,caf%E9\"" ++ S ++ " dump=true",
@@ -256,6 +273,14 @@ pub fn main() void {
         "dataurisrc" ++ S,
     };
     for (du) |p| run(p, null);
+    const os = [_][*c]const u8{
+        B ++ "output-selector name=s s.src_0" ++ S ++ " name=a s.src_1" ++ S ++ " name=k",
+        B ++ "output-selector name=s pad-negotiation-mode=active s.src_0" ++ S ++ " name=a s.src_1" ++ S ++ " name=k",
+        B ++ "output-selector name=s pad-negotiation-mode=none s.src_0" ++ S ++ " name=a s.src_1" ++ S ++ " name=k",
+    };
+    for (os) |p| run(p, null);
+    run(B ++ "output-selector name=s s.src_0" ++ S ++ " name=a s.src_1" ++ S ++ " name=k", toSecond);
+    run(B ++ "output-selector name=s resend-latest=true s.src_0" ++ S ++ " name=a s.src_1" ++ S ++ " name=k", toSecond);
     for ([_][*c]const u8{ "fd://0?size=100", "fd://abc", "file:///x" }) |u| {
         var e: [*c]c.GError = null;
         const el = c.gst_element_make_from_uri(c.GST_URI_SRC, u, null, &e);

@@ -155,7 +155,7 @@ fn started(o: anytype) bool {
 fn setProperty(o: [*c]c.GObject, id: c.guint, v: [*c]const c.GValue, spec: [*c]c.GParamSpec) callconv(.c) void {
     const s = me(o);
     switch (id) {
-        PROP_OUTPUT => c.g_log("GStreamer", c.G_LOG_LEVEL_WARNING, "not yet implemented"),
+        PROP_OUTPUT => c.g_log(null, c.G_LOG_LEVEL_WARNING, "not yet implemented"),
         PROP_DATA => {
             s.data = c.g_value_get_enum(v);
             if (s.data == DATA_SUBBUFFER) {
@@ -305,7 +305,7 @@ fn createBuffer(s: *Self, out_size: *usize) [*c]c.GstBuffer {
             c.gst_buffer_unmap(b, &info);
         },
         else => {
-            c.g_log("GStreamer", c.G_LOG_LEVEL_WARNING, "fakesrc: dunno how to allocate buffers !");
+            c.g_log(null, c.G_LOG_LEVEL_WARNING, "fakesrc: dunno how to allocate buffers !");
             b = c.gst_buffer_new();
         },
     }

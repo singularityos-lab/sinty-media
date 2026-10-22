@@ -18,6 +18,7 @@ const elements = .{
     @import("core/fdsrc.zig"),
     @import("core/fdsink.zig"),
     @import("core/dataurisrc.zig"),
+    @import("core/outputselector.zig"),
     @import("core/fakesink.zig"),
 };
 

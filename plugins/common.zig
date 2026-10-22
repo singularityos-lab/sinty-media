@@ -26,7 +26,7 @@ pub fn typeOf(p: anytype) c.GType {
 }
 
 pub fn warnInvalid(comptime file: []const u8, o: [*c]c.GObject, id: c.guint, spec: [*c]c.GParamSpec, line: c_int) void {
-    c.g_log("GLib-GObject", c.G_LOG_LEVEL_WARNING, "%s:%d: invalid %s id %u for \"%s\" of type '%s' in '%s'", (file ++ "").ptr, line, "property", id, spec[0].name, c.g_type_name(spec[0].g_type_instance.g_class[0].g_type), c.g_type_name(typeOf(o)));
+    c.g_log(null, c.G_LOG_LEVEL_WARNING, "%s:%d: invalid %s id %u for \"%s\" of type '%s' in '%s'", (file ++ "").ptr, line, "property", id, spec[0].name, c.g_type_name(spec[0].g_type_instance.g_class[0].g_type), c.g_type_name(typeOf(o)));
 }
 
 pub fn elementError(el: anytype, domain: c.GQuark, code: c.gint, text: [*c]u8, debug: [*c]u8, comptime file: []const u8, comptime func: []const u8, line: c.gint) void {
@@ -73,7 +73,7 @@ pub fn unrefCaps(p: c.gpointer) callconv(.c) void {
 }
 
 pub fn that(ok: bool, comptime func: []const u8, comptime expr: []const u8) bool {
-    if (!ok) c.g_return_if_fail_warning("GStreamer", (func ++ "").ptr, (expr ++ "").ptr);
+    if (!ok) c.g_return_if_fail_warning(null, (func ++ "").ptr, (expr ++ "").ptr);
     return ok;
 }
 

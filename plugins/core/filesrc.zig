@@ -47,7 +47,7 @@ fn setLocation(s: *Self, location: [*c]const u8, err: [*c][*c]c.GError) bool {
     cm.lock(s);
     const state = @as(*c.GstElement, @ptrCast(@alignCast(s))).current_state;
     if (state != c.GST_STATE_READY and state != c.GST_STATE_NULL) {
-        c.g_log("GStreamer", c.G_LOG_LEVEL_WARNING, "Changing the `location' property on filesrc when a file is open is not supported.");
+        c.g_log(null, c.G_LOG_LEVEL_WARNING, "Changing the `location' property on filesrc when a file is open is not supported.");
         if (err != null) c.g_set_error(err, c.gst_uri_error_quark(), c.GST_URI_ERROR_BAD_STATE, "Changing the `location' property on filesrc when a file is open is not supported.");
         cm.unlock(s);
         return false;

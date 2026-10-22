@@ -347,7 +347,7 @@ fn dequeue(q: *Self) [*c]c.GstMiniObject {
             else => {},
         }
     } else if (!cm.isQuery(item)) {
-        c.g_log("GStreamer", c.G_LOG_LEVEL_WARNING, "Unexpected item %p dequeued from queue %s (refcounting problem?)", item, cm.obj(q).name);
+        c.g_log(null, c.G_LOG_LEVEL_WARNING, "Unexpected item %p dequeued from queue %s (refcounting problem?)", item, cm.obj(q).name);
         item = null;
     }
     signalDel(q);
@@ -467,7 +467,7 @@ fn isEmpty(q: *Self) bool {
 fn leakDownstream(q: *Self) void {
     while (isFilled(q)) {
         const leak = dequeue(q);
-        if (leak == null) c.g_assertion_message_expr("GStreamer", FILE, 1237, "gst_queue_leak_downstream", "leak != NULL");
+        if (leak == null) c.g_assertion_message_expr(null, FILE, 1237, "gst_queue_leak_downstream", "leak != NULL");
         if (cm.isEvent(leak) and cm.eventSticky(leak)) _ = c.gst_pad_store_sticky_event(q.srcpad, @ptrCast(leak));
         if (!cm.isQuery(leak)) c.gst_mini_object_unref(leak);
         q.head_needs_discont = 1;
@@ -533,7 +533,7 @@ fn chainAny(par: [*c]c.GstObject, obj_in: [*c]c.GstMiniObject, list: bool) c.Gst
                 }
             },
             else => {
-                if (q.leaky != NO_LEAK) c.g_log("GStreamer", c.G_LOG_LEVEL_WARNING, "Unknown leaky type, using default");
+                if (q.leaky != NO_LEAK) c.g_log(null, c.G_LOG_LEVEL_WARNING, "Unknown leaky type, using default");
                 while (isFilled(q)) {
                     if (!waitDel(q)) return outFlushing(q, obj);
                 }

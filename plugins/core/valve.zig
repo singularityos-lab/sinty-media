@@ -111,7 +111,7 @@ fn needsDropping(v: *Self, ev: [*c]c.GstEvent) bool {
         DROP_ALL => true,
         FORWARD_STICKY => !cm.eventSticky(ev),
         TO_GAP => !cm.eventSticky(ev) and cm.eventType(ev) != c.GST_EVENT_GAP,
-        else => c.g_assertion_message_expr("GStreamer", FILE, 284, "gst_valve_event_needs_dropping", null),
+        else => c.g_assertion_message_expr(null, FILE, 284, "gst_valve_event_needs_dropping", null),
     };
 }
 

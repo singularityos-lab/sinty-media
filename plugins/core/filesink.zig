@@ -133,7 +133,7 @@ fn dispose(o: [*c]c.GObject) callconv(.c) void {
 
 fn setLocation(s: *Self, location: [*c]const u8, err: [*c][*c]c.GError) bool {
     if (s.file != null) {
-        c.g_log("GStreamer", c.G_LOG_LEVEL_WARNING, "Changing the `location' property on filesink when a file is open is not supported.");
+        c.g_log(null, c.G_LOG_LEVEL_WARNING, "Changing the `location' property on filesink when a file is open is not supported.");
         c.g_set_error(err, c.gst_uri_error_quark(), c.GST_URI_ERROR_BAD_STATE, "Changing the 'location' property on filesink when a file is open is not supported");
         return false;
     }
