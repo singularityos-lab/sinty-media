@@ -335,6 +335,8 @@ pub fn main() void {
     scenario("audio flag off", .{ .audio = true, .video = true, .flags = VIDEO | SOFT_VOLUME });
     scenario("text only", .{ .text = true });
     scenario("audio text", .{ .audio = true, .text = true });
+    scenario("text video", .{ .video = true, .text = true });
+    scenario("audio text video", .{ .audio = true, .video = true, .text = true });
     scenario("custom text sink", .{ .video = true, .text = true, .text_sink = true });
     scenario("custom text sink without video", .{ .audio = true, .text = true, .text_sink = true });
     scenario("vis", .{ .audio = true, .vis = true, .flags = AUDIO | VIDEO | VIS | SOFT_VOLUME });
