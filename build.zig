@@ -89,6 +89,22 @@ pub fn build(b: *std.Build) void {
         test_step.dependOn(&b.addRunArtifact(t).step);
     }
 
+    const plugin_opts = b.addOptions();
+    plugin_opts.addOption([]const u8, "package", b.option([]const u8, "plugin-package", "package name shown by plugins") orelse "sinty-media");
+    plugin_opts.addOption([]const u8, "origin", b.option([]const u8, "plugin-origin", "origin shown by plugins") orelse "https://sinty.dev");
+    const plugins = [_]struct { name: []const u8, root: []const u8, system: []const []const u8 }{
+        .{ .name = "coreelements", .root = "plugins/coreelements.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0" } },
+    };
+    const plugin_step = b.step("plugins", "build the element plugins");
+    for (plugins) |pl| {
+        const m = gstModule(b, pl.root, target, optimize, pl.system);
+        m.addOptions("build_options", plugin_opts);
+        const lib = b.addLibrary(.{ .name = b.fmt("gst{s}", .{pl.name}), .linkage = .dynamic, .root_module = m, .use_llvm = true });
+        const inst = b.addInstallArtifact(lib, .{ .dest_dir = .{ .override = .{ .custom = "plugins" } } });
+        plugin_step.dependOn(&inst.step);
+        b.getInstallStep().dependOn(&inst.step);
+    }
+
     const c_mod = gstModule(b, "tests/diff/c.zig", target, optimize, &.{ "gobject-2.0", "glib-2.0" });
     const diff_step = b.step("diff", "build the differential tests");
     for ([_][]const u8{ "object", "buffer", "caps", "misc", "pool", "taglist", "toc", "streams", "event", "message", "query", "clock", "bus", "task", "pad", "element", "bin", "pipeline", "ghostpad", "registry", "parse", "uri", "extras", "helpers", "logging", "control", "dot", "real", "quarks" }) |name| {
@@ -207,6 +223,16 @@ pub fn build(b: *std.Build) void {
         m.addImport("c", c_mod);
         const exe = b.addExecutable(.{ .name = "gen", .root_module = m, .use_llvm = true });
         b.step("gen", "build the table generator").dependOn(&b.addInstallArtifact(exe, .{}).step);
+    }
+
+    const inspect_mod = gstModule(b, "tests/diff/inspect.zig", target, optimize, &.{ "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
+    inspect_mod.addImport("c", c_mod);
+    for ([_][]const u8{ "core1", "core2" }) |name| {
+        const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-base-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
+        m.addImport("c", c_mod);
+        m.addImport("inspect", inspect_mod);
+        const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
+        diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
     }
 
     for ([_][]const u8{ "sintytest", "sintyfail", "sintycrash", "notaplugin", "sintyparse" }) |name| {
