@@ -13,6 +13,7 @@ const elements = .{
     @import("core/filesink.zig"),
     @import("core/funnel.zig"),
     @import("core/valve.zig"),
+    @import("core/clocksync.zig"),
     @import("core/fakesink.zig"),
 };
 

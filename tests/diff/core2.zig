@@ -227,6 +227,10 @@ pub fn main() void {
         B ++ "valve" ++ S,
         B ++ "valve drop=true drop-mode=forward-sticky-events" ++ S,
         B ++ "valve drop=true drop-mode=transform-to-gap" ++ S,
+        B ++ "clocksync" ++ S,
+        B ++ "clocksync sync=false" ++ S,
+        B ++ "clocksync qos=true ts-offset=-5000000" ++ S,
+        B ++ "clocksync sync-to-first=true rate=4.0" ++ S,
     };
     for (vl) |p| run(p, null);
     for ([_][*c]const u8{ "zig-out/ft1.bin", "zig-out/ft2.bin", "zig-out/ft3.bin" }) |f| {
