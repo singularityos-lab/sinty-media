@@ -23,10 +23,14 @@ fn flushStream() void {
     c.g_mutex_lock(&lock);
     if (stream != null) {
         const r = c.g_regex_new("stream-id=\\(string\\)[0-9a-f]+", 0, 0, null);
-        const t = c.g_regex_replace_literal(r, stream[0].str, -1, 0, "stream-id=(string)ID", 0, null);
+        const t0 = c.g_regex_replace_literal(r, stream[0].str, -1, 0, "stream-id=(string)ID", 0, null);
+        const g = c.g_regex_new("group-id=\\(uint\\)[0-9]+", 0, 0, null);
+        const t = c.g_regex_replace_literal(g, t0, -1, 0, "group-id=(uint)G", 0, null);
         _ = std.c.write(1, t, std.mem.len(@as([*:0]const u8, @ptrCast(t))));
+        c.g_free(t0);
         c.g_free(t);
         c.g_regex_unref(r);
+        c.g_regex_unref(g);
         _ = c.g_string_free(stream, 1);
         stream = null;
     }
@@ -280,6 +284,14 @@ pub fn main() void {
     };
     for (os) |p| run(p, null);
     run(B ++ "output-selector name=s s.src_0" ++ S ++ " name=a s.src_1" ++ S ++ " name=k", toSecond);
+    const A4 = "audiotestsrc num-buffers=3 samplesperbuffer=4 ! audio/x-raw,rate=4000,channels=1,format=S8 ! ";
+    const cc = [_][*c]const u8{
+        "concat name=c" ++ S ++ " " ++ A4 ++ "c.sink_0 " ++ A4 ++ "c.sink_1",
+        "concat name=c adjust-base=false" ++ S ++ " " ++ A4 ++ "c.sink_0 " ++ A4 ++ "c.sink_1",
+        "concat name=c" ++ S ++ " fakesrc num-buffers=2 sizetype=fixed sizemax=10 filltype=zero ! c.sink_0 fakesrc num-buffers=3 sizetype=fixed sizemax=7 filltype=zero ! c.sink_1",
+        "concat name=c" ++ S ++ " fakesrc num-buffers=2 sizetype=fixed sizemax=10 filltype=zero ! c.sink_0 " ++ A4 ++ "c.sink_1",
+    };
+    for (cc) |p| run(p, null);
     run(B ++ "output-selector name=s resend-latest=true s.src_0" ++ S ++ " name=a s.src_1" ++ S ++ " name=k", toSecond);
     for ([_][*c]const u8{ "fd://0?size=100", "fd://abc", "file:///x" }) |u| {
         var e: [*c]c.GError = null;
