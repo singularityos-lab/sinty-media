@@ -16,6 +16,7 @@ const libs = [_]Lib{
     .{ .name = "gstapp-1.0", .root = "gst/app.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0" }, .deps = &.{} },
     .{ .name = "gstallocators-1.0", .root = "gst/allocators.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "libdrm" }, .deps = &.{} },
     .{ .name = "gstcontroller-1.0", .root = "gst/controller.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "m" }, .deps = &.{} },
+    .{ .name = "gstnet-1.0", .root = "gst/net.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gio-2.0", "gstreamer-1.0" }, .deps = &.{} },
     .{ .name = "gstfft-1.0", .root = "gst/fft.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "m" }, .deps = &.{} },
     .{ .name = "gstgl-1.0", .root = "gst/gl.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gmodule-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0", "gstreamer-allocators-1.0", "egl", "gl", "wayland-client", "wayland-cursor", "wayland-egl", "x11", "x11-xcb", "xcb", "gudev-1.0", "libdrm", "gbm" }, .deps = &.{} },
     .{ .name = "gstvideo-1.0", .root = "gst/video.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-allocators-1.0", "m" }, .deps = &.{} },
@@ -61,6 +62,11 @@ fn gstModule(b: *std.Build, root: []const u8, target: std.Build.ResolvedTarget, 
     return mod;
 }
 
+fn relativeTo(base: []const u8, path: []const u8) []const u8 {
+    if (std.mem.startsWith(u8, path, base) and path.len > base.len and path[base.len] == '/') return path[base.len + 1 ..];
+    return std.mem.trimStart(u8, path, "/");
+}
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
@@ -72,6 +78,12 @@ pub fn build(b: *std.Build) void {
     config.addOption([]const u8, "data_dir", b.option([]const u8, "data-dir", "system data directory") orelse "/usr/share");
     config.addOption([]const u8, "install_helper", b.option([]const u8, "install-helper", "plugin installation helper") orelse "/usr/libexec/gst-install-plugins-helper");
     config.addOption([]const u8, "scanner_dir", b.option([]const u8, "scanner-dir", "directory of gst-plugin-scanner") orelse pkgVar(b, "pluginscannerdir", "/usr/libexec/gstreamer-1.0"));
+
+    const prefix = pkgVar(b, "prefix", "/usr");
+    const libexec = pkgVar(b, "libexecdir", "/usr/libexec");
+    config.addOption([]const u8, "ptp_helper", b.option([]const u8, "ptp-helper", "installed gst-ptp-helper") orelse b.pathJoin(&.{ libexec, "gstreamer-1.0", "gst-ptp-helper" }));
+    config.addOption([]const u8, "plugin_subdir", relativeTo(prefix, pkgVar(b, "libdir", "/usr/lib")));
+    config.addOption([]const u8, "helper_subdir", relativeTo(prefix, libexec));
 
     for (libs) |l| {
         const root = gstModule(b, l.root, target, optimize, l.system);
@@ -177,6 +189,18 @@ pub fn build(b: *std.Build) void {
         const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-video-1.0", "gstreamer-allocators-1.0", "gstreamer-base-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
         m.addImport("c", c_mod);
         const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
+        diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+    }
+
+    for ([_][]const u8{"net1"}) |name| {
+        const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-net-1.0", "gstreamer-1.0", "gio-2.0", "gobject-2.0", "glib-2.0" });
+        m.addImport("c", c_mod);
+        const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
+        diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+    }
+    {
+        const m = b.createModule(.{ .root_source_file = b.path("tests/diff/ptphelper.zig"), .target = target, .optimize = optimize, .link_libc = true });
+        const exe = b.addExecutable(.{ .name = "diff-ptphelper", .root_module = m, .use_llvm = true });
         diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
     }
 
