@@ -534,7 +534,7 @@ fn fixateSrcCaps(ab: [*c]c.GstAggregator, caps_in: [*c]c.GstCaps) callconv(.c) [
         c.gst_object_unref(first);
     } else {
         _ = c.gst_structure_fixate_field_nearest_int(s, "rate", 44100);
-        _ = c.gst_structure_fixate_field_string(s, "format", "S16LE");
+        _ = c.gst_structure_fixate_field_string(s, "format", "\"S16\"LE");
         _ = c.gst_structure_fixate_field_string(s, "layout", "interleaved");
         _ = c.gst_structure_fixate_field_nearest_int(s, "channels", 2);
         var n: c.gint = 0;

@@ -413,7 +413,7 @@ fn fixate(bs: [*c]c.GstBaseSrc, caps_in: [*c]c.GstCaps) callconv(.c) [*c]c.GstCa
     const st = c.gst_caps_get_structure(caps, 0);
     const rate: c.gint = cast(i32, @max(@as(f64, c.GST_AUDIO_DEF_RATE), s.freq * 2));
     _ = c.gst_structure_fixate_field_nearest_int(st, "rate", rate);
-    _ = c.gst_structure_fixate_field_string(st, "format", "S16LE");
+    _ = c.gst_structure_fixate_field_string(st, "format", "\"S16\"LE");
     _ = c.gst_structure_fixate_field_string(st, "layout", "interleaved");
     _ = c.gst_structure_fixate_field_nearest_int(st, "channels", 1);
     var channels: c.gint = 0;
