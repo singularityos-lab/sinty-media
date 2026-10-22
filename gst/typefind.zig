@@ -194,7 +194,9 @@ fn save(w: *regcache.Writer, f: [*c]feature.Feature) void {
     const tf = of(f);
     w.strv(@ptrCast(tf[0].extensions));
     if (tf[0].caps != null) {
-        const s = c.gst_caps_to_string(tf[0].caps);
+        const simple = c.gst_caps_simplify(c.gst_caps_ref(tf[0].caps));
+        const s = c.gst_caps_to_string(simple);
+        c.gst_caps_unref(simple);
         defer c.g_free(s);
         w.str(s);
     } else w.str(null);
