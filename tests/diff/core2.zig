@@ -194,5 +194,15 @@ pub fn main() void {
         "fakesrc num-buffers=3 ! queue ! fakesink num-buffers=1 silent=false",
     };
     for (ql) |p| run(p, null);
+    const tl = [_][*c]const u8{
+        B ++ "tee name=t silent=false" ++ S ++ " t." ++ S,
+        B ++ "tee name=t" ++ S ++ " t." ++ S ++ " t." ++ S,
+        B ++ "tee silent=false",
+        B ++ "tee allow-not-linked=true",
+        B ++ "tee name=t allow-not-linked=true t.src_5" ++ S ++ " t.src_2" ++ S,
+        B ++ "tee name=t has-chain=false" ++ S,
+        "fakesrc num-buffers=2 sizetype=fixed sizemax=3 filltype=pattern can-activate-push=false ! tee pull-mode=single" ++ S ++ " can-activate-pull=true",
+    };
+    for (tl) |p| run(p, null);
     out("done", .{});
 }
