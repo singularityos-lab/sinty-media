@@ -27,6 +27,7 @@
 #include <glib-object.h>
 #include <gmodule.h>
 #include <gst/gst.h>
+#include <gio/gio.h>
 #include <gst/base/base.h>
 #include <gst/controller/controller.h>
 #include <gst/app/app.h>

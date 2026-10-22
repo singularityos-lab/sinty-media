@@ -27,8 +27,12 @@ fn gstIncludeDir(b: *std.Build) []const u8 {
 }
 
 fn pkgVar(b: *std.Build, name: []const u8, fallback: []const u8) []const u8 {
+    return pkgVarOf(b, "gstreamer-1.0", name, fallback);
+}
+
+fn pkgVarOf(b: *std.Build, pkg: []const u8, name: []const u8, fallback: []const u8) []const u8 {
     var code: u8 = 0;
-    const r = b.runAllowFail(&.{ "pkg-config", b.fmt("--variable={s}", .{name}), "gstreamer-1.0" }, &code, .ignore) catch return fallback;
+    const r = b.runAllowFail(&.{ "pkg-config", b.fmt("--variable={s}", .{name}), pkg }, &code, .ignore) catch return fallback;
     const v = std.mem.trim(u8, r, " \n");
     return if (v.len == 0) fallback else v;
 }
@@ -91,6 +95,8 @@ pub fn build(b: *std.Build) void {
 
     const plugin_opts = b.addOptions();
     plugin_opts.addOption([]const u8, "package", b.option([]const u8, "plugin-package", "package name shown by plugins") orelse "sinty-media");
+    plugin_opts.addOption([]const u8, "gio_module_dir", pkgVarOf(b, "gio-2.0", "giomoduledir", "/usr/lib/gio/modules"));
+    plugin_opts.addOption([]const u8, "gio_prefix", pkgVarOf(b, "gio-2.0", "prefix", "/usr"));
     plugin_opts.addOption([]const u8, "origin", b.option([]const u8, "plugin-origin", "origin shown by plugins") orelse "https://sinty.dev");
     const plugins = [_]struct { name: []const u8, root: []const u8, system: []const []const u8 }{
         .{ .name = "coreelements", .root = "plugins/coreelements.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0" } },
@@ -107,6 +113,7 @@ pub fn build(b: *std.Build) void {
         .{ .name = "pbtypes", .root = "plugins/pbtypes.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-video-1.0", "gstreamer-audio-1.0" } },
         .{ .name = "typefindfunctions", .root = "plugins/typefindfunctions.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-pbutils-1.0", "gstreamer-video-1.0", "gstreamer-audio-1.0" } },
         .{ .name = "playback", .root = "plugins/playback.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-pbutils-1.0", "gstreamer-video-1.0", "gstreamer-audio-1.0" } },
+        .{ .name = "gio", .root = "plugins/gio.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gio-2.0", "gstreamer-1.0", "gstreamer-base-1.0" } },
         .{ .name = "app", .root = "plugins/app.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-app-1.0" } },
     };
     const plugin_step = b.step("plugins", "build the element plugins");
@@ -241,8 +248,8 @@ pub fn build(b: *std.Build) void {
 
     const inspect_mod = gstModule(b, "tests/diff/inspect.zig", target, optimize, &.{ "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
     inspect_mod.addImport("c", c_mod);
-    for ([_][]const u8{ "core1", "core2", "base1", "base2", "base3", "base4", "base5", "base6", "vb1", "tf1", "pb1", "pb2", "pb3", "pb4", "pb5", "pb6", "pb7", "pb8", "pb9", "pb10", "pb11" }) |name| {
-        const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-video-1.0", "gstreamer-audio-1.0", "gstreamer-controller-1.0", "gstreamer-base-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
+    for ([_][]const u8{ "core1", "core2", "base1", "base2", "base3", "base4", "base5", "base6", "vb1", "tf1", "pb1", "pb2", "pb3", "pb4", "pb5", "pb6", "pb7", "pb8", "pb9", "pb10", "pb11", "gio1" }) |name| {
+        const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-video-1.0", "gstreamer-audio-1.0", "gstreamer-controller-1.0", "gstreamer-base-1.0", "gstreamer-1.0", "gio-2.0", "gobject-2.0", "glib-2.0" });
         m.addImport("c", c_mod);
         m.addImport("inspect", inspect_mod);
         const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
