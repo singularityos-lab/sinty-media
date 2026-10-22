@@ -420,7 +420,7 @@ fn analyzeNewPad(s: *Self, src: ?*c.GstElement, pad_in: ?*c.GstPad, caps_in: [*c
             const p = parsepad.?;
             if (p.in_fallback != 0) {
                 const ns = c.gst_stream_new(c.gst_stream_get_stream_id(p.active_stream), caps, c.GST_STREAM_TYPE_UNKNOWN, c.gst_stream_get_stream_flags(p.active_stream));
-                _ = c.gst_object_replace(@ptrCast(&p.active_stream), cm.obj(ns));
+                _ = c.gst_object_replace(@ptrCast(&p.active_stream), @ptrCast(@alignCast(ns)));
             }
             _ = c.gst_element_post_message(elem(s), c.gst_missing_decoder_message_new(elem(s), caps));
             break :blk .expose;
@@ -1600,7 +1600,7 @@ fn streamStart(p: *PPad, ev_in: ?*c.GstEvent) ?*c.GstEvent {
             stream = @ptrCast(@alignCast(c.gst_object_ref(p.active_stream)));
         } else {
             stream = c.gst_stream_new(id, null, c.GST_STREAM_TYPE_UNKNOWN, sflags);
-            _ = c.gst_object_replace(@ptrCast(&p.active_stream), cm.obj(stream));
+            _ = c.gst_object_replace(@ptrCast(&p.active_stream), @ptrCast(@alignCast(stream)));
         }
         if (caps != null) {
             updateCaps(p, caps);
@@ -1614,7 +1614,7 @@ fn streamStart(p: *PPad, ev_in: ?*c.GstEvent) ?*c.GstEvent {
 }
 
 fn updateCollection(p: *PPad, col: ?*c.GstStreamCollection) void {
-    _ = c.gst_object_replace(@ptrCast(&p.active_collection), cm.obj(col));
+    _ = c.gst_object_replace(@ptrCast(&p.active_collection), @ptrCast(@alignCast(col)));
     p.in_fallback = 0;
 }
 

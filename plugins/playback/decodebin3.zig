@@ -1084,7 +1084,7 @@ fn identical(a: ?*c.GstStreamCollection, b: ?*c.GstStreamCollection) bool {
 fn handleCollectionLocked(s: *Self, col_in: ?*c.GstStreamCollection, input: ?*Input) [*c]c.GstMessage {
     const t = st(s);
     const inp = input orelse return null;
-    _ = c.gst_object_replace(@ptrCast(&inp.collection), cm.obj(col_in));
+    _ = c.gst_object_replace(@ptrCast(&inp.collection), @ptrCast(@alignCast(col_in)));
     const col = mergedCollection(s) orelse return null;
     selLock(s);
     defer selUnlock(s);
@@ -1351,7 +1351,7 @@ fn slotStreamStart(slot: *Slot, ev: ?*c.GstEvent) c.GstPadProbeReturn {
     }
     slot.drained = false;
     if (slot.active == stream) return c.GST_PAD_PROBE_OK;
-    _ = c.gst_object_replace(@ptrCast(&slot.active), cm.obj(stream));
+    _ = c.gst_object_replace(@ptrCast(&slot.active), @ptrCast(@alignCast(stream)));
     slot.active_id = c.gst_stream_get_stream_id(stream);
     if (slot.output) |prev| if (prev.kind != c.gst_stream_get_stream_type(stream)) {
         _ = setOutput(slot, null);

@@ -1227,7 +1227,7 @@ fn parsebinCollection(info: *Info, col: ?*c.GstStreamCollection) void {
         while (l != null) : (l = l.*.next) {
             const st: *c.GstStream = @ptrCast(@alignCast(l.*.data));
             if (c.g_strcmp0(x.stream.?.stream_id, st.stream_id) == 0) {
-                _ = c.gst_object_replace(@ptrCast(&x.pending_stream), cm.obj(st));
+                _ = c.gst_object_replace(@ptrCast(&x.pending_stream), @ptrCast(@alignCast(st)));
                 unused_streams = c.g_list_remove(unused_streams, st);
                 break;
             }
@@ -1237,14 +1237,14 @@ fn parsebinCollection(info: *Info, col: ?*c.GstStreamCollection) void {
     while (l != null) : (l = l.*.next) {
         const x: *Slot = @ptrCast(@alignCast(l.*.data));
         if (compatible(unused_streams, x.stream)) |r| {
-            _ = c.gst_object_replace(@ptrCast(&x.pending_stream), cm.obj(r));
+            _ = c.gst_object_replace(@ptrCast(&x.pending_stream), @ptrCast(@alignCast(r)));
             unused_streams = c.g_list_remove(unused_streams, r);
         }
     }
     c.g_list_free(unused_slots);
     c.g_list_free(streams);
     c.g_list_free(unused_streams);
-    _ = c.gst_object_replace(@ptrCast(&info.collection), cm.obj(col));
+    _ = c.gst_object_replace(@ptrCast(&info.collection), @ptrCast(@alignCast(col)));
 }
 
 fn aggregate(s: *Self) ?*c.GstStreamCollection {
@@ -1276,7 +1276,7 @@ fn aggregate(s: *Self) ?*c.GstStreamCollection {
         while (l != null) : (l = l.*.next) _ = c.gst_stream_collection_add_stream(res, @ptrCast(@alignCast(c.gst_object_ref(l.*.data))));
         c.g_list_free(streams);
     }
-    _ = c.gst_object_replace(@ptrCast(&s.collection), cm.obj(res));
+    _ = c.gst_object_replace(@ptrCast(&s.collection), @ptrCast(@alignCast(res)));
     return if (res) |x| @ptrCast(@alignCast(c.gst_object_ref(x))) else null;
 }
 
