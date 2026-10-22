@@ -76,3 +76,5 @@
 #include <gst/riff/riff-read.h>
 #include <ogg/ogg.h>
 #include <glib-unix.h>
+#include <gst/sdp/sdp.h>
+#include <gst/rtp/rtp.h>
