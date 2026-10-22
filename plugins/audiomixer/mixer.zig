@@ -104,21 +104,21 @@ pub fn padType() c.GType {
     }.f);
 }
 
-fn ftz32(x: f32) f32 {
+pub fn ftz32(x: f32) f32 {
     const b: u32 = @bitCast(x);
     return if (b & 0x7f800000 == 0) @bitCast(b & 0x80000000) else x;
 }
 
-fn ftz64(x: f64) f64 {
+pub fn ftz64(x: f64) f64 {
     const b: u64 = @bitCast(x);
     return if (b & 0x7ff0000000000000 == 0) @bitCast(b & 0x8000000000000000) else x;
 }
 
-fn sat(comptime T: type, x: anytype) T {
+pub fn sat(comptime T: type, x: anytype) T {
     return @intCast(std.math.clamp(x, std.math.minInt(T), std.math.maxInt(T)));
 }
 
-fn addPlain(comptime T: type, d: [*]u8, s: [*]const u8, n: usize) void {
+pub fn addPlain(comptime T: type, d: [*]u8, s: [*]const u8, n: usize) void {
     const dd: [*]align(1) T = @ptrCast(d);
     const ss: [*]align(1) const T = @ptrCast(s);
     for (0..n) |i| {
@@ -130,7 +130,7 @@ fn addPlain(comptime T: type, d: [*]u8, s: [*]const u8, n: usize) void {
     }
 }
 
-fn addScaled(comptime T: type, comptime S: type, comptime W: type, comptime shift: u6, d: [*]u8, s: [*]const u8, vol: c.gint, n: usize) void {
+pub fn addScaled(comptime T: type, comptime S: type, comptime W: type, comptime shift: u6, d: [*]u8, s: [*]const u8, vol: c.gint, n: usize) void {
     const dd: [*]align(1) T = @ptrCast(d);
     const ss: [*]align(1) const T = @ptrCast(s);
     const bias: T = if (T == S) 0 else @as(T, 1) << (@bitSizeOf(T) - 1);
@@ -143,7 +143,7 @@ fn addScaled(comptime T: type, comptime S: type, comptime W: type, comptime shif
     }
 }
 
-fn addFloat(comptime T: type, d: [*]u8, s: [*]const u8, vol: f64, n: usize) void {
+pub fn addFloat(comptime T: type, d: [*]u8, s: [*]const u8, vol: f64, n: usize) void {
     const dd: [*]align(1) T = @ptrCast(d);
     const ss: [*]align(1) const T = @ptrCast(s);
     const f = if (T == f32) ftz32 else ftz64;
@@ -152,6 +152,24 @@ fn addFloat(comptime T: type, d: [*]u8, s: [*]const u8, vol: f64, n: usize) void
         const t = f(f(ss[i]) * p);
         dd[i] = f(f(dd[i]) + t);
     }
+}
+
+pub fn volumeScaled(comptime T: type, comptime S: type, comptime W: type, comptime shift: u6, d: [*]u8, vol: c.gint, n: usize) void {
+    const dd: [*]align(1) T = @ptrCast(d);
+    const bias: T = if (T == S) 0 else @as(T, 1) << (@bitSizeOf(T) - 1);
+    const p: S = @truncate(vol);
+    for (0..n) |i| {
+        const x: S = @bitCast(dd[i] ^ bias);
+        const t: W = (@as(W, x) * @as(W, p)) >> shift;
+        dd[i] = @as(T, @bitCast(sat(S, t))) ^ bias;
+    }
+}
+
+pub fn volumeFloat(comptime T: type, d: [*]u8, vol: f64, n: usize) void {
+    const dd: [*]align(1) T = @ptrCast(d);
+    const f = if (T == f32) ftz32 else ftz64;
+    const p: T = f(@floatCast(vol));
+    for (0..n) |i| dd[i] = f(f(dd[i]) * p);
 }
 
 fn aggregateOne(aagg: [*c]c.GstAudioAggregator, apad: ?*c.GstAudioAggregatorPad, in: [*c]c.GstBuffer, in_off: c.guint, out: [*c]c.GstBuffer, out_off: c.guint, frames: c.guint) callconv(.c) c.gboolean {
