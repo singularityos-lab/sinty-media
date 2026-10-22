@@ -38,6 +38,7 @@
 #include <gst/video/video-resampler.h>
 #include <gst/video/video-tile.h>
 #include <gst/allocators/allocators.h>
+#include <gst/fft/fft.h>
 #include <gst/pbutils/pbutils.h>
 #include <gst/pbutils/gstaudiovisualizer.h>
 #include <sys/ioctl.h>
