@@ -28,6 +28,14 @@
 #include <gmodule.h>
 #include <gst/gst.h>
 #include <gio/gio.h>
+#include <gst/net/net.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <gst/base/base.h>
 #include <gst/controller/controller.h>
 #include <gst/app/app.h>
