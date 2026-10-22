@@ -28,9 +28,17 @@ fn objName(o: ?*anyopaque) []const u8 {
     return z(@as(*c.GstObject, @ptrCast(@alignCast(p))).name);
 }
 
-fn probe(_: ?*c.GstPad, info: [*c]c.GstPadProbeInfo, data: c.gpointer) callconv(.c) c.GstPadProbeReturn {
+fn probe(pad: ?*c.GstPad, info: [*c]c.GstPadProbeInfo, data: c.gpointer) callconv(.c) c.GstPadProbeReturn {
     const st: *Stat = @ptrCast(@alignCast(data));
     if (info[0].type & c.GST_PAD_PROBE_TYPE_BUFFER != 0) {
+        if (st.buffers == 0) {
+            const caps = c.gst_pad_get_current_caps(pad);
+            const cs = c.gst_caps_to_string(caps);
+            A.free(st.caps);
+            st.caps = A.dupe(u8, z(cs)) catch unreachable;
+            c.g_free(cs);
+            if (caps != null) c.gst_caps_unref(caps);
+        }
         const b: [*c]c.GstBuffer = @ptrCast(@alignCast(info[0].data));
         var map: c.GstMapInfo = undefined;
         if (c.gst_buffer_map(b, &map, c.GST_MAP_READ) != 0) {
@@ -49,6 +57,7 @@ fn probe(_: ?*c.GstPad, info: [*c]c.GstPadProbeInfo, data: c.gpointer) callconv(
 }
 
 fn padAdded(_: ?*c.GstElement, pad: ?*c.GstPad, _: c.gpointer) callconv(.c) void {
+    if (c.gst_pad_get_direction(pad) != c.GST_PAD_SRC) return;
     const caps = c.gst_pad_get_current_caps(pad);
     const cs = c.gst_caps_to_string(caps);
     const stream = c.gst_pad_get_stream(pad);
@@ -213,6 +222,7 @@ fn scenario(title: []const u8, o: Opts) void {
 }
 
 fn make(path: [:0]const u8, comptime desc: []const u8) void {
+    if (std.c.access(path.ptr, 0) == 0) return;
     var err: [*c]c.GError = null;
     const d = std.fmt.allocPrintSentinel(A, desc ++ " ! filesink location={s}", .{path}, 0) catch unreachable;
     const p = c.gst_parse_launch(d.ptr, &err);
