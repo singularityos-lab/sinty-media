@@ -322,8 +322,8 @@ fn retry(s: *Self, comptime what: enum { mem, buffer, list }, data: anytype, siz
         var written: u64 = 0;
         const flow = switch (what) {
             .mem => writer.mem(s, fd(s), null, data, size, &written, s.max_transient_error_timeout, s.current_pos, &s.flushing),
-            .buffer => writer.buffer(s, fd(s), null, data, &written, s.max_transient_error_timeout, s.current_pos, &s.flushing),
-            .list => writer.list(s, fd(s), null, data, &written, s.max_transient_error_timeout, s.current_pos, &s.flushing),
+            .buffer => writer.buffer(s, fd(s), null, data, 0, &written, s.max_transient_error_timeout, s.current_pos, &s.flushing),
+            .list => writer.list(s, fd(s), null, data, 0, &written, s.max_transient_error_timeout, s.current_pos, &s.flushing),
         };
         s.current_pos += written;
         if (flow != c.GST_FLOW_FLUSHING) return flow;

@@ -235,7 +235,31 @@ pub fn main() void {
         B ++ "streamiddemux name=d d.src_1" ++ S,
     };
     for (vl) |p| run(p, null);
-    for ([_][*c]const u8{ "zig-out/ft1.bin", "zig-out/ft2.bin", "zig-out/ft3.bin" }) |f| {
+    const rfd = c.open("zig-out/ft1.bin", c.O_RDONLY);
+    run(c.g_strdup_printf("fdsrc fd=%d blocksize=700" ++ S, rfd), null);
+    _ = c.close(rfd);
+    const wfd = c.open("zig-out/ft4.bin", c.O_WRONLY | c.O_CREAT | c.O_TRUNC, @as(c_uint, 0o644));
+    run(c.g_strdup_printf(P ++ "fdsink fd=%d", wfd), null);
+    _ = c.close(wfd);
+    const cfd = c.open("zig-out/ft1.bin", c.O_RDONLY);
+    const dfd = c.open("zig-out/ft5.bin", c.O_WRONLY | c.O_CREAT | c.O_TRUNC, @as(c_uint, 0o644));
+    run(c.g_strdup_printf("fdsrc fd=%d ! fdsink fd=%d", cfd, dfd), null);
+    _ = c.close(cfd);
+    _ = c.close(dfd);
+    run(P ++ "fdsink fd=999", null);
+    for ([_][*c]const u8{ "fd://0?size=100", "fd://abc", "file:///x" }) |u| {
+        var e: [*c]c.GError = null;
+        const el = c.gst_element_make_from_uri(c.GST_URI_SRC, u, null, &e);
+        out("fd uri {s} {d}", .{ z(u), @intFromBool(el != null) });
+        if (el != null) {
+            const g = c.gst_uri_handler_get_uri(@ptrCast(el));
+            out("  got {s}", .{z(g)});
+            _ = c.gst_object_ref_sink(el);
+            c.gst_object_unref(el);
+        }
+        if (e != null) c.g_error_free(e);
+    }
+    for ([_][*c]const u8{ "zig-out/ft1.bin", "zig-out/ft2.bin", "zig-out/ft3.bin", "zig-out/ft4.bin", "zig-out/ft5.bin" }) |f| {
         var data: [*c]u8 = null;
         var len: c.gsize = 0;
         if (c.g_file_get_contents(f, &data, &len, null) != 0) {
