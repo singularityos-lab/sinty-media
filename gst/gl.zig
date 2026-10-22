@@ -25,6 +25,12 @@ comptime {
     _ = @import("gl/overlay.zig");
     _ = @import("gl/basefilter.zig");
     _ = @import("gl/filter.zig");
+    _ = @import("gl/basesrc.zig");
+    _ = @import("gl/basemixer.zig");
+    _ = @import("gl/mixer.zig");
+    _ = @import("gl/viewconvert.zig");
+    _ = @import("gl/colorconvert.zig");
+    _ = @import("gl/upload.zig");
     _ = @import("gl/egl/error.zig");
     _ = @import("gl/egl/display.zig");
     _ = @import("gl/egl/image.zig");

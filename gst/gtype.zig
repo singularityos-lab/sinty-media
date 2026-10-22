@@ -79,3 +79,10 @@ pub fn weakType(comptime symbol: [:0]const u8) c.GType {
     const f = own(?*const fn () callconv(.c) c.GType, symbol) orelse return 0;
     return f();
 }
+
+pub fn objectExtending(parent: anytype, name: [*:0]const u8, class_extra: usize, instance_extra: usize, class_init: c.GClassInitFunc, instance_init: c.GInstanceInitFunc, flags: c.GTypeFlags) c.GType {
+    const p = parent();
+    var q: c.GTypeQuery = undefined;
+    c.g_type_query(p, &q);
+    return c.g_type_register_static_simple(p, c.g_intern_static_string(name), @intCast(q.class_size + class_extra), class_init, @intCast(q.instance_size + instance_extra), instance_init, flags);
+}

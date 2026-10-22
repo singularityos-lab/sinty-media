@@ -64,11 +64,11 @@ fn warnInvalid(o: [*c]c.GObject, id: c.guint, spec: [*c]c.GParamSpec, line: c_in
 }
 
 fn setProperty(o: [*c]c.GObject, id: c.guint, _: [*c]const c.GValue, spec: [*c]c.GParamSpec) callconv(.c) void {
-    warnInvalid(o, id, spec, 223);
+    warnInvalid(o, id, spec, 174);
 }
 
 fn getProperty(o: [*c]c.GObject, id: c.guint, _: [*c]c.GValue, spec: [*c]c.GParamSpec) callconv(.c) void {
-    warnInvalid(o, id, spec, 233);
+    warnInvalid(o, id, spec, 185);
 }
 
 fn stop(t: OTrans) callconv(.c) c.gboolean {
@@ -138,7 +138,7 @@ fn fixateSize(t: OTrans, ins: ?*c.GstStructure, outs: ?*c.GstStructure, from_par
     }
     var dn: c.gint = 0;
     var dd: c.gint = 0;
-    if (c.gst_util_fraction_multiply(fw, fh, fpn, fpd, &dn, &dd) == 0) return negotiationError(t, 234);
+    if (c.gst_util_fraction_multiply(fw, fh, fpn, fpd, &dn, &dd) == 0) return negotiationError(t, 329);
     var num: c.gint = 0;
     var den: c.gint = 0;
     if (h != 0 or w != 0) {
@@ -148,7 +148,7 @@ fn fixateSize(t: OTrans, ins: ?*c.GstStructure, outs: ?*c.GstStructure, from_par
         }
         const tpn = c.gst_value_get_fraction_numerator(to_par);
         const tpd = c.gst_value_get_fraction_denominator(to_par);
-        if (c.gst_util_fraction_multiply(dn, dd, tpd, tpn, &num, &den) == 0) return negotiationError(t, if (h != 0) 253 else 274);
+        if (c.gst_util_fraction_multiply(dn, dd, tpd, tpn, &num, &den) == 0) return negotiationError(t, if (h != 0) 364 else 397);
         if (h != 0) {
             w = scale(h, num, den);
             _ = c.gst_structure_fixate_field_nearest_int(outs, "width", w);
@@ -161,7 +161,7 @@ fn fixateSize(t: OTrans, ins: ?*c.GstStructure, outs: ?*c.GstStructure, from_par
     if (c.gst_value_is_fixed(to_par) != 0) {
         const tpn = c.gst_value_get_fraction_numerator(to_par);
         const tpd = c.gst_value_get_fraction_denominator(to_par);
-        if (c.gst_util_fraction_multiply(dn, dd, tpn, tpd, &num, &den) == 0) return negotiationError(t, 288);
+        if (c.gst_util_fraction_multiply(dn, dd, tpn, tpd, &num, &den) == 0) return negotiationError(t, 416);
         var tmp = c.gst_structure_copy(outs);
         _ = c.gst_structure_fixate_field_nearest_int(tmp, "height", fh);
         var sh = getInt(tmp, "height");
@@ -190,7 +190,7 @@ fn fixateSize(t: OTrans, ins: ?*c.GstStructure, outs: ?*c.GstStructure, from_par
     var tpn: c.gint = 0;
     var tpd: c.gint = 0;
     if (c.gst_util_fraction_multiply(dn, dd, sh, sw, &tpn, &tpd) == 0) {
-        negotiationError(t, 331);
+        negotiationError(t, 485);
         c.gst_structure_free(tmp);
         return;
     }
@@ -204,7 +204,7 @@ fn fixateSize(t: OTrans, ins: ?*c.GstStructure, outs: ?*c.GstStructure, from_par
         setWH(outs, sw, sh);
         return setPar(outs, spn, spd);
     }
-    if (c.gst_util_fraction_multiply(dn, dd, spd, spn, &num, &den) == 0) return negotiationError(t, 354);
+    if (c.gst_util_fraction_multiply(dn, dd, spd, spn, &num, &den) == 0) return negotiationError(t, 514);
     w = scale(sh, num, den);
     tmp = c.gst_structure_copy(outs);
     _ = c.gst_structure_fixate_field_nearest_int(tmp, "width", w);
@@ -327,12 +327,12 @@ fn glSetCaps(bf: [*c]c.GstGLBaseFilter, _: ?*c.GstCaps, _: ?*c.GstCaps) callconv
     if (f[0].fbo != null) c.gst_object_unref(f[0].fbo);
     f[0].fbo = framebuffer.gst_gl_framebuffer_new_with_default_depth(bf[0].context, @bitCast(f[0].out_info.width), @bitCast(f[0].out_info.height));
     if (f[0].fbo == null) {
-        check.elementMessage(f, c.GST_MESSAGE_ERROR, c.gst_resource_error_quark(), c.GST_RESOURCE_ERROR_NOT_FOUND, c.g_strdup("Could not generate FBO"), null, FILE, "gst_gl_filter_gl_set_caps", 664);
+        check.elementMessage(f, c.GST_MESSAGE_ERROR, c.gst_resource_error_quark(), c.GST_RESOURCE_ERROR_NOT_FOUND, c.g_strdup("Could not generate FBO"), null, FILE, "gst_gl_filter_gl_set_caps", 721);
         return 0;
     }
     if (klass(f).init_fbo) |ifbo| {
         if (ifbo(f) == 0) {
-            check.elementMessage(f, c.GST_MESSAGE_ERROR, c.gst_library_error_quark(), c.GST_LIBRARY_ERROR_INIT, c.g_strdup("Subclass failed to initialize."), null, FILE, "gst_gl_filter_gl_set_caps", 670);
+            check.elementMessage(f, c.GST_MESSAGE_ERROR, c.gst_library_error_quark(), c.GST_LIBRARY_ERROR_INIT, c.g_strdup("Subclass failed to initialize."), null, FILE, "gst_gl_filter_gl_set_caps", 727);
             return 0;
         }
     }

@@ -1,11 +1,11 @@
 const std = @import("std");
 const c = @import("../../c.zig").c;
 
-const Entry = extern struct {
+pub const Entry = extern struct {
     images: [c.GST_VIDEO_MAX_PLANES][*c]c.GstEGLImage,
 };
 
-const Cache = extern struct {
+pub const Cache = extern struct {
     refs: c.gint,
     table: ?*c.GHashTable,
     lock: c.GMutex,

@@ -73,7 +73,7 @@ fn warnInvalid(o: [*c]c.GObject, id: c.guint, spec: [*c]c.GParamSpec, line: c_in
 }
 
 fn setProperty(o: [*c]c.GObject, id: c.guint, _: [*c]const c.GValue, spec: [*c]c.GParamSpec) callconv(.c) void {
-    warnInvalid(o, id, spec, 193);
+    warnInvalid(o, id, spec, 172);
 }
 
 fn getProperty(o: [*c]c.GObject, id: c.guint, v: [*c]c.GValue, spec: [*c]c.GParamSpec) callconv(.c) void {
@@ -81,7 +81,7 @@ fn getProperty(o: [*c]c.GObject, id: c.guint, v: [*c]c.GValue, spec: [*c]c.GPara
         c.g_value_set_object(v, fl(o)[0].context);
         return;
     }
-    warnInvalid(o, id, spec, 208);
+    warnInvalid(o, id, spec, 188);
 }
 
 fn tryLocal(f: OFilter, dir: c.GstPadDirection) ?bool {
