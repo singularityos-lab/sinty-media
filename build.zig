@@ -102,6 +102,7 @@ pub fn build(b: *std.Build) void {
         .{ .name = "videoconvertscale", .root = "plugins/videoconvertscale.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0" } },
         .{ .name = "pbtypes", .root = "plugins/pbtypes.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-video-1.0", "gstreamer-audio-1.0" } },
         .{ .name = "typefindfunctions", .root = "plugins/typefindfunctions.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-pbutils-1.0" } },
+        .{ .name = "playback", .root = "plugins/playback.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-pbutils-1.0" } },
         .{ .name = "app", .root = "plugins/app.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-app-1.0" } },
     };
     const plugin_step = b.step("plugins", "build the element plugins");
