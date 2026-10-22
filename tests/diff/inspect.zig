@@ -33,6 +33,7 @@ fn typeChain(t: c.GType) void {
 }
 
 fn valueStr(v: *c.GValue) [*c]u8 {
+    if (v.g_type == c.g_value_array_get_type() and c.g_value_get_boxed(v) == null) return c.g_strdup("NULL");
     return c.g_strdup_value_contents(v);
 }
 

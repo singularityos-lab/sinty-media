@@ -206,7 +206,7 @@ fn props(name: [*c]const u8) void {
 
 pub fn main() void {
     c.gst_init(null, null);
-    for ([_][*c]const u8{ "rawvideoparse", "unalignedaudioparse", "unalignedvideoparse" }) |n| ins.element(n);
+    for ([_][*c]const u8{ "rawaudioparse", "rawvideoparse", "unalignedaudioparse", "unalignedvideoparse" }) |n| ins.element(n);
     for ([_][*c]const u8{ "rawaudioparse", "rawvideoparse" }) |n| props(n);
     const a = "appsrc name=src format=bytes ! ";
     const fs = "! fakesink name=sink signal-handoffs=true";
