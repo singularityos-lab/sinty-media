@@ -231,6 +231,8 @@ pub fn main() void {
         B ++ "clocksync sync=false" ++ S,
         B ++ "clocksync qos=true ts-offset=-5000000" ++ S,
         B ++ "clocksync sync-to-first=true rate=4.0" ++ S,
+        B ++ "streamiddemux name=d d.src_0" ++ S,
+        B ++ "streamiddemux name=d d.src_1" ++ S,
     };
     for (vl) |p| run(p, null);
     for ([_][*c]const u8{ "zig-out/ft1.bin", "zig-out/ft2.bin", "zig-out/ft3.bin" }) |f| {

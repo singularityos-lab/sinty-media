@@ -14,6 +14,7 @@ const elements = .{
     @import("core/funnel.zig"),
     @import("core/valve.zig"),
     @import("core/clocksync.zig"),
+    @import("core/streamiddemux.zig"),
     @import("core/fakesink.zig"),
 };
 
