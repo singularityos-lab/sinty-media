@@ -41,3 +41,24 @@ pub fn flagsType() c.GType {
         }
     }.f);
 }
+
+pub const SELECT_TRY: c.gint = 0;
+pub const SELECT_EXPOSE: c.gint = 1;
+pub const SELECT_SKIP: c.gint = 2;
+
+const select_values = [_]c.GEnumValue{
+    .{ .value = SELECT_TRY, .value_name = "GST_AUTOPLUG_SELECT_TRY", .value_nick = "try" },
+    .{ .value = SELECT_EXPOSE, .value_name = "GST_AUTOPLUG_SELECT_EXPOSE", .value_nick = "expose" },
+    .{ .value = SELECT_SKIP, .value_name = "GST_AUTOPLUG_SELECT_SKIP", .value_nick = "skip" },
+    .{ .value = 0, .value_name = null, .value_nick = null },
+};
+
+var select_once: cm.Once = .{};
+
+pub fn selectType() c.GType {
+    return select_once.get(struct {
+        fn f() c.GType {
+            return c.g_enum_register_static("GstAutoplugSelectResult", &select_values);
+        }
+    }.f);
+}
