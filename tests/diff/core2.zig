@@ -221,6 +221,14 @@ pub fn main() void {
         "filesrc location=zig-out/ft1.bin ! queue ! filesink location=zig-out/ft3.bin",
     };
     for (fl2) |p| run(p, null);
+    const vl = [_][*c]const u8{
+        B ++ "funnel" ++ S,
+        B ++ "funnel name=f forward-sticky-events=false f.sink_7" ++ S,
+        B ++ "valve" ++ S,
+        B ++ "valve drop=true drop-mode=forward-sticky-events" ++ S,
+        B ++ "valve drop=true drop-mode=transform-to-gap" ++ S,
+    };
+    for (vl) |p| run(p, null);
     for ([_][*c]const u8{ "zig-out/ft1.bin", "zig-out/ft2.bin", "zig-out/ft3.bin" }) |f| {
         var data: [*c]u8 = null;
         var len: c.gsize = 0;

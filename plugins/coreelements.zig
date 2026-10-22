@@ -11,6 +11,8 @@ const elements = .{
     @import("core/tee.zig"),
     @import("core/filesrc.zig"),
     @import("core/filesink.zig"),
+    @import("core/funnel.zig"),
+    @import("core/valve.zig"),
     @import("core/fakesink.zig"),
 };
 
