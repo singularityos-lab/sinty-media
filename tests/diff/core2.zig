@@ -88,7 +88,8 @@ fn showMessage(m: [*c]c.GstMessage) void {
             c.g_free(dbg);
         },
         c.GST_MESSAGE_ELEMENT => {
-            const s = c.gst_structure_to_string(c.gst_message_get_structure(m));
+            const st = c.gst_message_get_structure(m);
+            const s = if (c.gst_structure_has_name(st, "GstCacheDownloadComplete") != 0) c.g_strdup("GstCacheDownloadComplete") else c.gst_structure_to_string(st);
             out("  msg element from {s}: {s}", .{ src, z(s) });
             c.g_free(s);
         },
@@ -375,6 +376,12 @@ pub fn main() void {
         "fakesrc num-buffers=4 sizetype=fixed sizemax=8 filltype=zero ! m.sink_5 multiqueue name=m m.src_5" ++ S,
     };
     for (mqs) |p| run(p, mqStats);
+    const dl = [_][*c]const u8{
+        "filesrc location=zig-out/tf.png ! downloadbuffer temp-template=zig-out/dlXXXXXX ! typefind name=t" ++ S,
+        "filesrc location=zig-out/ft1.bin ! downloadbuffer" ++ S,
+        P ++ "downloadbuffer temp-template=zig-out/dlXXXXXX" ++ S,
+    };
+    for (dl) |p| run(p, watchType);
     run(B ++ "output-selector name=s resend-latest=true s.src_0" ++ S ++ " name=a s.src_1" ++ S ++ " name=k", toSecond);
     for ([_][*c]const u8{ "fd://0?size=100", "fd://abc", "file:///x" }) |u| {
         var e: [*c]c.GError = null;

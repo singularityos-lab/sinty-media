@@ -23,6 +23,7 @@ const elements = .{
     @import("core/typefind.zig"),
     @import("core/inputselector.zig"),
     @import("core/multiqueue.zig"),
+    @import("core/downloadbuffer.zig"),
     @import("core/fakesink.zig"),
 };
 
