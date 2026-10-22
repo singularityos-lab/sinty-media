@@ -237,7 +237,7 @@ pub fn build(b: *std.Build) void {
 
     const inspect_mod = gstModule(b, "tests/diff/inspect.zig", target, optimize, &.{ "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
     inspect_mod.addImport("c", c_mod);
-    for ([_][]const u8{ "core1", "core2", "base1", "base2", "tf1", "pb1", "pb2", "pb3", "pb4", "pb5", "pb6", "pb7", "pb8", "pb9", "pb10" }) |name| {
+    for ([_][]const u8{ "core1", "core2", "base1", "base2", "tf1", "pb1", "pb2", "pb3", "pb4", "pb5", "pb6", "pb7", "pb8", "pb9", "pb10", "pb11" }) |name| {
         const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-video-1.0", "gstreamer-controller-1.0", "gstreamer-base-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
         m.addImport("c", c_mod);
         m.addImport("inspect", inspect_mod);

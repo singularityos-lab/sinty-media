@@ -74,7 +74,7 @@ pub fn commonCapsFeatures(f1: ?*c.GstElementFactory, f2: ?*c.GstElementFactory, 
             if (c.gst_caps_features_is_any(ft2) != 0) continue;
             const s2 = c.gst_caps_get_structure(c2, j);
             if (c.gst_caps_features_is_equal(ft1, ft2) == 0) continue;
-            const meets = c.gst_structure_can_intersect(s1, s2) != 0 or (!native and c.gst_caps_features_is_equal(ft1, c.GST_CAPS_FEATURES_MEMORY_SYSTEM_MEMORY) != 0 and c.gst_structure_can_intersect(raw_s, s1) != 0 and c.gst_structure_can_intersect(raw_s, s2) != 0);
+            const meets = c.gst_structure_can_intersect(s1, s2) != 0 or (!native and c.gst_caps_features_is_equal(ft1, c.GST_CAPS_FEATURES_MEMORY_SYSTEM_MEMORY()) != 0 and c.gst_structure_can_intersect(raw_s, s1) != 0 and c.gst_structure_can_intersect(raw_s, s2) != 0);
             if (!meets) continue;
             var dup = false;
             var l = seen;
