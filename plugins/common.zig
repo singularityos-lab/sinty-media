@@ -158,3 +158,66 @@ pub fn metaString(b: [*c]c.GstBuffer) [*c]u8 {
     }
     return if (s != null) c.g_string_free(s, 0) else null;
 }
+
+pub fn flowError(el: anytype, ret: c.GstFlowReturn, comptime file: []const u8, comptime func: []const u8, line: c.gint) void {
+    const details = c.gst_make_element_message_details("flow-return", c.G_TYPE_INT, ret, @as(?*anyopaque, null));
+    c.gst_element_message_full_with_details(@ptrCast(@alignCast(el)), c.GST_MESSAGE_ERROR, c.gst_stream_error_quark(), c.GST_STREAM_ERROR_FAILED, c.g_strdup("Internal data stream error."), c.g_strdup_printf("streaming stopped, reason %s (%d)", c.gst_flow_get_name(ret), ret), (file ++ "").ptr, (func ++ "").ptr, line, details);
+}
+
+pub fn isA(p: anytype, t: c.GType) bool {
+    if (p == null) return false;
+    return c.g_type_check_instance_is_a(@ptrCast(@alignCast(p)), t) != 0;
+}
+
+pub fn miniType(p: anytype) c.GType {
+    return @as(*c.GstMiniObject, @ptrCast(@alignCast(p))).type;
+}
+
+pub fn isBuffer(p: anytype) bool {
+    return miniType(p) == c.gst_buffer_get_type();
+}
+
+pub fn isBufferList(p: anytype) bool {
+    return miniType(p) == c.gst_buffer_list_get_type();
+}
+
+pub fn isEvent(p: anytype) bool {
+    return miniType(p) == c.gst_event_get_type();
+}
+
+pub fn isQuery(p: anytype) bool {
+    return miniType(p) == c.gst_query_get_type();
+}
+
+pub fn eventSticky(e: anytype) bool {
+    return @as(c.guint, @bitCast(eventType(e))) & c.GST_EVENT_TYPE_STICKY != 0;
+}
+
+pub fn eventSerialized(e: anytype) bool {
+    return @as(c.guint, @bitCast(eventType(e))) & c.GST_EVENT_TYPE_SERIALIZED != 0;
+}
+
+pub fn querySerialized(q: anytype) bool {
+    return @as(c.guint, @bitCast(queryType(q))) & c.GST_QUERY_TYPE_SERIALIZED != 0;
+}
+
+pub fn padParent(p: anytype) ?*anyopaque {
+    return @ptrCast(obj(p).parent);
+}
+
+pub fn setPadFlag(p: anytype, f: c.guint) void {
+    obj(p).flags |= f;
+}
+
+pub fn streamLock(p: anytype) void {
+    c.g_rec_mutex_lock(&pad(p).stream_rec_lock);
+}
+
+pub fn streamUnlock(p: anytype) void {
+    c.g_rec_mutex_unlock(&pad(p).stream_rec_lock);
+}
+
+pub fn dtsOrPts(b: anytype) u64 {
+    const x = buf(b);
+    return if (x.dts != CLOCK_NONE) x.dts else x.pts;
+}

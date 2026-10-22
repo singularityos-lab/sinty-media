@@ -183,5 +183,16 @@ pub fn main() void {
         "audiotestsrc num-buffers=3 samplesperbuffer=4 is-live=true ! identity sync=true silent=true ! fakesink",
     };
     for (il) |p| run(p, null);
+    const B = "audiotestsrc num-buffers=5 samplesperbuffer=4 ! audio/x-raw,rate=4000,channels=1,format=S8 ! ";
+    const ql = [_][*c]const u8{
+        B ++ "queue" ++ S,
+        B ++ "queue max-size-buffers=1" ++ S,
+        B ++ "queue min-threshold-buffers=3 max-size-time=0 max-size-bytes=0" ++ S,
+        B ++ "queue max-size-buffers=2 leaky=upstream silent=true" ++ S ++ " sync=false",
+        B ++ "queue ! queue ! queue" ++ S,
+        "fakesrc num-buffers=3 sizetype=fixed sizemax=4 filltype=pattern ! queue max-size-bytes=4" ++ S,
+        "fakesrc num-buffers=3 ! queue ! fakesink num-buffers=1 silent=false",
+    };
+    for (ql) |p| run(p, null);
     out("done", .{});
 }
