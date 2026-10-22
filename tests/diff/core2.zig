@@ -184,6 +184,27 @@ fn toSink1(p: ?*c.GstElement) void {
     c.gst_object_unref(s);
 }
 
+fn mqStats(p: ?*c.GstElement) void {
+    const m = c.gst_bin_get_by_name(@ptrCast(@alignCast(p)), "m");
+    var st: ?*c.GstStructure = null;
+    c.g_object_get(m, "stats", &st, @as(?*anyopaque, null));
+    const t = c.gst_structure_to_string(st);
+    out("  stats {s}", .{z(t)});
+    c.g_free(t);
+    c.gst_structure_free(st);
+    const pad = c.gst_element_get_static_pad(m, "sink_0");
+    if (pad != null) {
+        var g: c.guint = 0;
+        var lb: c.guint = 0;
+        var lt: u64 = 0;
+        c.g_object_set(pad, "group-id", @as(c.guint, 3), @as(?*anyopaque, null));
+        c.g_object_get(pad, "group-id", &g, "current-level-buffers", &lb, "current-level-time", &lt, @as(?*anyopaque, null));
+        out("  pad group {d} level {d} {d}", .{ g, lb, lt });
+        c.gst_object_unref(pad);
+    }
+    c.gst_object_unref(m);
+}
+
 pub fn main() void {
     c.gst_init(null, null);
     _ = c.g_set_print_handler(printHandler);
@@ -344,6 +365,16 @@ pub fn main() void {
     };
     for (is) |p| run(p, null);
     run("input-selector name=i" ++ S ++ " " ++ A4 ++ "i.sink_0 " ++ A4 ++ "i.sink_1", toSink1);
+    const Q = " ! fakesink silent=true";
+    const mqs = [_][*c]const u8{
+        A4 ++ "m.sink_0 multiqueue name=m m.src_0" ++ S,
+        A4 ++ "m.sink_0 multiqueue name=m max-size-buffers=1 m.src_0" ++ S,
+        A4 ++ "m.sink_0 multiqueue name=m use-buffering=true m.src_0" ++ S,
+        A4 ++ "m.sink_0 multiqueue name=m sync-by-running-time=true use-interleave=true m.src_0" ++ S,
+        A4 ++ "m.sink_0 " ++ A4 ++ "m.sink_1 multiqueue name=m m.src_0" ++ Q ++ " m.src_1" ++ Q,
+        "fakesrc num-buffers=4 sizetype=fixed sizemax=8 filltype=zero ! m.sink_5 multiqueue name=m m.src_5" ++ S,
+    };
+    for (mqs) |p| run(p, mqStats);
     run(B ++ "output-selector name=s resend-latest=true s.src_0" ++ S ++ " name=a s.src_1" ++ S ++ " name=k", toSecond);
     for ([_][*c]const u8{ "fd://0?size=100", "fd://abc", "file:///x" }) |u| {
         var e: [*c]c.GError = null;

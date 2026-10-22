@@ -22,6 +22,7 @@ const elements = .{
     @import("core/concat.zig"),
     @import("core/typefind.zig"),
     @import("core/inputselector.zig"),
+    @import("core/multiqueue.zig"),
     @import("core/fakesink.zig"),
 };
 
