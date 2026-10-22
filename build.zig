@@ -15,6 +15,7 @@ const libs = [_]Lib{
     .{ .name = "gstaudio-1.0", .root = "gst/audio.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-tag-1.0", "m" }, .deps = &.{} },
     .{ .name = "gstapp-1.0", .root = "gst/app.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0" }, .deps = &.{} },
     .{ .name = "gstallocators-1.0", .root = "gst/allocators.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "libdrm" }, .deps = &.{} },
+    .{ .name = "gstcontroller-1.0", .root = "gst/controller.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "m" }, .deps = &.{} },
     .{ .name = "gstfft-1.0", .root = "gst/fft.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "m" }, .deps = &.{} },
     .{ .name = "gstgl-1.0", .root = "gst/gl.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gmodule-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0", "gstreamer-allocators-1.0", "egl", "gl", "wayland-client", "wayland-cursor", "wayland-egl", "x11", "x11-xcb", "xcb", "gudev-1.0", "libdrm", "gbm" }, .deps = &.{} },
     .{ .name = "gstvideo-1.0", .root = "gst/video.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-allocators-1.0", "m" }, .deps = &.{} },
@@ -174,6 +175,13 @@ pub fn build(b: *std.Build) void {
 
     for ([_][]const u8{ "video1", "video2", "video3", "video4", "video5", "video6", "video7", "video8", "video9", "video10", "video11", "video12", "video13", "video14", "video15", "video16" }) |name| {
         const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-video-1.0", "gstreamer-allocators-1.0", "gstreamer-base-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
+        m.addImport("c", c_mod);
+        const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
+        diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+    }
+
+    for ([_][]const u8{"ct1"}) |name| {
+        const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-controller-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
         m.addImport("c", c_mod);
         const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
         diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
