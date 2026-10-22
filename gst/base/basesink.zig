@@ -1270,7 +1270,11 @@ fn segmentEvent(x: *Sink, ev: [*c]Event) void {
     defer el.unlock(x);
     var seg: c.GstSegment = undefined;
     c.gst_event_copy_segment(ev, &seg);
-    seg.position = std.math.clamp(seg.position, seg.start, seg.stop);
+    if (seg.position > seg.stop) {
+        seg.position = seg.stop;
+    } else if (seg.position < seg.start) {
+        seg.position = seg.start;
+    }
     if (p.instant_rate_sync_seqnum != 0) {
         const rt = c.gst_segment_to_running_time(&seg, c.GST_FORMAT_TIME, seg.position);
         const anchor = p.last_anchor_running_time -% @as(u64, @bitCast(p.instant_rate_offset));

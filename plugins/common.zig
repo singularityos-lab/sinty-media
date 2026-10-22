@@ -68,6 +68,10 @@ pub fn unrefEvent(p: c.gpointer) callconv(.c) void {
     c.gst_mini_object_unref(@ptrCast(@alignCast(p)));
 }
 
+pub fn unrefBuffer(p: c.gpointer) callconv(.c) void {
+    c.gst_mini_object_unref(@ptrCast(@alignCast(p)));
+}
+
 pub fn unrefCaps(p: c.gpointer) callconv(.c) void {
     c.gst_mini_object_unref(@ptrCast(@alignCast(p)));
 }

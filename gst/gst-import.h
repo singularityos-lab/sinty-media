@@ -72,3 +72,6 @@
 #include <sys/ioctl.h>
 #include <linux/dma-buf.h>
 #include <zlib.h>
+#include <gst/riff/riff-media.h>
+#include <gst/riff/riff-read.h>
+#include <ogg/ogg.h>
