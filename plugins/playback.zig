@@ -9,6 +9,7 @@ const urisourcebin = @import("playback/urisourcebin.zig");
 const parsebin = @import("playback/parsebin.zig");
 const decodebin3 = @import("playback/decodebin3.zig");
 const uridecodebin3 = @import("playback/uridecodebin3.zig");
+const playbin3 = @import("playback/playbin3.zig");
 
 var init_done: usize = 0;
 
@@ -28,6 +29,7 @@ fn add(p: ?*c.GstPlugin, name: [*c]const u8, rank: c.guint, t: c.GType) bool {
 
 fn pluginInit(p: ?*c.GstPlugin) callconv(.c) c.gboolean {
     var ok = false;
+    ok = add(p, "playbin3", c.GST_RANK_NONE, playbin3.getType()) or ok;
     ok = add(p, "playsink", c.GST_RANK_NONE, playsink.getType()) or ok;
     ok = add(p, "subtitleoverlay", c.GST_RANK_NONE, subtitleoverlay.getType()) or ok;
     ok = add(p, "decodebin3", c.GST_RANK_NONE, decodebin3.getType()) or ok;
