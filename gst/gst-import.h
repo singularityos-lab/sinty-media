@@ -78,3 +78,4 @@
 #include <glib-unix.h>
 #include <gst/sdp/sdp.h>
 #include <gst/rtp/rtp.h>
+#include <gst/rtsp/rtsp.h>
