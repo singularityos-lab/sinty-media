@@ -96,6 +96,7 @@ pub fn build(b: *std.Build) void {
         .{ .name = "coreelements", .root = "plugins/coreelements.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0" } },
         .{ .name = "audioconvert", .root = "plugins/audioconvert.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-audio-1.0" } },
         .{ .name = "audioresample", .root = "plugins/audioresample.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-audio-1.0" } },
+        .{ .name = "videoconvertscale", .root = "plugins/videoconvertscale.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0" } },
         .{ .name = "app", .root = "plugins/app.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-app-1.0" } },
     };
     const plugin_step = b.step("plugins", "build the element plugins");

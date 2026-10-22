@@ -34,5 +34,32 @@ pub fn main() void {
         T ++ "audio/x-raw,format=S16LE,rate=16000,channels=1,layout=non-interleaved ! audioresample ! audio/x-raw,rate=8000" ++ S,
     };
     for (ar) |p| core.run(p, null);
+    const D = " ! fakesink silent=false signal-handoffs=true dump=true";
+    const V = "videotestsrc num-buffers=2 pattern=smpte ! ";
+    const vc = [_][*c]const u8{
+        V ++ "video/x-raw,format=I420,width=16,height=8 ! videoconvert ! video/x-raw,format=RGBA" ++ D,
+        V ++ "video/x-raw,format=RGBA,width=16,height=8 ! videoconvert ! video/x-raw,format=I420" ++ D,
+        V ++ "video/x-raw,format=NV12,width=16,height=8 ! videoconvert ! video/x-raw,format=YUY2" ++ D,
+        V ++ "video/x-raw,format=I420,width=16,height=8 ! videoconvert ! video/x-raw,format=GRAY8" ++ D,
+        V ++ "video/x-raw,format=RGB,width=16,height=8 ! videoconvert dither=none ! video/x-raw,format=RGB16" ++ D,
+        V ++ "video/x-raw,format=I420,width=16,height=8 ! videoconvert" ++ D,
+        V ++ "video/x-raw,format=I420,width=16,height=8 ! videoscale ! video/x-raw,width=8,height=4" ++ D,
+        V ++ "video/x-raw,format=RGBA,width=16,height=8 ! videoscale method=nearest-neighbour ! video/x-raw,width=24,height=12" ++ D,
+        V ++ "video/x-raw,format=I420,width=16,height=8 ! videoscale method=lanczos ! video/x-raw,width=24,height=12" ++ D,
+        V ++ "video/x-raw,format=I420,width=16,height=8 ! videoscale ! video/x-raw,width=16,height=16" ++ D,
+        V ++ "video/x-raw,format=I420,width=16,height=8 ! videoscale add-borders=false ! video/x-raw,width=16,height=16" ++ D,
+        V ++ "video/x-raw,format=I420,width=16,height=8,pixel-aspect-ratio=1/1 ! videoscale ! video/x-raw,height=4" ++ D,
+        V ++ "video/x-raw,format=I420,width=16,height=8 ! videoscale ! video/x-raw,width=8" ++ D,
+        V ++ "video/x-raw,format=I420,width=16,height=8,pixel-aspect-ratio=4/3 ! videoscale ! video/x-raw,width=8,height=8" ++ D,
+        V ++ "video/x-raw,format=NV12,width=16,height=8 ! videoconvertscale ! video/x-raw,format=BGRx,width=8,height=8" ++ D,
+        V ++ "video/x-raw,format=I420,width=16,height=8 ! videoconvertscale method=mitchell ! video/x-raw,format=AYUV,width=20,height=10" ++ D,
+        V ++ "video/x-raw,format=I420,width=16,height=8 ! videoconvertscale ! video/x-raw,format=Y444" ++ D,
+        V ++ "video/x-raw,format=I420,width=16,height=8 ! videoconvert ! video/x-raw,width=8" ++ D,
+        V ++ "video/x-raw,format=I420,width=16,height=8 ! videoscale ! video/x-raw,format=RGBA" ++ D,
+        V ++ "video/x-raw,format=I420,width=16,height=8,interlace-mode=interleaved ! videoconvertscale ! video/x-raw,format=RGBA" ++ D,
+        V ++ "video/x-raw,format=RGBA,width=16,height=8 ! videoconvert alpha-mode=set alpha-value=0.5 ! video/x-raw,format=ARGB" ++ D,
+        V ++ "video/x-raw,format=I420,width=16,height=8,colorimetry=bt709 ! videoconvert ! video/x-raw,format=RGB" ++ D,
+    };
+    for (vc) |p| core.run(p, null);
     ins.out("done", .{});
 }
