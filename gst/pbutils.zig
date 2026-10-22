@@ -5,4 +5,6 @@ comptime {
     _ = @import("pbutils/install.zig");
     _ = @import("pbutils/enums.zig");
     _ = @import("pbutils/codec.zig");
+    _ = @import("pbutils/encprofile.zig");
+    _ = @import("pbutils/enctarget.zig");
 }

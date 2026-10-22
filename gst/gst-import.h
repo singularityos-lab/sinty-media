@@ -23,6 +23,7 @@
 #include <sys/auxv.h>
 #include <glib.h>
 #include <libintl.h>
+#include <locale.h>
 #include <glib-object.h>
 #include <gmodule.h>
 #include <gst/gst.h>
