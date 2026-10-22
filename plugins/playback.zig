@@ -3,6 +3,12 @@ const cm = @import("common.zig");
 const c = cm.c;
 const build = @import("build_options");
 const streamsynchronizer = @import("playback/streamsynchronizer.zig");
+const convertbin = @import("playback/convertbin.zig");
+
+comptime {
+    _ = &convertbin.audioType;
+    _ = &convertbin.videoType;
+}
 
 var init_done: usize = 0;
 
