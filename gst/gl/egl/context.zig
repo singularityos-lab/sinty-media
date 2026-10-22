@@ -621,7 +621,7 @@ fn fetchFormats(ctx: OCtx) bool {
             const ma = c.g_array_sized_new(0, 0, @sizeOf(Modifier), @bitCast(nm));
             f.modifiers = c.g_array_set_size(ma, @bitCast(nm));
             const md: [*]Modifier = @ptrCast(@alignCast(f.modifiers.?.data));
-            for (0..@intCast(nm)) |j| md[j] = .{ .modifier = mods[j], .external_only = ext[j] };
+            for (0..@intCast(nm)) |j| md[j] = .{ .modifier = mods[j], .external_only = @bitCast(ext[j]) };
         }
         _ = c.g_array_append_vals(arr, &f, 1);
     }
