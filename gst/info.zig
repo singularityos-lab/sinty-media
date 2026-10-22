@@ -803,6 +803,66 @@ fn bufferListText(l: ?*c.GstBufferList) [*c]u8 {
     return c.g_strdup_printf("bufferlist: %p, %u buffers, pts %s, dts %s, size %lu", l, n, ps, ds, total);
 }
 
+fn orNull(t: [*c]u8) [*c]const u8 {
+    return if (t != null) t else "(NULL)";
+}
+
+fn messageText(m: [*c]c.GstMessage) [*c]u8 {
+    const st = structureText(c.gst_message_get_structure(m));
+    defer c.g_free(st);
+    const t = printf.timeAlloc(m[0].timestamp);
+    defer c.g_free(t);
+    const src: [*c]const u8 = if (m[0].src != null) m[0].src[0].name else "(NULL)";
+    return c.g_strdup_printf("%s message: %p, time %s, seq-num %d, element '%s', %s", c.gst_message_type_get_name(m[0].type), m, t, m[0].seqnum, src, orNull(st));
+}
+
+fn queryText(q: [*c]c.GstQuery) [*c]u8 {
+    const st = structureText(c.gst_query_get_structure(q));
+    defer c.g_free(st);
+    return c.g_strdup_printf("%s query: %p, %s", c.gst_query_type_get_name(q[0].type), q, orNull(st));
+}
+
+fn eventText(e: [*c]c.GstEvent) [*c]u8 {
+    const st = structureText(c.gst_event_get_structure(e));
+    defer c.g_free(st);
+    const t = printf.timeAlloc(e[0].timestamp);
+    defer c.g_free(t);
+    return c.g_strdup_printf("%s event: %p, time %s, seq-num %d, %s", c.gst_event_type_get_name(e[0].type), e, t, e[0].seqnum, orNull(st));
+}
+
+fn streamText(s: ?*c.GstStream) [*c]u8 {
+    var cs: [*c]u8 = null;
+    var ts: [*c]u8 = null;
+    const caps = c.gst_stream_get_caps(s);
+    if (caps != null) {
+        cs = c.gst_caps_to_string(caps);
+        c.gst_caps_unref(caps);
+    }
+    const tags = c.gst_stream_get_tags(s);
+    if (tags != null) {
+        ts = c.gst_tag_list_to_string(tags);
+        c.gst_tag_list_unref(tags);
+    }
+    defer c.g_free(cs);
+    defer c.g_free(ts);
+    return c.g_strdup_printf("stream %s %p, ID %s, flags 0x%x, caps [%s], tags [%s]", c.gst_stream_type_get_name(c.gst_stream_get_stream_type(s)), s, c.gst_stream_get_stream_id(s), c.gst_stream_get_stream_flags(s), if (cs != null) cs else @as([*c]const u8, ""), if (ts != null) ts else @as([*c]const u8, ""));
+}
+
+fn collectionText(col: ?*c.GstStreamCollection) [*c]u8 {
+    const g = c.g_string_new("<");
+    var i: c.guint = 0;
+    const n = c.gst_stream_collection_get_size(col);
+    while (i < n) : (i += 1) {
+        const st = streamText(c.gst_stream_collection_get_stream(col, i));
+        c.g_string_append_printf(g, " %s,", st);
+        c.g_free(st);
+    }
+    _ = c.g_string_append(g, " >");
+    const r = c.g_strdup_printf("collection %p (%d streams) %s", col, n, g[0].str);
+    _ = c.g_string_free(g, 1);
+    return r;
+}
+
 pub export fn gst_debug_print_object(ptr: c.gconstpointer) [*c]u8 {
     const p: ?*anyopaque = @constCast(ptr);
     if (p == null) return c.g_strdup("(NULL)");
@@ -816,6 +876,17 @@ pub export fn gst_debug_print_object(ptr: c.gconstpointer) [*c]u8 {
     if (miniType(p) == c.gst_date_time_get_type()) return @import("datetime.zig").serialize(@ptrCast(@alignCast(p)), true);
     if (miniType(p) == c.gst_buffer_get_type()) return bufferText(@ptrCast(@alignCast(p)));
     if (miniType(p) == c.gst_buffer_list_get_type()) return bufferListText(@ptrCast(@alignCast(p)));
+    if (miniType(p) == c.gst_message_get_type()) return messageText(@ptrCast(@alignCast(p)));
+    if (miniType(p) == c.gst_query_get_type()) return queryText(@ptrCast(@alignCast(p)));
+    if (miniType(p) == c.gst_event_get_type()) return eventText(@ptrCast(@alignCast(p)));
+    if (miniType(p) == c.gst_context_get_type()) {
+        const ctx: ?*c.GstContext = @ptrCast(@alignCast(p));
+        const st = structureText(c.gst_context_get_structure(ctx));
+        defer c.g_free(st);
+        return c.g_strdup_printf("context '%s'='%s'", c.gst_context_get_context_type(ctx), st);
+    }
+    if (isA(p, c.gst_stream_get_type())) return streamText(@ptrCast(@alignCast(p)));
+    if (isA(p, c.gst_stream_collection_get_type())) return collectionText(@ptrCast(@alignCast(p)));
     if (isPad(p) and objectName(p) != null) {
         const n = padName(p);
         defer c.g_free(n);

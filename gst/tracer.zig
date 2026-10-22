@@ -254,21 +254,30 @@ pub export fn gst_tracer_factory_get_type() c.GType {
     }.f);
 }
 
+fn dbg(o: [*c]c.GObject, comptime line: c.gint, comptime fmt: [*:0]const u8, args: anytype) void {
+    if (debug_cat == null or c.GST_LEVEL_DEBUG > info._gst_debug_min) return;
+    @call(.auto, info.gst_debug_log, .{ debug_cat, c.GST_LEVEL_DEBUG, "../gst/gsttracer.c", "gst_tracer_register", line, o, fmt } ++ args);
+}
+
 pub export fn gst_tracer_register(p: [*c]plugin.Plugin, name: [*c]const u8, t: c.GType) c.gboolean {
     if (!check.that(name != null, "gst_tracer_register", "name != NULL")) return 0;
     if (!check.that(c.g_type_is_a(t, gst_tracer_get_type()) != 0, "gst_tracer_register", "g_type_is_a (type, GST_TYPE_TRACER)")) return 0;
     const reg = registry.gst_registry_get();
     const existing = registry.gst_registry_lookup_feature(reg, name);
+    _ = gst_tracer_factory_get_type();
     if (existing != null) {
+        dbg(@ptrCast(reg), 172, "update existing feature %p (%s)", .{ existing, name });
         fof(existing)[0].type = t;
         existing[0].loaded = 1;
         c.gst_object_unref(existing);
         return 1;
     }
     const f = fof(c.g_object_new(gst_tracer_factory_get_type(), @as([*c]const u8, null)));
+    dbg(@ptrCast(f), 181, "new tracer factory for %s", .{name});
     _ = c.gst_object_set_name(@ptrCast(f), name);
     feature.gst_plugin_feature_set_rank(@ptrCast(f), c.GST_RANK_NONE);
     f[0].type = t;
+    dbg(@ptrCast(f), 188, "tracer factory for %u:%s", .{ @as(c.guint, @truncate(t)), c.g_type_name(t) });
     feature.bindPlugin(@ptrCast(f), p);
     f[0].feature.loaded = 1;
     _ = registry.gst_registry_add_feature(reg, @ptrCast(f));
@@ -353,6 +362,7 @@ fn templateField(field: [*c]const c.GstIdStr, v: [*c]const c.GValue, data: c.gpo
 fn buildFormat(r: [*c]Record) void {
     const name = c.gst_structure_get_name(r[0].spec);
     if (!check.that(c.g_str_has_suffix(name, ".class") != 0, "gst_tracer_record_build_format", "g_str_has_suffix (name, \".class\")")) return;
+    if (debug_cat != null and c.GST_LEVEL_TRACE <= info._gst_debug_min) info.gst_debug_log(debug_cat, c.GST_LEVEL_TRACE, "../gst/gsttracerrecord.c", "gst_tracer_record_build_format", 111, null, "%" ++ "p\x07A", r[0].spec);
     const base = c.g_strndup(name, c.strlen(name) - 6);
     defer c.g_free(base);
     const s = c.g_string_sized_new(64);
@@ -360,6 +370,7 @@ fn buildFormat(r: [*c]Record) void {
     _ = c.gst_structure_foreach_id_str(r[0].spec, templateField, s);
     _ = c.g_string_append_c(s, ';');
     r[0].format = c.g_string_free(s, 0);
+    if (debug_cat != null and c.GST_LEVEL_DEBUG <= info._gst_debug_min) info.gst_debug_log(debug_cat, c.GST_LEVEL_DEBUG, "../gst/gsttracerrecord.c", "gst_tracer_record_build_format", 125, null, "new format string: %s", r[0].format);
 }
 
 pub export fn gst_tracer_record_new(name: [*c]const u8, first: [*c]const u8, ...) callconv(.c) [*c]Record {
