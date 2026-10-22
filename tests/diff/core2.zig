@@ -382,6 +382,17 @@ pub fn main() void {
         P ++ "downloadbuffer temp-template=zig-out/dlXXXXXX" ++ S,
     };
     for (dl) |p| run(p, watchType);
+    const q2 = [_][*c]const u8{
+        B ++ "queue2" ++ S,
+        P ++ "queue2 max-size-buffers=2" ++ S,
+        P ++ "queue2 use-buffering=true use-rate-estimate=false" ++ S,
+        "filesrc location=zig-out/tf.png ! queue2 temp-template=zig-out/q2XXXXXX ! typefind name=t" ++ S,
+        "filesrc location=zig-out/tf.png ! queue2 ring-buffer-max-size=65536 ! typefind name=t" ++ S,
+        "filesrc location=zig-out/ft1.bin ! queue2 temp-template=zig-out/q2XXXXXX" ++ S,
+        "filesrc location=zig-out/ft1.bin ! queue2 ring-buffer-max-size=4096" ++ S,
+        "filesrc location=zig-out/ft1.bin ! queue2 temp-template=zig-out/q2XXXXXX ! queue2" ++ S,
+    };
+    for (q2) |p| run(p, watchType);
     run(B ++ "output-selector name=s resend-latest=true s.src_0" ++ S ++ " name=a s.src_1" ++ S ++ " name=k", toSecond);
     for ([_][*c]const u8{ "fd://0?size=100", "fd://abc", "file:///x" }) |u| {
         var e: [*c]c.GError = null;

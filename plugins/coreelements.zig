@@ -24,6 +24,7 @@ const elements = .{
     @import("core/inputselector.zig"),
     @import("core/multiqueue.zig"),
     @import("core/downloadbuffer.zig"),
+    @import("core/queue2.zig"),
     @import("core/fakesink.zig"),
 };
 
