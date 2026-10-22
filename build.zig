@@ -96,6 +96,7 @@ pub fn build(b: *std.Build) void {
         .{ .name = "coreelements", .root = "plugins/coreelements.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0" } },
         .{ .name = "audioconvert", .root = "plugins/audioconvert.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-audio-1.0" } },
         .{ .name = "audioresample", .root = "plugins/audioresample.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-audio-1.0" } },
+        .{ .name = "volume", .root = "plugins/volume.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-audio-1.0" } },
         .{ .name = "videoconvertscale", .root = "plugins/videoconvertscale.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0" } },
         .{ .name = "app", .root = "plugins/app.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-app-1.0" } },
     };
@@ -232,7 +233,7 @@ pub fn build(b: *std.Build) void {
     const inspect_mod = gstModule(b, "tests/diff/inspect.zig", target, optimize, &.{ "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
     inspect_mod.addImport("c", c_mod);
     for ([_][]const u8{ "core1", "core2", "base1", "base2" }) |name| {
-        const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-base-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
+        const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-controller-1.0", "gstreamer-base-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
         m.addImport("c", c_mod);
         m.addImport("inspect", inspect_mod);
         const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });

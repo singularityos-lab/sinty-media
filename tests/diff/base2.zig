@@ -61,5 +61,55 @@ pub fn main() void {
         V ++ "video/x-raw,format=I420,width=16,height=8,colorimetry=bt709 ! videoconvert ! video/x-raw,format=RGB" ++ D,
     };
     for (vc) |p| core.run(p, null);
+    const A = "audiotestsrc num-buffers=3 samplesperbuffer=16 wave=sine volume=0.9 ! ";
+    const vo = [_][*c]const u8{
+        A ++ "audio/x-raw,format=S16LE,rate=8000,channels=1 ! volume volume=0.5" ++ D,
+        A ++ "audio/x-raw,format=S16LE,rate=8000,channels=1 ! volume volume=1.7" ++ D,
+        A ++ "audio/x-raw,format=S16LE,rate=8000,channels=1 ! volume volume-full-range=40" ++ D,
+        A ++ "audio/x-raw,format=S8,rate=8000,channels=1 ! volume volume=0.3" ++ D,
+        A ++ "audio/x-raw,format=S8,rate=8000,channels=1 ! volume volume=3.3" ++ D,
+        A ++ "audio/x-raw,format=S8,rate=8000,channels=1 ! volume volume-full-range=200" ++ D,
+        A ++ "audio/x-raw,format=S24LE,rate=8000,channels=1 ! volume volume=0.7" ++ D,
+        A ++ "audio/x-raw,format=S24LE,rate=8000,channels=1 ! volume volume=2.5" ++ D,
+        A ++ "audio/x-raw,format=S24LE,rate=8000,channels=1 ! volume volume-full-range=33" ++ D,
+        A ++ "audio/x-raw,format=S32LE,rate=8000,channels=1 ! volume volume=0.25" ++ D,
+        A ++ "audio/x-raw,format=S32LE,rate=8000,channels=1 ! volume volume=9.9" ++ D,
+        A ++ "audio/x-raw,format=S32LE,rate=8000,channels=1 ! volume volume-full-range=17" ++ D,
+        A ++ "audio/x-raw,format=F32LE,rate=8000,channels=2 ! volume volume=0.123" ++ D,
+        A ++ "audio/x-raw,format=F64LE,rate=8000,channels=2 ! volume volume=4.56" ++ D,
+        A ++ "audio/x-raw,format=S16LE,rate=8000,channels=1 ! volume volume=1.0" ++ D,
+        A ++ "audio/x-raw,format=S16LE,rate=8000,channels=1 ! volume mute=true" ++ D,
+        A ++ "audio/x-raw,format=F32LE,rate=8000,channels=1 ! volume volume=0" ++ D,
+        A ++ "audio/x-raw,format=U8,rate=8000,channels=1 ! volume volume=0.5" ++ D,
+    };
+    for (vo) |p| core.run(p, null);
+    const fmts = [_][]const u8{ "S8", "S16LE", "S24LE", "S32LE", "F32LE", "F64LE" };
+    for (fmts) |f| {
+        for ([_]u8{ '1', '2', '3' }) |ch| {
+            var buf: [256]u8 = undefined;
+            const d = std.fmt.bufPrintZ(&buf, "audiotestsrc num-buffers=3 samplesperbuffer=16 wave=sine ! audio/x-raw,format={s},rate=8000,channels={c} ! volume name=v{s}", .{ f, ch, D }) catch unreachable;
+            core.run(d.ptr, ramp);
+            core.run(d.ptr, muteRamp);
+        }
+    }
     ins.out("done", .{});
+}
+
+fn bind(p: ?*c.GstElement, prop: [*c]const u8, pts: []const [2]f64) void {
+    const v = c.gst_bin_get_by_name(@ptrCast(@alignCast(p)), "v");
+    defer c.gst_object_unref(v);
+    const cs = c.gst_interpolation_control_source_new();
+    c.g_object_set(cs, "mode", c.GST_INTERPOLATION_MODE_LINEAR, @as(?*anyopaque, null));
+    for (pts) |t| _ = c.gst_timed_value_control_source_set(@ptrCast(@alignCast(cs)), @intFromFloat(t[0] * 1e6), t[1]);
+    _ = c.gst_object_add_control_binding(@ptrCast(@alignCast(v)), c.gst_direct_control_binding_new_absolute(@ptrCast(@alignCast(v)), prop, cs));
+    c.gst_object_unref(cs);
+}
+
+fn ramp(p: ?*c.GstElement) void {
+    bind(p, "volume", &.{ .{ 0, 0.2 }, .{ 5, 3.7 }, .{ 6, 9.5 } });
+}
+
+fn muteRamp(p: ?*c.GstElement) void {
+    bind(p, "volume", &.{ .{ 0, 1.3 }, .{ 6, 0.4 } });
+    bind(p, "mute", &.{ .{ 0, 0 }, .{ 2, 0 }, .{ 2.1, 1 }, .{ 4, 1 }, .{ 4.1, 0 } });
 }

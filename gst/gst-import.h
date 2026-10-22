@@ -28,6 +28,7 @@
 #include <gmodule.h>
 #include <gst/gst.h>
 #include <gst/base/base.h>
+#include <gst/controller/controller.h>
 #include <gst/app/app.h>
 #include <gst/tag/tag.h>
 #include <gst/audio/audio.h>
