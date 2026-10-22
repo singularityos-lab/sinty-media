@@ -216,6 +216,15 @@ pub fn build(b: *std.Build) void {
         diff_step.dependOn(&b.addInstallArtifact(lib, .{ .dest_dir = .{ .override = .{ .custom = "testplugins" } } }).step);
     }
 
+    {
+        const m = b.createModule(.{ .root_source_file = b.path("tests/diff/web1.zig"), .target = target, .optimize = optimize, .link_libc = true });
+        m.addIncludePath(b.path("tests/diff"));
+        m.linkSystemLibrary("webkitgtk-6.0", .{});
+        m.linkSystemLibrary("gtk4", .{});
+        const exe = b.addExecutable(.{ .name = "diff-web1", .root_module = m, .use_llvm = true });
+        b.step("web", "build the WebKit media test").dependOn(&b.addInstallArtifact(exe, .{}).step);
+    }
+
     const gate = b.addExecutable(.{
         .name = "abi-gate",
         .root_module = b.createModule(.{ .root_source_file = b.path("abi/gate.zig"), .target = target, .optimize = optimize }),

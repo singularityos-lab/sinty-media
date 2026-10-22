@@ -8,6 +8,7 @@ const jobs = [_]Job{
     .{ .name = "tone.opus.ogg", .pipe = "audiotestsrc num-buffers=40 samplesperbuffer=960 freq=330 ! audio/x-raw,rate=48000,channels=2 ! opusenc ! oggmux ! filesink location=" },
     .{ .name = "tone.mp3", .pipe = "audiotestsrc num-buffers=40 samplesperbuffer=1152 freq=550 ! audio/x-raw,rate=44100,channels=2 ! lamemp3enc ! filesink location=" },
     .{ .name = "tone.alaw", .pipe = "audiotestsrc num-buffers=20 samplesperbuffer=800 freq=700 ! audio/x-raw,format=S16LE,rate=8000,channels=1 ! alawenc ! filesink location=" },
+    .{ .name = "clip.webm", .pipe = "videotestsrc num-buffers=30 pattern=smpte ! video/x-raw,width=64,height=48,framerate=15/1 ! vp8enc deadline=1 keyframe-max-dist=10 ! m. audiotestsrc num-buffers=40 samplesperbuffer=960 freq=440 ! audio/x-raw,rate=48000,channels=1 ! opusenc ! m. webmmux name=m ! filesink location=" },
 };
 
 pub fn main() !void {
