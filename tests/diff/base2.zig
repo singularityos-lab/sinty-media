@@ -83,6 +83,31 @@ pub fn main() void {
         A ++ "audio/x-raw,format=U8,rate=8000,channels=1 ! volume volume=0.5" ++ D,
     };
     for (vo) |p| core.run(p, null);
+    const W = "audiotestsrc num-buffers=3 samplesperbuffer=24 ";
+    const wv = [_][*c]const u8{
+        W ++ "wave=square freq=1000 ! audio/x-raw,rate=8000" ++ D,
+        W ++ "wave=saw freq=700 ! audio/x-raw,rate=8000,format=S32LE" ++ D,
+        W ++ "wave=triangle freq=900 volume=0.4 ! audio/x-raw,rate=8000,format=F32LE" ++ D,
+        W ++ "wave=silence ! audio/x-raw,rate=8000,format=F64LE" ++ D,
+        W ++ "wave=sine-table freq=1234 ! audio/x-raw,rate=8000" ++ D,
+        W ++ "wave=sine-table freq=400 volume=0.3 ! audio/x-raw,rate=8000,format=F32LE" ++ D,
+        W ++ "wave=ticks freq=2000 tick-interval=5000000 sine-periods-per-tick=3 ! audio/x-raw,rate=8000" ++ D,
+        W ++ "wave=ticks freq=1500 tick-interval=3000000 apply-tick-ramp=true marker-tick-period=2 marker-tick-volume=0.2 ! audio/x-raw,rate=8000,format=F64LE" ++ D,
+        W ++ "wave=ticks freq=1500 tick-interval=3000000 apply-tick-ramp=true marker-tick-period=3 ! audio/x-raw,rate=8000,format=S32LE" ++ D,
+        W ++ "! audio/x-raw,rate=8000,format=S24LE" ++ D,
+        W ++ "wave=saw ! audio/x-raw,rate=8000,format=U8" ++ D,
+        W ++ "! audio/x-raw,rate=8000,format=F32BE,channels=2" ++ D,
+        W ++ "wave=triangle ! audio/x-raw,rate=8000,format=S16BE,channels=3" ++ D,
+        W ++ "! audio/x-raw,rate=8000,format=U18LE" ++ D,
+        W ++ "! audio/x-raw,rate=8000,channels=2,layout=non-interleaved" ++ D,
+        W ++ "wave=square ! audio/x-raw,rate=8000,channels=4,format=F64BE,layout=non-interleaved" ++ D,
+        W ++ "volume=0 ! audio/x-raw,rate=8000" ++ D,
+        W ++ "timestamp-offset=123456 ! audio/x-raw,rate=8000" ++ S,
+        W ++ "freq=30000" ++ S,
+        W ++ "" ++ S,
+        W ++ "! audio/x-raw,channels=6" ++ S,
+    };
+    for (wv) |p| core.run(p, null);
     const fmts = [_][]const u8{ "S8", "S16LE", "S24LE", "S32LE", "F32LE", "F64LE" };
     for (fmts) |f| {
         for ([_]u8{ '1', '2', '3' }) |ch| {
