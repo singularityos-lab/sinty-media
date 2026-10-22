@@ -146,6 +146,8 @@ pub fn build(b: *std.Build) void {
         .{ .name = "opus", .root = "plugins/opus.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-audio-1.0", "gstreamer-tag-1.0", "gstreamer-pbutils-1.0", "opus" } },
         .{ .name = "opengl", .root = "plugins/opengl.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0", "gstreamer-gl-1.0", "gstreamer-allocators-1.0", "gstreamer-controller-1.0", "egl", "gl", "x11", "graphene-1.0", "libpng", "libjpeg", "m" } },
         .{ .name = "pango", .root = "plugins/pango.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0", "gstreamer-controller-1.0", "pangocairo", "pango", "cairo", "m" } },
+        .{ .name = "cdparanoia", .root = "plugins/cdparanoia.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-audio-1.0", "cdda_interface", "cdda_paranoia" } },
+        .{ .name = "libvisual", .root = "plugins/libvisual.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-audio-1.0", "gstreamer-video-1.0", "gstreamer-pbutils-1.0", "libvisual-0.4" } },
         .{ .name = "app", .root = "plugins/app.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-app-1.0" } },
     };
     const plugin_step = b.step("plugins", "build the element plugins");
@@ -228,7 +230,7 @@ pub fn build(b: *std.Build) void {
         diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
     }
 
-    for ([_][]const u8{ "gl1", "gl2", "gl3", "gl4", "pg1" }) |name| {
+    for ([_][]const u8{ "gl1", "gl2", "gl3", "gl4", "pg1", "cv1" }) |name| {
         const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-gl-1.0", "gstreamer-video-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
         m.addImport("c", c_mod);
         const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
