@@ -9,6 +9,8 @@ const elements = .{
     @import("core/identity.zig"),
     @import("core/queue.zig"),
     @import("core/tee.zig"),
+    @import("core/filesrc.zig"),
+    @import("core/filesink.zig"),
     @import("core/fakesink.zig"),
 };
 

@@ -204,5 +204,56 @@ pub fn main() void {
         "fakesrc num-buffers=2 sizetype=fixed sizemax=3 filltype=pattern can-activate-push=false ! tee pull-mode=single" ++ S ++ " can-activate-pull=true",
     };
     for (tl) |p| run(p, null);
+    const P = "fakesrc num-buffers=5 sizetype=fixed sizemax=100 filltype=pattern-span ! ";
+    const fl2 = [_][*c]const u8{
+        P ++ "filesink location=zig-out/ft1.bin",
+        "filesrc location=zig-out/ft1.bin blocksize=128" ++ S,
+        P ++ "filesink location=zig-out/ft1.bin append=true buffer-mode=unbuffered",
+        "filesrc location=zig-out/ft1.bin blocksize=300" ++ S ++ " can-activate-pull=true num-buffers=4",
+        P ++ "filesink location=zig-out/ft2.bin buffer-mode=full buffer-size=150",
+        P ++ "filesink location=zig-out/ft2.bin file-mode=overwrite buffer-mode=line buffer-size=10",
+        "filesrc location=zig-out/ft2.bin blocksize=333" ++ S,
+        "filesrc location=zig-out/does-not-exist.bin" ++ S,
+        "filesrc location=zig-out" ++ S,
+        "filesrc" ++ S,
+        P ++ "filesink",
+        P ++ "filesink location=/proc/nope/x.bin",
+        "filesrc location=zig-out/ft1.bin ! queue ! filesink location=zig-out/ft3.bin",
+    };
+    for (fl2) |p| run(p, null);
+    for ([_][*c]const u8{ "zig-out/ft1.bin", "zig-out/ft2.bin", "zig-out/ft3.bin" }) |f| {
+        var data: [*c]u8 = null;
+        var len: c.gsize = 0;
+        if (c.g_file_get_contents(f, &data, &len, null) != 0) {
+            var sum: u64 = 0;
+            for (0..len) |i| sum = sum *% 31 +% data[i];
+            out("file {s} len={d} sum={d}", .{ z(f), len, sum });
+            c.g_free(data);
+        }
+    }
+    const cwd = c.g_get_current_dir();
+    const uri = c.g_strdup_printf("file://%s/zig-out/ft1.bin", cwd);
+    var err: [*c]c.GError = null;
+    const fs = c.gst_element_make_from_uri(c.GST_URI_SRC, uri, null, &err);
+    out("uri src {d}", .{@intFromBool(fs != null)});
+    if (fs != null) {
+        var loc: [*c]u8 = null;
+        c.g_object_get(fs, "location", &loc, @as(?*anyopaque, null));
+        const got = c.gst_uri_handler_get_uri(@ptrCast(fs));
+        out("uri loc {s} {d}", .{ z(c.g_path_get_basename(loc)), @intFromBool(c.g_strcmp0(got, uri) == 0) });
+        _ = c.gst_object_ref_sink(fs);
+        c.gst_object_unref(fs);
+    }
+    const fk = c.gst_element_make_from_uri(c.GST_URI_SINK, "file://localhost/tmp/x.bin", null, &err);
+    out("uri sink {d}", .{@intFromBool(fk != null)});
+    if (fk != null) {
+        var loc: [*c]u8 = null;
+        c.g_object_get(fk, "location", &loc, @as(?*anyopaque, null));
+        out("uri sink loc {s}", .{z(loc)});
+        _ = c.gst_object_ref_sink(fk);
+        c.gst_object_unref(fk);
+    }
+    const bad = c.gst_element_make_from_uri(c.GST_URI_SINK, "file://relative", null, &err);
+    out("uri bad {d} {s}", .{ @intFromBool(bad != null), if (err != null) z(err[0].message) else "-" });
     out("done", .{});
 }
