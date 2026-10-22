@@ -53,16 +53,18 @@ fn handoff(e: ?*c.GstElement, b: [*c]c.GstBuffer, _: ?*c.GstPad, _: c.gpointer) 
 }
 
 fn hook(bin: ?*c.GstElement) void {
-    var it = c.gst_bin_iterate_sinks(@ptrCast(@alignCast(bin)));
+    var it = c.gst_bin_iterate_recurse(@ptrCast(@alignCast(bin)));
     var v = std.mem.zeroes(c.GValue);
     while (c.gst_iterator_next(it, &v) == c.GST_ITERATOR_OK) {
         const e: ?*c.GstElement = @ptrCast(@alignCast(c.g_value_get_object(&v)));
         const f = c.gst_element_get_factory(e);
-        if (f != null and std.mem.eql(u8, z(@as(*c.GstObject, @ptrCast(@alignCast(f))).name), "fakesink")) {
-            _ = c.g_signal_connect_data(e, "notify::last-message", @ptrCast(&lastMessage), null, null, 0);
+        const fname = if (f != null) z(@as(*c.GstObject, @ptrCast(@alignCast(f))).name) else "";
+        const cls: ?*c.GObjectClass = @ptrCast(@alignCast(@as(*c.GTypeInstance, @ptrCast(@alignCast(e))).g_class));
+        if (c.g_object_class_find_property(cls, "last-message") != null) _ = c.g_signal_connect_data(e, "notify::last-message", @ptrCast(&lastMessage), null, null, 0);
+        if (std.mem.eql(u8, fname, "fakesink") or std.mem.eql(u8, fname, "fakesrc") or std.mem.eql(u8, fname, "identity")) {
             _ = c.g_signal_connect_data(e, "handoff", @ptrCast(&handoff), null, null, 0);
-            _ = c.g_signal_connect_data(e, "preroll-handoff", @ptrCast(&handoff), null, null, 0);
         }
+        if (std.mem.eql(u8, fname, "fakesink")) _ = c.g_signal_connect_data(e, "preroll-handoff", @ptrCast(&handoff), null, null, 0);
         _ = c.g_value_reset(&v);
     }
     c.g_value_unset(&v);
@@ -117,6 +119,7 @@ pub fn run(desc: [*c]const u8, setup: ?*const fn (?*c.GstElement) void) void {
         showMessage(m);
         const t = m[0].type;
         c.gst_mini_object_unref(@ptrCast(m));
+        if (t == c.GST_MESSAGE_ERROR) c.g_usleep(200000);
         if (t == c.GST_MESSAGE_EOS or t == c.GST_MESSAGE_ERROR) break;
     }
     c.gst_object_unref(bus);
@@ -125,8 +128,16 @@ pub fn run(desc: [*c]const u8, setup: ?*const fn (?*c.GstElement) void) void {
     c.gst_object_unref(p);
 }
 
+fn printHandler(msg: [*c]const u8) callconv(.c) void {
+    c.g_mutex_lock(&lock);
+    if (stream == null) stream = c.g_string_new(null);
+    _ = c.g_string_append(stream, msg);
+    c.g_mutex_unlock(&lock);
+}
+
 pub fn main() void {
     c.gst_init(null, null);
+    _ = c.g_set_print_handler(printHandler);
     const S = " ! fakesink silent=false signal-handoffs=true";
     const list = [_][*c]const u8{
         "audiotestsrc num-buffers=3 samplesperbuffer=8 ! audio/x-raw,format=S16LE,rate=8000,channels=1" ++ S,
@@ -142,5 +153,35 @@ pub fn main() void {
         "audiotestsrc num-buffers=3 samplesperbuffer=4 ! fakesink can-activate-pull=true can-activate-push=false",
     };
     for (list) |p| run(p, null);
+    const F = "fakesrc num-buffers=3 silent=false signal-handoffs=true";
+    const fl = [_][*c]const u8{
+        F ++ S,
+        F ++ " sizetype=fixed sizemax=8 filltype=pattern" ++ S,
+        F ++ " sizetype=fixed sizemax=6 filltype=pattern-span" ++ S,
+        F ++ " sizetype=fixed sizemax=5 filltype=zero datarate=10" ++ S,
+        F ++ " sizetype=fixed sizemax=8 filltype=pattern-span data=subbuffer parentsize=20" ++ S,
+        F ++ " sizetype=fixed sizemax=4 filltype=pattern dump=true format=time" ++ S,
+        F ++ " sizetype=fixed sizemax=4 filltype=zero datarate=1000 sync=true" ++ S,
+        F ++ " sizetype=fixed sizemax=4 filltype=zero can-activate-push=false" ++ S ++ " can-activate-pull=true can-activate-push=false",
+        "fakesrc num-buffers=2 sizetype=fixed sizemax=3 filltype=pattern" ++ S ++ " can-activate-pull=true",
+    };
+    for (fl) |p| run(p, null);
+    const A = "audiotestsrc num-buffers=4 samplesperbuffer=4 ! audio/x-raw,rate=4000,channels=1,format=S8 ! identity silent=false";
+    const il = [_][*c]const u8{
+        A ++ S,
+        A ++ " dump=true" ++ S,
+        A ++ " error-after=2" ++ S,
+        A ++ " eos-after=3" ++ S,
+        A ++ " eos-after=3 error-after=2" ++ S,
+        A ++ " datarate=8" ++ S,
+        A ++ " single-segment=true" ++ S,
+        A ++ " check-imperfect-timestamp=true check-imperfect-offset=true" ++ S,
+        "fakesrc num-buffers=3 sizetype=fixed sizemax=4 filltype=zero datarate=8 ! identity silent=false check-imperfect-offset=true check-imperfect-timestamp=true" ++ S,
+        A ++ " drop-buffer-flags=discont" ++ S,
+        A ++ " sync=true" ++ S,
+        A ++ " signal-handoffs=false drop-allocation=true" ++ S,
+        "audiotestsrc num-buffers=3 samplesperbuffer=4 is-live=true ! identity sync=true silent=true ! fakesink",
+    };
+    for (il) |p| run(p, null);
     out("done", .{});
 }

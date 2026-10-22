@@ -5,6 +5,8 @@ const build = @import("build_options");
 
 const elements = .{
     @import("core/capsfilter.zig"),
+    @import("core/fakesrc.zig"),
+    @import("core/identity.zig"),
     @import("core/fakesink.zig"),
 };
 
