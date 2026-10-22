@@ -5,6 +5,7 @@ const build = @import("build_options");
 const streamsynchronizer = @import("playback/streamsynchronizer.zig");
 const playsink = @import("playback/playsink.zig");
 const subtitleoverlay = @import("playback/subtitleoverlay.zig");
+const urisourcebin = @import("playback/urisourcebin.zig");
 
 var init_done: usize = 0;
 
@@ -26,6 +27,7 @@ fn pluginInit(p: ?*c.GstPlugin) callconv(.c) c.gboolean {
     var ok = false;
     ok = add(p, "playsink", c.GST_RANK_NONE, playsink.getType()) or ok;
     ok = add(p, "subtitleoverlay", c.GST_RANK_NONE, subtitleoverlay.getType()) or ok;
+    ok = add(p, "urisourcebin", c.GST_RANK_NONE, urisourcebin.getType()) or ok;
     ok = add(p, "streamsynchronizer", c.GST_RANK_NONE, streamsynchronizer.getType()) or ok;
     return @intFromBool(ok);
 }
