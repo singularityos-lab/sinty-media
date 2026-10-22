@@ -168,6 +168,22 @@ fn watchType(p: ?*c.GstElement) void {
     c.gst_object_unref(t);
 }
 
+fn toSink1(p: ?*c.GstElement) void {
+    const s = c.gst_bin_get_by_name(@ptrCast(@alignCast(p)), "i");
+    const pad = c.gst_element_get_static_pad(s, "sink_1");
+    c.g_object_set(s, "active-pad", pad, @as(?*anyopaque, null));
+    var n: c.guint = 0;
+    c.g_object_get(s, "n-pads", &n, @as(?*anyopaque, null));
+    var act: c.gboolean = 0;
+    c.g_object_get(pad, "active", &act, @as(?*anyopaque, null));
+    out("  n-pads {d} active {d}", .{ n, act });
+    const src = c.gst_element_get_static_pad(s, "src");
+    c.g_object_set(s, "active-pad", src, @as(?*anyopaque, null));
+    c.gst_object_unref(src);
+    c.gst_object_unref(pad);
+    c.gst_object_unref(s);
+}
+
 pub fn main() void {
     c.gst_init(null, null);
     _ = c.g_set_print_handler(printHandler);
@@ -321,6 +337,13 @@ pub fn main() void {
         "fakesrc num-buffers=3 sizetype=fixed sizemax=3000 filltype=zero ! typefind name=t" ++ S,
     };
     for (tf) |p| run(p, watchType);
+    const is = [_][*c]const u8{
+        "input-selector name=i" ++ S ++ " " ++ A4 ++ "i.sink_0 " ++ A4 ++ "i.sink_1",
+        "input-selector name=i sync-streams=false" ++ S ++ " " ++ A4 ++ "i.sink_0 " ++ A4 ++ "i.sink_1",
+        "input-selector name=i cache-buffers=true" ++ S ++ " " ++ A4 ++ "i.sink_0 " ++ A4 ++ "i.sink_1",
+    };
+    for (is) |p| run(p, null);
+    run("input-selector name=i" ++ S ++ " " ++ A4 ++ "i.sink_0 " ++ A4 ++ "i.sink_1", toSink1);
     run(B ++ "output-selector name=s resend-latest=true s.src_0" ++ S ++ " name=a s.src_1" ++ S ++ " name=k", toSecond);
     for ([_][*c]const u8{ "fd://0?size=100", "fd://abc", "file:///x" }) |u| {
         var e: [*c]c.GError = null;
