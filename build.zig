@@ -16,6 +16,7 @@ const libs = [_]Lib{
     .{ .name = "gstapp-1.0", .root = "gst/app.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0" }, .deps = &.{} },
     .{ .name = "gstallocators-1.0", .root = "gst/allocators.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "libdrm" }, .deps = &.{} },
     .{ .name = "gstfft-1.0", .root = "gst/fft.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "m" }, .deps = &.{} },
+    .{ .name = "gstgl-1.0", .root = "gst/gl.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gmodule-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0", "gstreamer-allocators-1.0", "egl", "gl", "wayland-client", "wayland-cursor", "wayland-egl", "x11", "x11-xcb", "xcb", "gudev-1.0", "libdrm", "gbm" }, .deps = &.{}, .dest = "staging" },
     .{ .name = "gstvideo-1.0", .root = "gst/video.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-allocators-1.0", "m" }, .deps = &.{} },
     .{ .name = "gstpbutils-1.0", .root = "gst/pbutils.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-tag-1.0", "gstreamer-audio-1.0", "gstreamer-video-1.0" }, .deps = &.{} },
 };
@@ -41,6 +42,7 @@ fn gstModule(b: *std.Build, root: []const u8, target: std.Build.ResolvedTarget, 
         .link_libc = true,
     });
     mod.addIncludePath(.{ .cwd_relative = gstIncludeDir(b) });
+    mod.addIncludePath(.{ .cwd_relative = b.pathJoin(&.{ pkgVar(b, "libdir", "/usr/lib"), "gstreamer-1.0", "include" }) });
     mod.addIncludePath(b.path("gst"));
     for (system) |s| mod.linkSystemLibrary(s, .{});
     return mod;

@@ -39,6 +39,11 @@
 #include <gst/video/video-tile.h>
 #include <gst/allocators/allocators.h>
 #include <gst/fft/fft.h>
+#include <gst/gl/gl.h>
+#include <gst/gl/gstglfuncs.h>
+#include <gst/gl/egl/egl.h>
+#include <gst/gl/x11/x11.h>
+#include <gst/gl/wayland/wayland.h>
 #include <gst/pbutils/pbutils.h>
 #include <gst/pbutils/gstaudiovisualizer.h>
 #include <sys/ioctl.h>
