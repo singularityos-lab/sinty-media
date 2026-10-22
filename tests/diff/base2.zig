@@ -23,5 +23,16 @@ pub fn main() void {
         T ++ "audio/x-raw,format=F64LE,rate=8000,channels=1 ! audioconvert noise-shaping=high dithering=tpdf-hf ! audio/x-raw,format=S16LE" ++ S,
     };
     for (ac) |p| core.run(p, null);
+    const ar = [_][*c]const u8{
+        T ++ "audio/x-raw,format=S16LE,rate=8000,channels=1 ! audioresample ! audio/x-raw,rate=16000" ++ S,
+        T ++ "audio/x-raw,format=F32LE,rate=8000,channels=2 ! audioresample ! audio/x-raw,rate=11025" ++ S,
+        T ++ "audio/x-raw,format=S16LE,rate=48000,channels=1 ! audioresample quality=10 ! audio/x-raw,rate=44100" ++ S,
+        T ++ "audio/x-raw,format=S32LE,rate=8000,channels=1 ! audioresample resample-method=linear ! audio/x-raw,rate=22050" ++ S,
+        T ++ "audio/x-raw,format=F64LE,rate=22050,channels=1 ! audioresample resample-method=cubic sinc-filter-mode=full ! audio/x-raw,rate=8000" ++ S,
+        T ++ "audio/x-raw,format=S16LE,rate=8000,channels=1 ! audioresample ! audio/x-raw,rate=8000" ++ S,
+        T ++ "audio/x-raw,format=S16LE,rate=8000,channels=2 ! audioconvert ! audioresample ! audio/x-raw,rate=32000,channels=1,format=F32LE" ++ S,
+        T ++ "audio/x-raw,format=S16LE,rate=16000,channels=1,layout=non-interleaved ! audioresample ! audio/x-raw,rate=8000" ++ S,
+    };
+    for (ar) |p| core.run(p, null);
     ins.out("done", .{});
 }
