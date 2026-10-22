@@ -133,7 +133,7 @@ pub fn run(desc: [*c]const u8, setup: ?*const fn (?*c.GstElement) void) void {
     c.gst_object_unref(p);
 }
 
-fn printHandler(msg: [*c]const u8) callconv(.c) void {
+pub fn printHandler(msg: [*c]const u8) callconv(.c) void {
     c.g_mutex_lock(&lock);
     if (stream == null) stream = c.g_string_new(null);
     _ = c.g_string_append(stream, msg);
