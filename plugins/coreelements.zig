@@ -17,6 +17,7 @@ const elements = .{
     @import("core/streamiddemux.zig"),
     @import("core/fdsrc.zig"),
     @import("core/fdsink.zig"),
+    @import("core/dataurisrc.zig"),
     @import("core/fakesink.zig"),
 };
 

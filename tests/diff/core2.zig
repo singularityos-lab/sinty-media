@@ -247,6 +247,15 @@ pub fn main() void {
     _ = c.close(cfd);
     _ = c.close(dfd);
     run(P ++ "fdsink fd=999", null);
+    const du = [_][*c]const u8{
+        "dataurisrc uri=\"data:,Hello%20World\"" ++ S ++ " dump=true",
+        "dataurisrc uri=\"data:text/plain;charset=iso-8859-1,caf%E9\"" ++ S ++ " dump=true",
+        "dataurisrc uri=\"data:;base64,SGVsbG8gYmFzZTY0\"" ++ S ++ " dump=true",
+        "dataurisrc uri=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==\" blocksize=20" ++ S,
+        "dataurisrc uri=\"nodata\"" ++ S,
+        "dataurisrc" ++ S,
+    };
+    for (du) |p| run(p, null);
     for ([_][*c]const u8{ "fd://0?size=100", "fd://abc", "file:///x" }) |u| {
         var e: [*c]c.GError = null;
         const el = c.gst_element_make_from_uri(c.GST_URI_SRC, u, null, &e);
