@@ -15,3 +15,7 @@ pub fn assertFail(comptime file: []const u8, line: c_int, comptime func: []const
     c.g_assertion_message_expr(DOMAIN, "../gst-libs/gst/gl/" ++ file, line, @as([*c]const u8, func ++ ""), expr);
     unreachable;
 }
+
+pub fn elementMessage(el: anytype, kind: c.GstMessageType, domain: c.GQuark, code: c.gint, text: [*c]u8, debug: [*c]u8, comptime file: []const u8, comptime func: []const u8, line: c.gint) void {
+    c.gst_element_message_full(@ptrCast(@alignCast(el)), kind, domain, code, text, debug, "../gst-libs/gst/gl/" ++ file, func ++ "", line);
+}

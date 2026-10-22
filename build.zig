@@ -44,6 +44,14 @@ fn gstModule(b: *std.Build, root: []const u8, target: std.Build.ResolvedTarget, 
     mod.addIncludePath(.{ .cwd_relative = gstIncludeDir(b) });
     mod.addIncludePath(.{ .cwd_relative = b.pathJoin(&.{ pkgVar(b, "libdir", "/usr/lib"), "gstreamer-1.0", "include" }) });
     mod.addIncludePath(b.path("gst"));
+    for ([_][]const u8{ "libdrm", "gudev-1.0" }) |pc| {
+        var code: u8 = 0;
+        const out = b.runAllowFail(&.{ "pkg-config", "--cflags-only-I", pc }, &code, .ignore) catch continue;
+        var it = std.mem.tokenizeAny(u8, out, " \n");
+        while (it.next()) |flag| {
+            if (std.mem.startsWith(u8, flag, "-I")) mod.addIncludePath(.{ .cwd_relative = flag[2..] });
+        }
+    }
     for (system) |s| mod.linkSystemLibrary(s, .{});
     return mod;
 }
@@ -127,6 +135,13 @@ pub fn build(b: *std.Build) void {
 
     for ([_][]const u8{"fft1"}) |name| {
         const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-fft-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
+        m.addImport("c", c_mod);
+        const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
+        diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+    }
+
+    for ([_][]const u8{"gl1"}) |name| {
+        const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-gl-1.0", "gstreamer-video-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
         m.addImport("c", c_mod);
         const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
         diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);

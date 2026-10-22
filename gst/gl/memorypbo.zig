@@ -275,7 +275,7 @@ fn copy(b: OBase, offset: c.gssize, size: c.gssize) callconv(.c) OBase {
     const ba: [*c]c.GstGLBaseMemoryAllocator = @ptrCast(@alignCast(allocator));
     var params = c.GstAllocationParams{ .flags = 0, .@"align" = src[0].mem.mem.mem.@"align", .prefix = 0, .padding = 0, ._gst_reserved = std.mem.zeroes([4]c.gpointer) };
     if (src[0].mem.tex_target == c.GST_GL_TEXTURE_TARGET_EXTERNAL_OES) return null;
-    if (offset > 0 or size < @as(c.gssize, @bitCast(src[0].mem.mem.mem.size))) return @ptrCast(@alignCast(ba[0].fallback_mem_copy.?(@ptrCast(src), offset, size)));
+    if (offset > 0 or @as(c.gsize, @bitCast(size)) < src[0].mem.mem.mem.size) return @ptrCast(@alignCast(ba[0].fallback_mem_copy.?(@ptrCast(src), offset, size)));
     const dest: OPbo = @ptrCast(@alignCast(c.g_malloc0(@sizeOf(Pbo))));
     memory.gst_gl_memory_init(@ptrCast(dest), allocator, null, src[0].mem.mem.context, src[0].mem.tex_target, src[0].mem.tex_format, &params, &src[0].mem.info, src[0].mem.plane, &src[0].mem.valign, null, null);
     if (!flagSet(src, NEED_UPLOAD)) {

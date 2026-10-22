@@ -102,7 +102,7 @@ fn configToStructure(dpy: c.EGLDisplay, cfg: c.EGLConfig) ?*c.GstStructure {
     const s = c.gst_structure_new("gst-gl-context-config", config.name("PLATFORM"), c.gst_gl_platform_get_type(), @as(c.guint, c.GST_GL_PLATFORM_EGL), @as([*c]const u8, null));
     var val: c.EGLint = 0;
     const head = [_]Attr{
-        .{ .attr = c.EGL_CONFIG_ID, .name = "CONFIG_ID", .kind = .int },
+        .{ .attr = c.EGL_CONFIG_ID, .name = "CONFIG_ID", .kind = .uint },
         .{ .attr = c.EGL_NATIVE_VISUAL_ID, .name = "NATIVE_VISUAL_ID", .kind = .uint },
         .{ .attr = c.EGL_NATIVE_RENDERABLE, .name = "NATIVE_RENDERABLE", .kind = .boolean },
         .{ .attr = c.EGL_CONFORMANT, .name = "CONFORMANT_API", .kind = .api },

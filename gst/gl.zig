@@ -16,9 +16,20 @@ comptime {
     _ = @import("gl/renderbuffer.zig");
     _ = @import("gl/buffer.zig");
     _ = @import("gl/memorypbo.zig");
+    _ = @import("gl/glsl.zig");
+    _ = @import("gl/shaderstrings.zig");
+    _ = @import("gl/glslstage.zig");
+    _ = @import("gl/shader.zig");
+    _ = @import("gl/syncmeta.zig");
+    _ = @import("gl/bufferpool.zig");
+    _ = @import("gl/overlay.zig");
+    _ = @import("gl/basefilter.zig");
+    _ = @import("gl/filter.zig");
     _ = @import("gl/egl/error.zig");
     _ = @import("gl/egl/display.zig");
     _ = @import("gl/egl/image.zig");
     _ = @import("gl/egl/memory.zig");
     _ = @import("gl/egl/cache.zig");
+    _ = @import("gl/x11/display.zig");
+    _ = @import("gl/wayland/display.zig");
 }
