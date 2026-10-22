@@ -20,6 +20,7 @@ const elements = .{
     @import("core/dataurisrc.zig"),
     @import("core/outputselector.zig"),
     @import("core/concat.zig"),
+    @import("core/typefind.zig"),
     @import("core/fakesink.zig"),
 };
 

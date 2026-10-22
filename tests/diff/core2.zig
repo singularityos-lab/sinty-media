@@ -156,6 +156,18 @@ fn toSecond(p: ?*c.GstElement) void {
     c.gst_object_unref(s);
 }
 
+fn haveType(_: ?*c.GstElement, prob: c.guint, caps: [*c]c.GstCaps, _: c.gpointer) callconv(.c) void {
+    const t = c.gst_caps_to_string(caps);
+    sout("  have-type {d} {s}", .{ prob, z(t) });
+    c.g_free(t);
+}
+
+fn watchType(p: ?*c.GstElement) void {
+    const t = c.gst_bin_get_by_name(@ptrCast(@alignCast(p)), "t");
+    _ = c.g_signal_connect_data(t, "have-type", @ptrCast(&haveType), null, null, 0);
+    c.gst_object_unref(t);
+}
+
 pub fn main() void {
     c.gst_init(null, null);
     _ = c.g_set_print_handler(printHandler);
@@ -292,6 +304,23 @@ pub fn main() void {
         "concat name=c" ++ S ++ " fakesrc num-buffers=2 sizetype=fixed sizemax=10 filltype=zero ! c.sink_0 " ++ A4 ++ "c.sink_1",
     };
     for (cc) |p| run(p, null);
+    const png = "\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDATx\xdac\xfc\xcf\xc0P\x0f\x00\x04\x85\x01\x80\x84\xa9\x8c!\x00\x00\x00\x00IEND\xaeB`\x82";
+    _ = c.g_file_set_contents("zig-out/tf.png", png, png.len, null);
+    _ = c.g_file_set_contents("zig-out/tf.dat", png, png.len, null);
+    _ = c.g_file_set_contents("zig-out/tf0.dat", "", 0, null);
+    const tf = [_][*c]const u8{
+        "filesrc location=zig-out/tf.png ! typefind name=t" ++ S,
+        "filesrc location=zig-out/tf.dat ! typefind name=t" ++ S,
+        "filesrc location=zig-out/tf.png ! queue ! typefind name=t" ++ S,
+        "filesrc location=zig-out/ft1.bin ! queue ! typefind name=t" ++ S,
+        "filesrc location=zig-out/ft1.bin ! typefind name=t" ++ S,
+        "filesrc location=zig-out/tf0.dat ! typefind name=t" ++ S,
+        "filesrc location=zig-out/tf.png ! typefind name=t minimum=100" ++ S,
+        "filesrc location=zig-out/tf.png ! queue ! typefind name=t force-caps=video/x-foo" ++ S,
+        A4 ++ "typefind name=t" ++ S,
+        "fakesrc num-buffers=3 sizetype=fixed sizemax=3000 filltype=zero ! typefind name=t" ++ S,
+    };
+    for (tf) |p| run(p, watchType);
     run(B ++ "output-selector name=s resend-latest=true s.src_0" ++ S ++ " name=a s.src_1" ++ S ++ " name=k", toSecond);
     for ([_][*c]const u8{ "fd://0?size=100", "fd://abc", "file:///x" }) |u| {
         var e: [*c]c.GError = null;
