@@ -150,6 +150,7 @@ pub fn build(b: *std.Build) void {
         .{ .name = "libvisual", .root = "plugins/libvisual.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-audio-1.0", "gstreamer-video-1.0", "gstreamer-pbutils-1.0", "libvisual-0.4" } },
         .{ .name = "ximagesink", .root = "plugins/ximagesink.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0", "x11", "xext", "xi" } },
         .{ .name = "xvimagesink", .root = "plugins/xvimagesink.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0", "x11", "xext", "xi", "xv" } },
+        .{ .name = "video4linux2", .root = "plugins/video4linux2.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0", "gudev-1.0" } },
         .{ .name = "sintymedia", .root = "plugins/sintymedia.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-allocators-1.0" } },
         .{ .name = "app", .root = "plugins/app.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-app-1.0" } },
     };
@@ -242,7 +243,7 @@ pub fn build(b: *std.Build) void {
         diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
     }
 
-    for ([_][]const u8{ "xi1", "md1" }) |name| {
+    for ([_][]const u8{ "xi1", "md1", "v4l1", "cam1" }) |name| {
         const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-gl-1.0", "gstreamer-video-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0", "x11" });
         m.addImport("c", c_mod);
         const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });

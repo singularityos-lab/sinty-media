@@ -81,7 +81,7 @@ fn enumValues(t: c.GType) void {
     }
 }
 
-fn describe(o: ?*c.GObject) void {
+pub fn describe(o: ?*c.GObject) void {
     const t = @as(*c.GTypeInstance, @ptrCast(@alignCast(o))).g_class[0].g_type;
     var p = t;
     while (p != 0) : (p = c.g_type_parent(p)) out("  type {s}", .{z(c.g_type_name(p))});
