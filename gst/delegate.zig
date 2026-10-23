@@ -68,10 +68,15 @@ pub fn camera(e: [*c]c.GstElement, device_class: [*c]const u8) [*c]c.GstElement 
     c.g_object_get(e, "device", &dev, @as(?*anyopaque, null));
     if (dev == null) return e;
     defer c.g_free(dev);
-    const quoted = c.g_shell_quote(dev);
-    defer c.g_free(quoted);
-    const desc = c.g_strdup_printf("v4l2src device=%s", quoted);
-    defer c.g_free(desc);
+    var buf: [1024]u8 = undefined;
+    var w: std.Io.Writer = .fixed(&buf);
+    w.writeAll("v4l2src device=\"") catch return e;
+    for (std.mem.span(dev)) |ch| {
+        if (ch == '"' or ch == '\\') w.writeByte('\\') catch return e;
+        w.writeByte(ch) catch return e;
+    }
+    w.writeAll("\"\x00") catch return e;
+    const desc: [*c]const u8 = &buf;
     const name = c.gst_object_get_name(@ptrCast(e));
     defer c.g_free(name);
     const proxy = c.gst_element_factory_make("sintymediasrc", name) orelse return e;

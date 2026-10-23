@@ -269,9 +269,13 @@ fn startSession(key: []u8, source: []const u8, filter: []const u8, cl: *Client) 
             failure(cl.fd, c.g_quark_to_string(err[0].domain), err[0].code, err[0].message, null);
             c.g_clear_error(&err);
         } else failure(cl.fd, "gst-core-error-quark", c.GST_CORE_ERROR_MISSING_PLUGIN, "could not build the delegated source", null);
+        gpa.free(key);
         return null;
     };
-    const s = gpa.create(Session) catch return null;
+    const s = gpa.create(Session) catch {
+        gpa.free(key);
+        return null;
+    };
     s.* = .{ .key = key, .pipeline = pipe, .live = false };
     c.g_mutex_init(&s.lock);
     c.g_cond_init(&s.cond);
@@ -408,10 +412,7 @@ fn open(cl: *Client, body: []const u8) bool {
             failure(cl.fd, "gst-resource-error-quark", c.GST_RESOURCE_ERROR_BUSY, "too many clients on this source", null);
             return false;
         }
-    } else s = startSession(key, parts[0], parts[1], cl) orelse {
-        gpa.free(key);
-        return false;
-    };
+    } else s = startSession(key, parts[0], parts[1], cl) orelse return false;
     const ss = s.?;
     c.g_mutex_lock(&ss.lock);
     for (&ss.seats, 0..) |*o, i| {
