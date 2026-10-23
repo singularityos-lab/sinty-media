@@ -100,7 +100,9 @@ fn scannerCandidates() [4][*c]u8 {
 fn tryHelper(l: *Loader, location: [*c]u8) bool {
     var argv = [_][*c]u8{ location, @constCast("-l"), core.executablePath(), null };
     var err: [*c]c.GError = null;
-    _ = c.g_spawn_async_with_pipes(null, @ptrCast(&argv), null, c.G_SPAWN_DO_NOT_REAP_CHILD, null, null, &l.pid, &l.fd_w, &l.fd_r, null, &err);
+    const env = c.g_environ_setenv(c.g_get_environ(), "GST_REGISTRY_FORK", "no", 1);
+    defer c.g_strfreev(env);
+    _ = c.g_spawn_async_with_pipes(null, @ptrCast(&argv), env, c.G_SPAWN_DO_NOT_REAP_CHILD, null, null, &l.pid, &l.fd_w, &l.fd_r, null, &err);
     if (err != null) {
         c.g_error_free(err);
         return false;

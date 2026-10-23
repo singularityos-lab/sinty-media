@@ -1,7 +1,10 @@
 const std = @import("std");
 const c = @import("c").c;
 const d = @import("plugdump.zig");
-const X = @cImport(@cInclude("X11/Xlib.h"));
+const X = @cImport({
+    @cUndef("_FORTIFY_SOURCE");
+    @cInclude("X11/Xlib.h");
+});
 
 var xid: u64 = 0;
 

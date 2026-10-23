@@ -94,6 +94,7 @@ pub export fn gst_debug_category_set_threshold(cat: [*c]Category, level: Level) 
     if (level > _gst_debug_min) {
         _gst_debug_enabled = 1;
         _gst_debug_min = level;
+        @import("interpose.zig").publishDebug();
     }
     threshold(cat).store(@intCast(level), .monotonic);
 }
@@ -203,7 +204,10 @@ pub export fn gst_debug_set_threshold_from_string(list: [*c]const u8, reset: c.g
             if (name[0] == 0) continue;
             const level = parseLevel(kv[1]) orelse continue;
             gst_debug_set_threshold_for_name(name, level);
-            if (level > _gst_debug_min) _gst_debug_min = level;
+            if (level > _gst_debug_min) {
+                _gst_debug_min = level;
+                @import("interpose.zig").publishDebug();
+            }
         } else if (parseLevel(item)) |level| {
             gst_debug_set_default_threshold(level);
         }
@@ -374,6 +378,7 @@ pub export fn gst_debug_get_color_mode() c.GstDebugColorMode {
 pub export fn gst_debug_set_active(active: c.gboolean) void {
     _gst_debug_enabled = active;
     _gst_debug_min = if (active != 0) c.GST_LEVEL_COUNT else c.GST_LEVEL_NONE;
+    @import("interpose.zig").publishDebug();
 }
 
 pub export fn gst_debug_is_active() c.gboolean {

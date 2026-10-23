@@ -1,4 +1,5 @@
 pub const v = @cImport({
+    @cUndef("_FORTIFY_SOURCE");
     @cDefine("_GNU_SOURCE", "1");
     @cInclude("linux/videodev2.h");
     @cInclude("sys/ioctl.h");

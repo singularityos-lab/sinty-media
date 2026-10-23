@@ -1,4 +1,5 @@
 pub const p = @cImport({
+    @cUndef("_FORTIFY_SOURCE");
     @cDefine("_GNU_SOURCE", "1");
     @cDefine("__GI_SCANNER__", "1");
     @cDefine("GLIB_VERSION_MIN_REQUIRED", "(G_ENCODE_VERSION (2, 40))");

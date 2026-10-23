@@ -77,16 +77,17 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "run tests");
 
     const config = b.addOptions();
-    config.addOption([]const u8, "plugin_dir", b.option([]const u8, "plugin-dir", "system plugin directory") orelse pkgVar(b, "pluginsdir", "/usr/lib/gstreamer-1.0"));
+    const flat = b.option(bool, "flat-libdir", "install layout with /usr/lib and /usr/libexec, as on Sinty OS") orelse false;
+    config.addOption([]const u8, "plugin_dir", b.option([]const u8, "plugin-dir", "system plugin directory") orelse if (flat) "/usr/lib/gstreamer-1.0" else pkgVar(b, "pluginsdir", "/usr/lib/gstreamer-1.0"));
     config.addOption([]const u8, "locale_dir", b.option([]const u8, "locale-dir", "gettext locale directory") orelse "/usr/share/locale");
     config.addOption([]const u8, "data_dir", b.option([]const u8, "data-dir", "system data directory") orelse "/usr/share");
     config.addOption([]const u8, "install_helper", b.option([]const u8, "install-helper", "plugin installation helper") orelse "/usr/libexec/gst-install-plugins-helper");
-    config.addOption([]const u8, "scanner_dir", b.option([]const u8, "scanner-dir", "directory of gst-plugin-scanner") orelse pkgVar(b, "pluginscannerdir", "/usr/libexec/gstreamer-1.0"));
+    config.addOption([]const u8, "scanner_dir", b.option([]const u8, "scanner-dir", "directory of gst-plugin-scanner") orelse if (flat) "/usr/libexec/gstreamer-1.0" else pkgVar(b, "pluginscannerdir", "/usr/libexec/gstreamer-1.0"));
 
-    const prefix = pkgVar(b, "prefix", "/usr");
-    const libexec = pkgVar(b, "libexecdir", "/usr/libexec");
+    const prefix = if (flat) "/usr" else pkgVar(b, "prefix", "/usr");
+    const libexec = if (flat) "/usr/libexec" else pkgVar(b, "libexecdir", "/usr/libexec");
     config.addOption([]const u8, "ptp_helper", b.option([]const u8, "ptp-helper", "installed gst-ptp-helper") orelse b.pathJoin(&.{ libexec, "gstreamer-1.0", "gst-ptp-helper" }));
-    config.addOption([]const u8, "plugin_subdir", relativeTo(prefix, pkgVar(b, "libdir", "/usr/lib")));
+    config.addOption([]const u8, "plugin_subdir", relativeTo(prefix, if (flat) "/usr/lib" else pkgVar(b, "libdir", "/usr/lib")));
     config.addOption([]const u8, "helper_subdir", relativeTo(prefix, libexec));
 
     for (libs) |l| {
@@ -112,8 +113,8 @@ pub fn build(b: *std.Build) void {
 
     const plugin_opts = b.addOptions();
     plugin_opts.addOption([]const u8, "package", b.option([]const u8, "plugin-package", "package name shown by plugins") orelse "sinty-media");
-    plugin_opts.addOption([]const u8, "gio_module_dir", pkgVarOf(b, "gio-2.0", "giomoduledir", "/usr/lib/gio/modules"));
-    plugin_opts.addOption([]const u8, "gio_prefix", pkgVarOf(b, "gio-2.0", "prefix", "/usr"));
+    plugin_opts.addOption([]const u8, "gio_module_dir", if (flat) "/usr/lib/gio/modules" else pkgVarOf(b, "gio-2.0", "giomoduledir", "/usr/lib/gio/modules"));
+    plugin_opts.addOption([]const u8, "gio_prefix", if (flat) "/usr" else pkgVarOf(b, "gio-2.0", "prefix", "/usr"));
     plugin_opts.addOption([]const u8, "origin", b.option([]const u8, "plugin-origin", "origin shown by plugins") orelse "https://sinty.dev");
     const plugins = [_]struct { name: []const u8, root: []const u8, system: []const []const u8 }{
         .{ .name = "coretracers", .root = "plugins/coretracers.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0" } },

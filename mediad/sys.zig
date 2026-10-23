@@ -1,4 +1,5 @@
 pub const s = @cImport({
+    @cUndef("_FORTIFY_SOURCE");
     @cDefine("_GNU_SOURCE", "1");
     @cInclude("sys/socket.h");
     @cInclude("sys/un.h");

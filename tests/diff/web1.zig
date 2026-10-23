@@ -1,5 +1,6 @@
 const std = @import("std");
 const c = @cImport({
+    @cUndef("_FORTIFY_SOURCE");
     @cInclude("web-import.h");
 });
 

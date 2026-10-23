@@ -173,6 +173,7 @@ fn post(_: ?*c.GOptionContext, _: ?*c.GOptionGroup, _: c.gpointer, _: [*c][*c]c.
     _ = c.g_type_class_ref(c.gst_param_spec_fraction_get_type());
     _ = c.gst_parse_context_get_type();
     @import("plugin.zig").initialize();
+    @import("interpose.zig").publish();
     _ = @import("plugin.zig").gst_plugin_register_static(1, 28, "staticelements", "core elements linked into the GStreamer library", registerCore, "1.28.2", "LGPL", "gstreamer", "sinty-media", "https://sinty.dev");
     ready.store(true, .release);
     initStaticPlugins();
