@@ -74,6 +74,7 @@ fn rtpBuffers() void {
     while (c.gst_rtp_buffer_get_extension_onebyte_header(&rtp, 1, nth, &d, &sz) != 0) : (nth += 1) hex("one id1", @ptrCast(d), sz);
     out("  missing {d}", .{c.gst_rtp_buffer_get_extension_onebyte_header(&rtp, 5, 0, &d, &sz)});
     c.gst_rtp_buffer_unmap(&rtp);
+    _ = c.gst_buffer_memset(b, c.gst_buffer_get_size(b) - 4, 0, 3);
     rtpHeader("b", b);
     bufHex("raw", b);
     _ = c.gst_rtp_buffer_map(b, c.GST_MAP_READ, &rtp);
