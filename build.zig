@@ -150,12 +150,15 @@ pub fn build(b: *std.Build) void {
         .{ .name = "libvisual", .root = "plugins/libvisual.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-audio-1.0", "gstreamer-video-1.0", "gstreamer-pbutils-1.0", "libvisual-0.4" } },
         .{ .name = "ximagesink", .root = "plugins/ximagesink.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0", "x11", "xext", "xi" } },
         .{ .name = "xvimagesink", .root = "plugins/xvimagesink.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0", "x11", "xext", "xi", "xv" } },
+        .{ .name = "sintymedia", .root = "plugins/sintymedia.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-allocators-1.0" } },
         .{ .name = "app", .root = "plugins/app.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-app-1.0" } },
     };
+    const proto_mod = b.createModule(.{ .root_source_file = b.path("mediad/proto.zig"), .target = target, .optimize = optimize, .link_libc = true });
     const plugin_step = b.step("plugins", "build the element plugins");
     for (plugins) |pl| {
         const m = gstModule(b, pl.root, target, optimize, pl.system);
         m.addOptions("build_options", plugin_opts);
+        m.addImport("mediad", proto_mod);
         const lib = b.addLibrary(.{ .name = b.fmt("gst{s}", .{pl.name}), .linkage = .dynamic, .root_module = m, .use_llvm = true });
         const inst = b.addInstallArtifact(lib, .{ .dest_dir = .{ .override = .{ .custom = "plugins" } } });
         plugin_step.dependOn(&inst.step);
@@ -239,7 +242,7 @@ pub fn build(b: *std.Build) void {
         diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
     }
 
-    for ([_][]const u8{"xi1"}) |name| {
+    for ([_][]const u8{ "xi1", "md1" }) |name| {
         const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-gl-1.0", "gstreamer-video-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0", "x11" });
         m.addImport("c", c_mod);
         const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
@@ -272,6 +275,15 @@ pub fn build(b: *std.Build) void {
         m.addImport("c", c_mod);
         const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
         diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+    }
+
+    {
+        const m = gstModule(b, "mediad/main.zig", target, optimize, &.{ "gstreamer-app-1.0", "gstreamer-allocators-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
+        m.addImport("c", c_mod);
+        const exe = b.addExecutable(.{ .name = "sinty-mediad", .root_module = m, .use_llvm = true });
+        const inst = b.addInstallArtifact(exe, .{});
+        b.step("mediad", "build the session media service").dependOn(&inst.step);
+        b.getInstallStep().dependOn(&inst.step);
     }
 
     {

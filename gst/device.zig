@@ -9,6 +9,7 @@ const feature = @import("pluginfeature.zig");
 const plugin = @import("plugin.zig");
 const registry = @import("registry.zig");
 const regcache = @import("regcache.zig");
+const delegate = @import("delegate.zig");
 
 comptime {
     @import("abi.zig").check(@This());
@@ -177,7 +178,7 @@ pub export fn gst_device_create_element(d: [*c]Device, name: [*c]const u8) [*c]E
     if (!check.that(isDevice(d), "gst_device_create_element", "GST_IS_DEVICE (device)")) return null;
     const e = if (k.create_element) |f| f(d, name) else null;
     if (e != null and c.g_object_is_floating(e) == 0) c.g_log("GStreamer", c.G_LOG_LEVEL_CRITICAL, "The created element should be floating, this is probably caused by faulty bindings");
-    return e;
+    return delegate.camera(e, dpriv(d).device_class);
 }
 
 pub export fn gst_device_get_caps(d: [*c]Device) [*c]c.GstCaps {
