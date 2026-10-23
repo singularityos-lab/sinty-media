@@ -3,3 +3,4 @@ zig-out/
 *.a
 *.so
 *.o
+zig-img/
