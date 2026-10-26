@@ -111,6 +111,10 @@ pub fn build(b: *std.Build) void {
         test_step.dependOn(&b.addRunArtifact(t).step);
     }
 
+    const vp9_mod = b.createModule(.{ .root_source_file = b.path("plugins/va/vp9.zig"), .target = target, .optimize = optimize });
+    for ([_][]const u8{ "clip-vp9.webm", "clip-vp9-420.webm" }) |clip| vp9_mod.addAnonymousImport(clip, .{ .root_source_file = b.path(b.fmt("tests/data/{s}", .{clip})) });
+    test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = vp9_mod, .use_llvm = true })).step);
+
     const plugin_opts = b.addOptions();
     plugin_opts.addOption([]const u8, "package", b.option([]const u8, "plugin-package", "package name shown by plugins") orelse "sinty-media");
     plugin_opts.addOption([]const u8, "gio_module_dir", if (flat) "/usr/lib/gio/modules" else pkgVarOf(b, "gio-2.0", "giomoduledir", "/usr/lib/gio/modules"));
@@ -153,6 +157,7 @@ pub fn build(b: *std.Build) void {
         .{ .name = "xvimagesink", .root = "plugins/xvimagesink.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0", "x11", "xext", "xi", "xv" } },
         .{ .name = "video4linux2", .root = "plugins/video4linux2.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0", "gudev-1.0" } },
         .{ .name = "sintymedia", .root = "plugins/sintymedia.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-allocators-1.0" } },
+        .{ .name = "va", .root = "plugins/va.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0", "libva", "libva-drm" } },
         .{ .name = "app", .root = "plugins/app.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-app-1.0" } },
     };
     const proto_mod = b.createModule(.{ .root_source_file = b.path("mediad/proto.zig"), .target = target, .optimize = optimize, .link_libc = true });

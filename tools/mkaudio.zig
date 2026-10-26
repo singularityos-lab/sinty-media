@@ -10,6 +10,7 @@ const jobs = [_]Job{
     .{ .name = "tone.alaw", .pipe = "audiotestsrc num-buffers=20 samplesperbuffer=800 freq=700 ! audio/x-raw,format=S16LE,rate=8000,channels=1 ! alawenc ! filesink location=" },
     .{ .name = "clip.webm", .pipe = "videotestsrc num-buffers=30 pattern=smpte ! video/x-raw,width=64,height=48,framerate=15/1 ! vp8enc deadline=1 keyframe-max-dist=10 ! m. audiotestsrc num-buffers=40 samplesperbuffer=960 freq=440 ! audio/x-raw,rate=48000,channels=1 ! opusenc ! m. webmmux name=m ! filesink location=" },
     .{ .name = "clip-vp9.webm", .pipe = "videotestsrc num-buffers=30 pattern=ball ! video/x-raw,width=64,height=48,framerate=15/1 ! vp9enc deadline=1 keyframe-max-dist=10 ! webmmux ! filesink location=" },
+    .{ .name = "clip-vp9-420.webm", .pipe = "videotestsrc num-buffers=30 pattern=ball ! video/x-raw,format=I420,width=64,height=48,framerate=15/1 ! vp9enc deadline=1 keyframe-max-dist=10 ! webmmux ! filesink location=" },
 };
 
 pub fn main() !void {
