@@ -676,9 +676,25 @@ fn listen() c_int {
     return fd;
 }
 
+fn preferHardware() void {
+    if (c.g_getenv("SINTY_MEDIAD_SOFTWARE") != null) return;
+    const list = c.gst_element_factory_list_get_elements(c.GST_ELEMENT_FACTORY_TYPE_DECODER | c.GST_ELEMENT_FACTORY_TYPE_MEDIA_VIDEO, c.GST_RANK_NONE);
+    defer c.gst_plugin_feature_list_free(list);
+    var it = list;
+    while (it) |node| : (it = node.*.next) {
+        const f: *c.GstElementFactory = @ptrCast(@alignCast(node.*.data));
+        const klass = c.gst_element_factory_get_metadata(f, c.GST_ELEMENT_METADATA_KLASS) orelse continue;
+        if (c.g_strrstr(klass, "Hardware") == null) continue;
+        const feature: *c.GstPluginFeature = @ptrCast(f);
+        c.gst_plugin_feature_set_rank(feature, c.GST_RANK_PRIMARY + 64);
+        note("hardware decoder preferred: %s", c.gst_object_get_name(@ptrCast(@alignCast(feature))));
+    }
+}
+
 pub fn main(init: std.process.Init) u8 {
     c.gst_init(null, null);
     cat = c._gst_debug_category_new("sinty-mediad", 0, "session media service");
+    preferHardware();
     const n = S.readlink("/proc/self/exe", &self_path, self_path.len - 1);
     if (n <= 0) return 1;
     self_path[@intCast(n)] = 0;
