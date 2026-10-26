@@ -140,7 +140,7 @@ fn profileOf(fr: *const vp9.Frame) ?struct { va: v.VAProfile, rt: c_uint, fourcc
 }
 
 fn freeSurface(p: *const Priv) u32 {
-    for (p.session.surfaces) |sf| {
+    for (p.session.pool()) |sf| {
         if (std.mem.indexOfScalar(u32, &p.refs, sf) == null) return sf;
     }
     return dsp.INVALID;
@@ -192,7 +192,7 @@ fn decodeOne(s: *Self, p: *Priv, fr: *const vp9.Frame, data: []const u8) c.GstFl
             return c.GST_FLOW_ERROR;
         }
         p.refs = .{dsp.INVALID} ** 8;
-        if (!p.session.create(&p.display, prof.va, fr.width, fr.height, prof.rt)) {
+        if (!p.session.create(&p.display, prof.va, fr.width, fr.height, prof.rt, 12)) {
             err(s, c.GST_STREAM_ERROR_DECODE, "could not create the VA decoder", "gst_va_vp9_dec_new_sequence", 230);
             return c.GST_FLOW_ERROR;
         }
@@ -263,7 +263,7 @@ fn output(s: *Self, p: *Priv, surface: u32, width: u32, height: u32, format: c.G
         .{ .data = @ptrCast(vf.data[0].?), .stride = @intCast(vf.info.stride[0]) },
         .{ .data = @ptrCast(vf.data[1].?), .stride = @intCast(vf.info.stride[1]) },
     };
-    if (!dsp.download(&p.display, surface, fourcc, width, height, planes, bpp)) {
+    if (!dsp.download(&p.display, surface, fourcc, 0, 0, width, height, planes, bpp)) {
         err(s, c.GST_STREAM_ERROR_DECODE, "could not read the decoded picture", "gst_va_base_dec_copy_output_buffer", 400);
         return c.GST_FLOW_ERROR;
     }

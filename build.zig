@@ -114,6 +114,9 @@ pub fn build(b: *std.Build) void {
     const vp9_mod = b.createModule(.{ .root_source_file = b.path("plugins/va/vp9.zig"), .target = target, .optimize = optimize });
     for ([_][]const u8{ "clip-vp9.webm", "clip-vp9-420.webm" }) |clip| vp9_mod.addAnonymousImport(clip, .{ .root_source_file = b.path(b.fmt("tests/data/{s}", .{clip})) });
     test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = vp9_mod, .use_llvm = true })).step);
+    const dpb_mod = b.createModule(.{ .root_source_file = b.path("plugins/va/dpb.zig"), .target = target, .optimize = optimize });
+    dpb_mod.addAnonymousImport("clip.h264", .{ .root_source_file = b.path("tests/data/clip.h264") });
+    test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = dpb_mod, .use_llvm = true })).step);
 
     const plugin_opts = b.addOptions();
     plugin_opts.addOption([]const u8, "package", b.option([]const u8, "plugin-package", "package name shown by plugins") orelse "sinty-media");

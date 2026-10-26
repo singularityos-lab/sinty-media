@@ -2,7 +2,7 @@ const std = @import("std");
 const v = @import("vc.zig").v;
 
 pub const INVALID: u32 = 0xffffffff;
-pub const SURFACES = 12;
+pub const SURFACES = 24;
 
 pub const Display = struct {
     fd: c_int,
@@ -53,6 +53,9 @@ pub const Session = struct {
     config: u32 = INVALID,
     context: u32 = INVALID,
     surfaces: [SURFACES]u32 = .{INVALID} ** SURFACES,
+    count: usize = 0,
+    pending: [160]v.VABufferID = undefined,
+    pending_count: usize = 0,
     width: u32 = 0,
     height: u32 = 0,
     format: c_uint = 0,
@@ -61,19 +64,25 @@ pub const Session = struct {
         return s.context != INVALID and s.width == width and s.height == height and s.format == format;
     }
 
-    pub fn create(s: *Session, d: *const Display, profile: v.VAProfile, width: u32, height: u32, format: c_uint) bool {
+    pub fn pool(s: *const Session) []const u32 {
+        return s.surfaces[0..s.count];
+    }
+
+    pub fn create(s: *Session, d: *const Display, profile: v.VAProfile, width: u32, height: u32, format: c_uint, count: usize) bool {
         s.destroy(d);
         var attr = v.VAConfigAttrib{ .type = v.VAConfigAttribRTFormat, .value = format };
         if (v.vaCreateConfig(d.dpy, profile, v.VAEntrypointVLD, &attr, 1, &s.config) != v.VA_STATUS_SUCCESS) {
             s.config = INVALID;
             return false;
         }
-        if (v.vaCreateSurfaces(d.dpy, format, width, height, &s.surfaces, SURFACES, null, 0) != v.VA_STATUS_SUCCESS) {
+        const n = @min(count, SURFACES);
+        if (v.vaCreateSurfaces(d.dpy, format, width, height, &s.surfaces, @intCast(n), null, 0) != v.VA_STATUS_SUCCESS) {
             s.surfaces = .{INVALID} ** SURFACES;
             s.destroy(d);
             return false;
         }
-        if (v.vaCreateContext(d.dpy, s.config, @intCast(width), @intCast(height), v.VA_PROGRESSIVE, &s.surfaces, SURFACES, &s.context) != v.VA_STATUS_SUCCESS) {
+        s.count = n;
+        if (v.vaCreateContext(d.dpy, s.config, @intCast(width), @intCast(height), v.VA_PROGRESSIVE, &s.surfaces, @intCast(n), &s.context) != v.VA_STATUS_SUCCESS) {
             s.context = INVALID;
             s.destroy(d);
             return false;
@@ -86,25 +95,42 @@ pub const Session = struct {
 
     pub fn destroy(s: *Session, d: *const Display) void {
         if (s.context != INVALID) _ = v.vaDestroyContext(d.dpy, s.context);
-        if (s.surfaces[0] != INVALID) _ = v.vaDestroySurfaces(d.dpy, &s.surfaces, SURFACES);
+        if (s.count > 0) _ = v.vaDestroySurfaces(d.dpy, &s.surfaces, @intCast(s.count));
         if (s.config != INVALID) _ = v.vaDestroyConfig(d.dpy, s.config);
         s.* = .{};
     }
 
-    pub fn submit(s: *const Session, d: *const Display, target: u32, buffers: []const Buffer) bool {
-        var ids: [4]v.VABufferID = undefined;
-        var n: usize = 0;
-        defer for (ids[0..n]) |id| {
-            _ = v.vaDestroyBuffer(d.dpy, id);
-        };
+    pub fn begin(s: *Session, d: *const Display, target: u32) bool {
+        s.pending_count = 0;
+        return v.vaBeginPicture(d.dpy, s.context, target) == v.VA_STATUS_SUCCESS;
+    }
+
+    pub fn add(s: *Session, d: *const Display, kind: v.VABufferType, data: []const u8) bool {
+        if (s.pending_count >= s.pending.len) return false;
+        var id: v.VABufferID = undefined;
+        if (v.vaCreateBuffer(d.dpy, s.context, kind, @intCast(data.len), 1, @constCast(data.ptr), &id) != v.VA_STATUS_SUCCESS) return false;
+        s.pending[s.pending_count] = id;
+        s.pending_count += 1;
+        return v.vaRenderPicture(d.dpy, s.context, &id, 1) == v.VA_STATUS_SUCCESS;
+    }
+
+    pub fn end(s: *Session, d: *const Display) bool {
+        const ok = v.vaEndPicture(d.dpy, s.context) == v.VA_STATUS_SUCCESS;
+        for (s.pending[0..s.pending_count]) |id| _ = v.vaDestroyBuffer(d.dpy, id);
+        s.pending_count = 0;
+        return ok;
+    }
+
+    pub fn submit(s: *Session, d: *const Display, target: u32, buffers: []const Buffer) bool {
+        if (!s.begin(d, target)) return false;
+        var ok = true;
         for (buffers) |b| {
-            if (v.vaCreateBuffer(d.dpy, s.context, b.kind, @intCast(b.data.len), 1, @constCast(b.data.ptr), &ids[n]) != v.VA_STATUS_SUCCESS) return false;
-            n += 1;
+            if (!s.add(d, b.kind, b.data)) {
+                ok = false;
+                break;
+            }
         }
-        if (v.vaBeginPicture(d.dpy, s.context, target) != v.VA_STATUS_SUCCESS) return false;
-        const rendered = v.vaRenderPicture(d.dpy, s.context, &ids, @intCast(n)) == v.VA_STATUS_SUCCESS;
-        const ended = v.vaEndPicture(d.dpy, s.context) == v.VA_STATUS_SUCCESS;
-        return rendered and ended;
+        return s.end(d) and ok;
     }
 };
 
@@ -119,7 +145,7 @@ pub fn bytesOf(p: anytype) []const u8 {
 
 pub const Plane = struct { data: [*]u8, stride: usize };
 
-pub fn download(d: *const Display, surface: u32, fourcc: u32, width: u32, height: u32, planes: [2]Plane, bpp: usize) bool {
+pub fn download(d: *const Display, surface: u32, fourcc: u32, x: u32, y: u32, width: u32, height: u32, planes: [2]Plane, bpp: usize) bool {
     if (v.vaSyncSurface(d.dpy, surface) != v.VA_STATUS_SUCCESS) return false;
     var img = std.mem.zeroes(v.VAImage);
     img.image_id = v.VA_INVALID_ID;
@@ -129,8 +155,8 @@ pub fn download(d: *const Display, surface: u32, fourcc: u32, width: u32, height
         fmt.fourcc = fourcc;
         fmt.byte_order = v.VA_LSB_FIRST;
         fmt.bits_per_pixel = @intCast(bpp * 12);
-        if (v.vaCreateImage(d.dpy, &fmt, @intCast(width), @intCast(height), &img) != v.VA_STATUS_SUCCESS) return false;
-        if (v.vaGetImage(d.dpy, surface, 0, 0, width, height, img.image_id) != v.VA_STATUS_SUCCESS) {
+        if (v.vaCreateImage(d.dpy, &fmt, @intCast(x + width), @intCast(y + height), &img) != v.VA_STATUS_SUCCESS) return false;
+        if (v.vaGetImage(d.dpy, surface, 0, 0, x + width, y + height, img.image_id) != v.VA_STATUS_SUCCESS) {
             _ = v.vaDestroyImage(d.dpy, img.image_id);
             return false;
         }
@@ -143,7 +169,8 @@ pub fn download(d: *const Display, surface: u32, fourcc: u32, width: u32, height
     for (planes, 0..) |pl, i| {
         const rows = if (i == 0) height else (height + 1) / 2;
         const row = if (i == 0) width * bpp else ((width + 1) & ~@as(u32, 1)) * bpp;
-        var src = base + img.offsets[i];
+        const sy = if (i == 0) y else y / 2;
+        var src = base + img.offsets[i] + sy * img.pitches[i] + (x & ~@as(u32, 1)) * bpp;
         var dst = pl.data;
         for (0..rows) |_| {
             @memcpy(dst[0..row], src[0..row]);

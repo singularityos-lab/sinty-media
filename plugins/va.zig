@@ -3,9 +3,11 @@ const cm = @import("common.zig");
 const c = cm.c;
 const build = @import("build_options");
 const vp9dec = @import("va/vp9dec.zig");
+const h264dec = @import("va/h264dec.zig");
 
 fn pluginInit(p: ?*c.GstPlugin) callconv(.c) c.gboolean {
     c.gst_plugin_add_dependency_simple(p, null, "/dev/dri", "renderD", c.GST_PLUGIN_DEPENDENCY_FLAG_FILE_NAME_IS_PREFIX);
+    _ = h264dec.register(p);
     _ = vp9dec.register(p);
     return 1;
 }
