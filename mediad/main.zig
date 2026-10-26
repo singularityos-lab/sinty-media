@@ -46,6 +46,11 @@ const Session = struct {
     next_slot: i64 = 1,
     closing: bool = false,
     bus_watch: c.guint = 0,
+    feed: ?*c.GstElement = null,
+    feed_fd: c_int = -1,
+    size: u64 = 0,
+    offset: u64 = 0,
+    tick: c.guint = 0,
 };
 
 var sessions: std.ArrayListUnmanaged(*Session) = .empty;
@@ -245,6 +250,75 @@ fn build(source: []const u8, filter: []const u8, err: [*c][*c]c.GError) ?*c.GstE
     return pipe;
 }
 
+fn onNeed(_: ?*c.GstAppSrc, length: c.guint, data: c.gpointer) callconv(.c) void {
+    const s: *Session = @ptrCast(@alignCast(data));
+    c.g_mutex_lock(&s.lock);
+    var need = proto.Need{ .offset = s.offset, .length = @intCast(@min(length, proto.CHUNK * 16)) };
+    const fd = s.feed_fd;
+    c.g_mutex_unlock(&s.lock);
+    if (fd >= 0) _ = proto.send(fd, .need, &.{std.mem.asBytes(&need)}, -1, false);
+}
+
+fn onSeekData(_: ?*c.GstAppSrc, offset: u64, data: c.gpointer) callconv(.c) c.gboolean {
+    const s: *Session = @ptrCast(@alignCast(data));
+    c.g_mutex_lock(&s.lock);
+    s.offset = offset;
+    c.g_mutex_unlock(&s.lock);
+    return 1;
+}
+
+fn onSourceSetup(_: ?*c.GstElement, src: ?*c.GstElement, data: c.gpointer) callconv(.c) void {
+    const s: *Session = @ptrCast(@alignCast(data));
+    if (s.feed) |old| c.gst_object_unref(old);
+    s.feed = @ptrCast(@alignCast(c.gst_object_ref(src)));
+    const size: i64 = if (s.size == 0) -1 else @intCast(s.size);
+    c.g_object_set(src, "stream-type", @as(c_int, c.GST_APP_STREAM_TYPE_RANDOM_ACCESS), "format", @as(c_int, c.GST_FORMAT_BYTES), "size", size, @as(?*anyopaque, null));
+    var cbs = std.mem.zeroes(c.GstAppSrcCallbacks);
+    cbs.need_data = onNeed;
+    cbs.seek_data = onSeekData;
+    c.gst_app_src_set_callbacks(@ptrCast(src), &cbs, s, null);
+}
+
+fn buildPlayer(filter: []const u8, err: [*c][*c]c.GError) ?*c.GstElement {
+    const pipe = c.gst_element_factory_make("playbin3", "sinty-mediad") orelse return null;
+    const sink = c.gst_element_factory_make("appsink", "out") orelse {
+        c.gst_object_unref(pipe);
+        return null;
+    };
+    if (filter.len != 0) {
+        const fz = gpa.dupeZ(u8, filter) catch return null;
+        defer gpa.free(fz);
+        const caps = c.gst_caps_from_string(fz.ptr);
+        if (caps != null) {
+            c.gst_app_sink_set_caps(@ptrCast(sink), caps);
+            c.gst_caps_unref(caps);
+        }
+    }
+    c.g_object_set(sink, "enable-last-sample", @as(c.gboolean, 0), @as(?*anyopaque, null));
+    c.g_object_set(pipe, "uri", "appsrc://", "video-sink", sink, @as(?*anyopaque, null));
+    if (std.c.getenv("SINTY_MEDIAD_AUDIO_SINK")) |desc| {
+        const audio = c.gst_parse_bin_from_description(desc, 1, err) orelse {
+            c.gst_object_unref(pipe);
+            return null;
+        };
+        c.g_object_set(pipe, "audio-sink", audio, @as(?*anyopaque, null));
+    }
+    return pipe;
+}
+
+fn onTick(data: c.gpointer) callconv(.c) c.gboolean {
+    const s: *Session = @ptrCast(@alignCast(data));
+    var st = proto.State{ .position = -1, .duration = -1, .flags = 0 };
+    _ = c.gst_element_query_position(s.pipeline, c.GST_FORMAT_TIME, &st.position);
+    _ = c.gst_element_query_duration(s.pipeline, c.GST_FORMAT_TIME, &st.duration);
+    var cur: c.GstState = c.GST_STATE_NULL;
+    _ = c.gst_element_get_state(s.pipeline, &cur, null, 0);
+    if (cur == c.GST_STATE_PLAYING) st.flags |= proto.STATE_PLAYING;
+    if (s.size != 0) st.flags |= proto.STATE_SEEKABLE;
+    if (s.feed_fd >= 0) _ = proto.send(s.feed_fd, .state, &.{std.mem.asBytes(&st)}, -1, false);
+    return 1;
+}
+
 fn popError(pipe: *c.GstElement, cl: *Client) void {
     const bus = c.gst_element_get_bus(pipe);
     defer c.gst_object_unref(bus);
@@ -262,9 +336,10 @@ fn popError(pipe: *c.GstElement, cl: *Client) void {
     c.g_free(dbg);
 }
 
-fn startSession(key: []u8, source: []const u8, filter: []const u8, cl: *Client) ?*Session {
+fn startSession(key: []u8, source: []const u8, filter: []const u8, cl: *Client, player: ?u64) ?*Session {
     var err: [*c]c.GError = null;
-    const pipe = build(source, filter, &err) orelse {
+    const built = if (player != null) buildPlayer(filter, &err) else build(source, filter, &err);
+    const pipe = built orelse {
         if (err != null) {
             failure(cl.fd, c.g_quark_to_string(err[0].domain), err[0].code, err[0].message, null);
             c.g_clear_error(&err);
@@ -279,7 +354,14 @@ fn startSession(key: []u8, source: []const u8, filter: []const u8, cl: *Client) 
     s.* = .{ .key = key, .pipeline = pipe, .live = false };
     c.g_mutex_init(&s.lock);
     c.g_cond_init(&s.cond);
-    const sink = c.gst_bin_get_by_name(@ptrCast(pipe), "out");
+    var sink: ?*c.GstElement = null;
+    if (player) |size| {
+        s.size = size;
+        s.feed_fd = cl.fd;
+        _ = c.g_signal_connect_data(pipe, "source-setup", @ptrCast(&onSourceSetup), s, null, 0);
+        c.g_object_get(pipe, "video-sink", &sink, @as(?*anyopaque, null));
+        s.tick = c.g_timeout_add(250, onTick, s);
+    } else sink = c.gst_bin_get_by_name(@ptrCast(pipe), "out");
     var cbs = std.mem.zeroes(c.GstAppSinkCallbacks);
     cbs.new_sample = onSample;
     cbs.eos = onEos;
@@ -308,6 +390,8 @@ fn destroy(s: *Session) void {
     c.g_mutex_unlock(&s.lock);
     _ = c.gst_element_set_state(s.pipeline, c.GST_STATE_NULL);
     if (s.bus_watch != 0) _ = c.g_source_remove(s.bus_watch);
+    if (s.tick != 0) _ = c.g_source_remove(s.tick);
+    if (s.feed) |f| c.gst_object_unref(f);
     c.gst_object_unref(s.pipeline);
     var it = s.held.valueIterator();
     while (it.next()) |h| dropHeld(s, h.*);
@@ -379,13 +463,13 @@ fn release(cl: *Client, id: u64) void {
     c.g_cond_broadcast(&s.cond);
 }
 
-fn spawnWorker(cl: *Client, body: []const u8) void {
+fn spawnWorker(cl: *Client, body: []const u8, mode: [*:0]const u8) void {
     const pid = S.fork();
     if (pid == 0) {
         _ = S.dup2(cl.fd, 3);
         var hex: [proto.MAX * 2 + 1]u8 = undefined;
         const enc = std.fmt.bufPrintZ(&hex, "{x}", .{body}) catch S._exit(1);
-        const argv = [_:null]?[*:0]const u8{ "sinty-mediad", "--worker", enc.ptr, null };
+        const argv = [_:null]?[*:0]const u8{ "sinty-mediad", mode, enc.ptr, null };
         _ = S.execv(@ptrCast(&self_path), @ptrCast(&argv));
         S._exit(127);
     }
@@ -398,7 +482,7 @@ fn open(cl: *Client, body: []const u8) bool {
     var parts: [2][]const u8 = .{ "", "" };
     if (proto.strings(body[4..], &parts) < 2) return false;
     if (flags & proto.FLAG_ISOLATED != 0 and !worker) {
-        spawnWorker(cl, body);
+        spawnWorker(cl, body, "--worker");
         return false;
     }
     const key = std.fmt.allocPrintSentinel(gpa, "{s}\x01{s}", .{ parts[0], parts[1] }, 0) catch return false;
@@ -412,8 +496,13 @@ fn open(cl: *Client, body: []const u8) bool {
             failure(cl.fd, "gst-resource-error-quark", c.GST_RESOURCE_ERROR_BUSY, "too many clients on this source", null);
             return false;
         }
-    } else s = startSession(key, parts[0], parts[1], cl) orelse return false;
-    const ss = s.?;
+    } else s = startSession(key, parts[0], parts[1], cl, null) orelse return false;
+    join(cl, s.?);
+    if (s.?.count == 1) _ = c.gst_element_set_state(s.?.pipeline, c.GST_STATE_PLAYING);
+    return true;
+}
+
+fn join(cl: *Client, ss: *Session) void {
     c.g_mutex_lock(&ss.lock);
     for (&ss.seats, 0..) |*o, i| {
         if (o.* == null) {
@@ -427,8 +516,62 @@ fn open(cl: *Client, body: []const u8) bool {
     c.g_mutex_unlock(&ss.lock);
     var ready: u32 = if (ss.live) proto.FLAG_LIVE else 0;
     _ = proto.send(cl.fd, .ready, &.{std.mem.asBytes(&ready)}, -1, false);
-    if (ss.count == 1) _ = c.gst_element_set_state(ss.pipeline, c.GST_STATE_PLAYING);
+}
+
+fn play(cl: *Client, body: []const u8) bool {
+    if (cl.session != null) return false;
+    const p = proto.asStruct(proto.Play, body) orelse return false;
+    if (p.flags & proto.FLAG_ISOLATED != 0 and !worker) {
+        spawnWorker(cl, body, "--player");
+        return false;
+    }
+    var parts: [1][]const u8 = .{""};
+    _ = proto.strings(body[@sizeOf(proto.Play)..], &parts);
+    const key = std.fmt.allocPrintSentinel(gpa, "play\x01{x}", .{@intFromPtr(cl)}, 0) catch return false;
+    const s = startSession(key, "", parts[0], cl, p.size) orelse return false;
+    join(cl, s);
     return true;
+}
+
+fn feed(cl: *Client, body: []const u8) void {
+    const s = cl.session orelse return;
+    const src = s.feed orelse return;
+    if (body.len < 8) return;
+    const offset = std.mem.readInt(u64, body[0..8], .little);
+    const bytes = body[8..];
+    c.g_mutex_lock(&s.lock);
+    const fresh = offset == s.offset;
+    if (fresh) s.offset += bytes.len;
+    c.g_mutex_unlock(&s.lock);
+    if (!fresh) return;
+    if (bytes.len == 0) {
+        _ = c.gst_app_src_end_of_stream(@ptrCast(src));
+        return;
+    }
+    const buf = c.gst_buffer_new_allocate(null, bytes.len, null) orelse return;
+    _ = c.gst_buffer_fill(buf, 0, bytes.ptr, bytes.len);
+    buf[0].offset = offset;
+    buf[0].offset_end = offset + bytes.len;
+    _ = c.gst_app_src_push_buffer(@ptrCast(src), buf);
+}
+
+fn control(cl: *Client, body: []const u8) void {
+    const s = cl.session orelse return;
+    if (s.feed_fd != cl.fd) return;
+    const m = proto.asStruct(proto.Control, body) orelse return;
+    const op = std.enums.fromInt(proto.Op, m.op) orelse return;
+    switch (op) {
+        .play => _ = c.gst_element_set_state(s.pipeline, c.GST_STATE_PLAYING),
+        .pause => _ = c.gst_element_set_state(s.pipeline, c.GST_STATE_PAUSED),
+        .seek => _ = c.gst_element_seek_simple(s.pipeline, c.GST_FORMAT_TIME, c.GST_SEEK_FLAG_FLUSH | c.GST_SEEK_FLAG_KEY_UNIT, @intFromFloat(@max(m.value, 0) * 1e9)),
+        .rate => {
+            var pos: i64 = 0;
+            _ = c.gst_element_query_position(s.pipeline, c.GST_FORMAT_TIME, &pos);
+            if (m.value > 0) _ = c.gst_element_seek(s.pipeline, m.value, c.GST_FORMAT_TIME, c.GST_SEEK_FLAG_FLUSH | c.GST_SEEK_FLAG_ACCURATE, c.GST_SEEK_TYPE_SET, pos, c.GST_SEEK_TYPE_NONE, -1);
+        },
+        .volume => c.g_object_set(s.pipeline, "volume", std.math.clamp(m.value, 0, 10), @as(?*anyopaque, null)),
+        .mute => c.g_object_set(s.pipeline, "mute", @as(c.gboolean, @intFromBool(m.value != 0)), @as(?*anyopaque, null)),
+    }
 }
 
 fn onClient(fd: c_int, cond: c.GIOCondition, data: c.gpointer) callconv(.c) c.gboolean {
@@ -447,6 +590,15 @@ fn onClient(fd: c_int, cond: c.GIOCondition, data: c.gpointer) callconv(.c) c.gb
     if (m.fd >= 0) _ = S.close(m.fd);
     const keep = switch (m.kind) {
         .open => open(cl, m.body),
+        .play => play(cl, m.body),
+        .data => blk: {
+            feed(cl, m.body);
+            break :blk true;
+        },
+        .control => blk: {
+            control(cl, m.body);
+            break :blk true;
+        },
         .release => blk: {
             if (proto.asStruct(u64, m.body)) |id| release(cl, id);
             break :blk true;
@@ -534,7 +686,8 @@ pub fn main(init: std.process.Init) u8 {
     loop = c.g_main_loop_new(null, 0);
     const args = init.minimal.args.toSlice(gpa) catch return 1;
     if (args.len > 1) {
-        if (!std.mem.eql(u8, args[1], "--worker") or args.len < 3) return 2;
+        const player = std.mem.eql(u8, args[1], "--player");
+        if (!player and !std.mem.eql(u8, args[1], "--worker") or args.len < 3) return 2;
         const enc = args[2];
         var body: [proto.MAX]u8 = undefined;
         const raw = std.fmt.hexToBytes(&body, enc) catch return 2;
@@ -542,7 +695,7 @@ pub fn main(init: std.process.Init) u8 {
         sandbox();
         const cl = gpa.create(Client) catch return 1;
         cl.* = .{ .fd = 3 };
-        if (!open(cl, raw)) {
+        if (!(if (player) play(cl, raw) else open(cl, raw))) {
             _ = S.close(3);
             return 1;
         }

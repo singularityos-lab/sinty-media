@@ -324,6 +324,13 @@ pub fn build(b: *std.Build) void {
         b.step("tagdata", "build the tag table extractor").dependOn(&b.addInstallArtifact(exe, .{}).step);
     }
     {
+        const m = gstModule(b, "tools/playfeed.zig", target, optimize, &.{ "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
+        m.addImport("c", c_mod);
+        m.addImport("mediad", proto_mod);
+        const exe = b.addExecutable(.{ .name = "playfeed", .root_module = m, .use_llvm = true });
+        b.step("playfeed", "build the media service player client").dependOn(&b.addInstallArtifact(exe, .{}).step);
+    }
+    {
         const m = gstModule(b, "tools/gen.zig", target, optimize, &.{ "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
         m.addImport("c", c_mod);
         const exe = b.addExecutable(.{ .name = "gen", .root_module = m, .use_llvm = true });

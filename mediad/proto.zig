@@ -3,7 +3,7 @@ const X = @import("sys.zig");
 pub const sys = X.s;
 const S = sys;
 
-pub const Kind = enum(u32) { open = 1, release, close, ready, caps, frame, eos, failure };
+pub const Kind = enum(u32) { open = 1, release, close, ready, caps, frame, eos, failure, play, data, need, control, state };
 
 pub const FLAG_ISOLATED: u32 = 1;
 pub const FLAG_LIVE: u32 = 1;
@@ -26,6 +26,38 @@ pub const Frame = extern struct {
     dts: u64,
     duration: u64,
 };
+
+pub const Play = extern struct {
+    flags: u32,
+    pad: u32 = 0,
+    size: u64,
+};
+
+pub const Need = extern struct {
+    offset: u64,
+    length: u32,
+    pad: u32 = 0,
+};
+
+pub const Op = enum(u32) { play = 1, pause, seek, rate, volume, mute };
+
+pub const Control = extern struct {
+    op: u32,
+    pad: u32 = 0,
+    value: f64,
+};
+
+pub const STATE_PLAYING: u32 = 1;
+pub const STATE_SEEKABLE: u32 = 2;
+
+pub const State = extern struct {
+    position: i64,
+    duration: i64,
+    flags: u32,
+    pad: u32 = 0,
+};
+
+pub const CHUNK = MAX - @sizeOf(Head) - 8;
 
 pub const Failure = extern struct {
     domain: u32,
