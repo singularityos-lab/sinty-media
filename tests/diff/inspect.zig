@@ -154,3 +154,14 @@ pub fn element(name: [*c]const u8) void {
     _ = c.gst_object_ref_sink(e);
     c.gst_object_unref(e);
 }
+
+pub fn gobject(t: c.GType) void {
+    var q: c.GTypeQuery = undefined;
+    c.g_type_query(t, &q);
+    out("type {s} abstract={d} class={d} instance={d}", .{ z(c.g_type_name(t)), @intFromBool(c.g_type_test_flags(t, c.G_TYPE_FLAG_ABSTRACT) != 0), q.class_size, q.instance_size });
+    typeChain(t);
+    const cls = c.g_type_class_ref(t);
+    props(cls);
+    c.g_type_class_unref(cls);
+    signals(t);
+}

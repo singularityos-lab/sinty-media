@@ -79,3 +79,5 @@
 #include <gst/sdp/sdp.h>
 #include <gst/rtp/rtp.h>
 #include <gst/rtsp/rtsp.h>
+#define GST_USE_UNSTABLE_API 1
+#include <gst/webrtc/webrtc.h>

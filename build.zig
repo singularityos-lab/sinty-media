@@ -21,6 +21,7 @@ const libs = [_]Lib{
     .{ .name = "gstrtp-1.0", .root = "gst/rtp.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0" }, .deps = &.{} },
     .{ .name = "gstsdp-1.0", .root = "gst/sdp.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gio-2.0", "gstreamer-1.0", "gstreamer-rtp-1.0", "gstreamer-pbutils-1.0" }, .deps = &.{} },
     .{ .name = "gstrtsp-1.0", .root = "gst/rtsp.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gio-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-sdp-1.0" }, .deps = &.{} },
+    .{ .name = "gstwebrtc-1.0", .root = "gst/webrtc.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-sdp-1.0" }, .deps = &.{} },
     .{ .name = "gstfft-1.0", .root = "gst/fft.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "m" }, .deps = &.{} },
     .{ .name = "gstgl-1.0", .root = "gst/gl.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gmodule-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0", "gstreamer-allocators-1.0", "egl", "gl", "wayland-client", "wayland-cursor", "wayland-egl", "x11", "x11-xcb", "xcb", "gudev-1.0", "libdrm", "gbm" }, .deps = &.{} },
     .{ .name = "gstvideo-1.0", .root = "gst/video.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-allocators-1.0", "m" }, .deps = &.{} },
@@ -341,6 +342,14 @@ pub fn build(b: *std.Build) void {
     inspect_mod.addImport("c", c_mod);
     for ([_][]const u8{ "core1", "core2", "base1", "base2", "base3", "base4", "base5", "base6", "vb1", "tf1", "pb1", "pb2", "pb3", "pb4", "pb5", "pb6", "pb7", "pb8", "pb9", "pb10", "pb11", "gio1", "raw1", "mix1", "sub1", "enc1", "add1", "tcp1", "vr1", "co1", "op1", "og1", "pk1", "vo1", "th1", "tr1", "riff1", "sdp1", "rtp1", "rtsp1" }) |name| {
         const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-pbutils-1.0", "gstreamer-video-1.0", "gstreamer-audio-1.0", "gstreamer-riff-1.0", "gstreamer-sdp-1.0", "gstreamer-rtp-1.0", "gstreamer-rtsp-1.0", "gstreamer-tag-1.0", "gstreamer-controller-1.0", "gstreamer-base-1.0", "gstreamer-1.0", "gio-2.0", "gobject-2.0", "glib-2.0" });
+        m.addImport("c", c_mod);
+        m.addImport("inspect", inspect_mod);
+        const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
+        diff_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+    }
+
+    for ([_][]const u8{"webrtc1"}) |name| {
+        const m = gstModule(b, b.fmt("tests/diff/{s}.zig", .{name}), target, optimize, &.{ "gstreamer-webrtc-1.0", "gstreamer-sdp-1.0", "gstreamer-1.0", "gobject-2.0", "glib-2.0" });
         m.addImport("c", c_mod);
         m.addImport("inspect", inspect_mod);
         const exe = b.addExecutable(.{ .name = b.fmt("diff-{s}", .{name}), .root_module = m, .use_llvm = true });
