@@ -387,6 +387,7 @@ pub fn read(reg: [*c]registry.Registry, path: [*c]const u8) bool {
         return false;
     }
     defer c.g_free(contents);
+    if (contents == null or len == 0) return false;
     var r = Reader{ .data = contents[0..len] };
     if (!checkHeader(&r)) return false;
     var n = r.int(u32) catch return false;
