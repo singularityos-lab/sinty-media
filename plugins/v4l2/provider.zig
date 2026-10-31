@@ -219,6 +219,40 @@ fn onUevent(_: ?*gu.GUdevClient, action: [*c]const u8, dev: ?*gu.GUdevDevice, da
     }
 }
 
+fn knownPath(p: *c.GstDeviceProvider, path: [*c]const u8) ?*c.GstDevice {
+    var found: ?*c.GstDevice = null;
+    cm.lock(p);
+    var l = p.devices;
+    while (l != null) : (l = l[0].next) {
+        const d: *Device = @ptrCast(@alignCast(l[0].data));
+        if (c.g_strcmp0(d.device_path, path) == 0) {
+            found = @ptrCast(@alignCast(c.gst_object_ref(d)));
+            break;
+        }
+    }
+    cm.unlock(p);
+    return found;
+}
+
+fn rescan(data: c.gpointer) callconv(.c) c.gboolean {
+    const p: *c.GstDeviceProvider = @ptrCast(@alignCast(data));
+    var buf: [64]u8 = undefined;
+    var i: u32 = 0;
+    while (i < 16) : (i += 1) {
+        const path = std.fmt.bufPrintZ(&buf, "/dev/video{d}", .{i}) catch continue;
+        const known = knownPath(p, path.ptr);
+        defer if (known) |d| c.gst_object_unref(d);
+        const present = c.g_file_test(path.ptr, c.G_FILE_TEST_EXISTS) != 0;
+        if (present and known == null) {
+            const props = c.gst_structure_new("v4l2deviceprovider", "udev-probed", c.G_TYPE_BOOLEAN, @as(c.gboolean, 0), @as(?*anyopaque, null)).?;
+            if (probeDevice(path.ptr, null, props)) |d| c.gst_device_provider_device_add(p, d);
+        } else if (!present and known != null) {
+            c.gst_device_provider_device_remove(p, known.?);
+        }
+    }
+    return 1;
+}
+
 fn thread(data: c.gpointer) callconv(.c) c.gpointer {
     const p: *Provider = @ptrCast(@alignCast(data));
     cm.lock(p);
@@ -245,6 +279,13 @@ fn thread(data: c.gpointer) callconv(.c) c.gpointer {
             if (fromUdev(ud)) |d| c.gst_device_provider_device_add(&p.parent, d);
         }
         gu.g_object_unref(ud);
+    }
+    if (c.g_file_test("/run/udev", c.G_FILE_TEST_EXISTS) == 0) {
+        _ = rescan(p);
+        const src = c.g_timeout_source_new_seconds(2);
+        c.g_source_set_callback(src, rescan, p, null);
+        _ = c.g_source_attach(src, ctx);
+        c.g_source_unref(src);
     }
     cm.lock(p);
     p.started = 1;
