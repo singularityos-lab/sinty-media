@@ -115,6 +115,8 @@ pub fn build(b: *std.Build) void {
     const vp9_mod = b.createModule(.{ .root_source_file = b.path("plugins/va/vp9.zig"), .target = target, .optimize = optimize });
     for ([_][]const u8{ "clip-vp9.webm", "clip-vp9-420.webm" }) |clip| vp9_mod.addAnonymousImport(clip, .{ .root_source_file = b.path(b.fmt("tests/data/{s}", .{clip})) });
     test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = vp9_mod, .use_llvm = true })).step);
+    const pod_mod = b.createModule(.{ .root_source_file = b.path("plugins/pipewire/pod.zig"), .target = target, .optimize = optimize });
+    test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = pod_mod, .use_llvm = true })).step);
     const dpb_mod = b.createModule(.{ .root_source_file = b.path("plugins/va/dpb.zig"), .target = target, .optimize = optimize });
     dpb_mod.addAnonymousImport("clip.h264", .{ .root_source_file = b.path("tests/data/clip.h264") });
     test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = dpb_mod, .use_llvm = true })).step);
@@ -147,6 +149,8 @@ pub fn build(b: *std.Build) void {
         .{ .name = "rawparse", .root = "plugins/rawparse.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-audio-1.0", "gstreamer-video-1.0" } },
         .{ .name = "gio", .root = "plugins/gio.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gio-2.0", "gstreamer-1.0", "gstreamer-base-1.0" } },
         .{ .name = "compositor", .root = "plugins/compositor.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0" } },
+        .{ .name = "videocrop", .root = "plugins/videocrop.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0" } },
+        .{ .name = "pipewire", .root = "plugins/pipewire.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0", "gstreamer-audio-1.0", "libpipewire-0.3" } },
         .{ .name = "videorate", .root = "plugins/videorate.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-video-1.0" } },
         .{ .name = "tcp", .root = "plugins/tcp.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gio-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-net-1.0" } },
         .{ .name = "ogg", .root = "plugins/ogg.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-audio-1.0", "gstreamer-tag-1.0", "gstreamer-pbutils-1.0", "gstreamer-riff-1.0", "ogg" } },

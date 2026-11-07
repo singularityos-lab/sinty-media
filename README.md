@@ -16,8 +16,9 @@ behave like GStreamer and open devices themselves.
 - `gst/`: the core library and the base libraries (app, audio, video, pbutils,
   tag, rtp and the others in gst-plugins-base) and the WebRTC library from
   gst-plugins-bad.
-- `plugins/`: the gst-plugins-base elements, `video4linux2`, and `sintymedia`,
-  the element that reads from `sinty-mediad`.
+- `plugins/`: the gst-plugins-base elements, `video4linux2`, `videocrop`,
+  `pipewiresrc` for screen and audio capture, and `sintymedia`, the element that
+  reads from `sinty-mediad`.
 - `mediad/`: the session media service. Each capture source runs in an isolated
   worker process.
 - `tests/diff/`: differential tests. Each test runs against the real GStreamer and
