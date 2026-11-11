@@ -170,7 +170,16 @@ pub fn build(b: *std.Build) void {
     };
     const proto_mod = b.createModule(.{ .root_source_file = b.path("mediad/proto.zig"), .target = target, .optimize = optimize, .link_libc = true });
     const plugin_step = b.step("plugins", "build the element plugins");
+    const only = b.option([]const u8, "plugins", "comma separated plugins to build, all when unset");
     for (plugins) |pl| {
+        if (only) |list| {
+            var wanted = false;
+            var it = std.mem.tokenizeScalar(u8, list, ',');
+            while (it.next()) |name| {
+                if (std.mem.eql(u8, name, pl.name)) wanted = true;
+            }
+            if (!wanted) continue;
+        }
         const m = gstModule(b, pl.root, target, optimize, pl.system);
         m.addOptions("build_options", plugin_opts);
         m.addImport("mediad", proto_mod);
