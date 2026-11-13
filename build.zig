@@ -28,6 +28,8 @@ const libs = [_]Lib{
     .{ .name = "gstpbutils-1.0", .root = "gst/pbutils.zig", .system = &.{ "glib-2.0", "gobject-2.0", "gstreamer-1.0", "gstreamer-base-1.0", "gstreamer-tag-1.0", "gstreamer-audio-1.0", "gstreamer-video-1.0" }, .deps = &.{} },
 };
 
+const va_shims = [_][]const u8{ "gstreamer-1.0", "gstgl-1.0", "gstrtp-1.0", "gstvideo-1.0" };
+
 fn gstIncludeDir(b: *std.Build) []const u8 {
     const dir = std.mem.trim(u8, b.run(&.{ "pkg-config", "--variable=includedir", "gstreamer-1.0" }), " \n");
     return b.pathJoin(&.{ dir, "gstreamer-1.0" });
@@ -94,6 +96,11 @@ pub fn build(b: *std.Build) void {
     for (libs) |l| {
         const root = gstModule(b, l.root, target, optimize, l.system);
         root.addOptions("config", config);
+        if (target.result.cpu.arch == .aarch64) {
+            for (va_shims) |name| {
+                if (std.mem.eql(u8, name, l.name)) root.addCSourceFile(.{ .file = b.path(b.fmt("gst/va/{s}.c", .{name})) });
+            }
+        }
         const lib = b.addLibrary(.{
             .name = l.name,
             .linkage = .dynamic,

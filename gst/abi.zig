@@ -1,5 +1,6 @@
 const std = @import("std");
 const c = @import("c.zig").c;
+const va = @import("varargs.zig");
 
 fn pointee(comptime T: type) ?std.builtin.Type.Pointer {
     return switch (@typeInfo(T)) {
@@ -14,6 +15,7 @@ fn pointee(comptime T: type) ?std.builtin.Type.Pointer {
 
 fn compatible(comptime ours: type, comptime theirs: type) bool {
     if (ours == theirs) return true;
+    if (va.manual and ours == va.CVaList and @typeInfo(theirs) == .@"struct" and @sizeOf(theirs) == @sizeOf(va.VaList)) return true;
     const a = pointee(ours) orelse return false;
     const b = pointee(theirs) orelse return false;
     if (a.is_const != b.is_const) return false;

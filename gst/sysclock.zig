@@ -1,5 +1,6 @@
 const std = @import("std");
 const linux = std.os.linux;
+const va = @import("varargs.zig");
 const c = @import("c.zig").c;
 const check = @import("check.zig");
 const gtype = @import("gtype.zig");
@@ -222,7 +223,7 @@ fn asyncThread(data: c.gpointer) callconv(.c) c.gpointer {
             c.g_mutex_unlock(&e.lock);
         } else {
             if (status != c.GST_CLOCK_OK and status != c.GST_CLOCK_EARLY)
-                info.gst_debug_log(info.GST_CAT_CLOCK, c.GST_LEVEL_ERROR, "../gst/gstsystemclock.c", "gst_system_clock_async_thread", 0, @ptrCast(p), "unexpected status %d for entry %p", status, e);
+                va.entryPoint(info, "gst_debug_log")(info.GST_CAT_CLOCK, c.GST_LEVEL_ERROR, "../gst/gstsystemclock.c", "gst_system_clock_async_thread", 0, @ptrCast(p), "unexpected status %d for entry %p", status, e);
             e.entry.status = c.GST_CLOCK_BUSY;
             const requested = e.entry.time;
             c.g_mutex_unlock(lock);
@@ -308,7 +309,7 @@ fn waitUnlocked(p: [*c]Clock, e: *EntryImpl, jitter: [*c]c.GstClockTimeDiff, res
         status = e.entry.status;
         if (status == c.GST_CLOCK_UNSCHEDULED) return status;
         if (status != c.GST_CLOCK_BUSY)
-            info.gst_debug_log(info.GST_CAT_CLOCK, c.GST_LEVEL_ERROR, "../gst/gstsystemclock.c", "gst_system_clock_id_wait_jitter_unlocked", 0, @ptrCast(p), "unexpected status %d for entry %p", status, e);
+            va.entryPoint(info, "gst_debug_log")(info.GST_CAT_CLOCK, c.GST_LEVEL_ERROR, "../gst/gstsystemclock.c", "gst_system_clock_id_wait_jitter_unlocked", 0, @ptrCast(p), "unexpected status %d for entry %p", status, e);
         e.entry.status = c.GST_CLOCK_DONE;
         if (woke and !restart) return status;
         c.g_mutex_unlock(&e.lock);
@@ -336,7 +337,7 @@ fn waitJitter(p: [*c]Clock, entry: [*c]Entry, jitter: [*c]c.GstClockTimeDiff) ca
     const status = e.entry.status;
     if (status == c.GST_CLOCK_UNSCHEDULED) return status;
     if (status != c.GST_CLOCK_OK)
-        info.gst_debug_log(info.GST_CAT_CLOCK, c.GST_LEVEL_ERROR, "../gst/gstsystemclock.c", "gst_system_clock_id_wait_jitter", 0, @ptrCast(p), "unexpected status %d for entry %p", status, e);
+        va.entryPoint(info, "gst_debug_log")(info.GST_CAT_CLOCK, c.GST_LEVEL_ERROR, "../gst/gstsystemclock.c", "gst_system_clock_id_wait_jitter", 0, @ptrCast(p), "unexpected status %d for entry %p", status, e);
     e.entry.status = c.GST_CLOCK_BUSY;
     return waitUnlocked(p, e, jitter, true);
 }

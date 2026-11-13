@@ -313,8 +313,8 @@ pub export fn gst_gl_context_get_current_gl_api(platform: c.GstGLPlatform, major
     var ret: c.GstGLAPI = 1 << 31;
     var ver = [2]c.gint{ 0, 0 };
     while (ret != c.GST_GL_API_NONE) : (ret >>= 1) {
-        const gs: ?GetStringFn = @ptrCast(gst_gl_context_get_proc_address_with_platform(platform, ret, "glGetString"));
-        const gi: ?GetIntegervFn = @ptrCast(gst_gl_context_get_proc_address_with_platform(platform, ret, "glGetIntegerv"));
+        const gs: ?GetStringFn = @ptrCast(@alignCast(gst_gl_context_get_proc_address_with_platform(platform, ret, "glGetString")));
+        const gi: ?GetIntegervFn = @ptrCast(@alignCast(gst_gl_context_get_proc_address_with_platform(platform, ret, "glGetIntegerv")));
         const f = gs orelse continue;
         const vp = f(c.GL_VERSION);
         if (vp == null) continue;
@@ -656,10 +656,10 @@ pub export fn gst_gl_context_fill_info(ctx: OCtx, err: [*c][*c]c.GError) c.gbool
     if (!check.that(p.active_thread == c.g_thread_self(), fname, "context->priv->active_thread == g_thread_self ()")) return 0;
     const gl = ctx[0].gl_vtable;
     const api = gst_gl_context_get_gl_api(ctx);
-    gl[0].GetError = @ptrCast(gst_gl_context_get_proc_address(ctx, "glGetError"));
-    gl[0].GetString = @ptrCast(gst_gl_context_get_proc_address(ctx, "glGetString"));
-    gl[0].GetStringi = @ptrCast(gst_gl_context_get_proc_address(ctx, "glGetStringi"));
-    gl[0].GetIntegerv = @ptrCast(gst_gl_context_get_proc_address(ctx, "glGetIntegerv"));
+    gl[0].GetError = @ptrCast(@alignCast(gst_gl_context_get_proc_address(ctx, "glGetError")));
+    gl[0].GetString = @ptrCast(@alignCast(gst_gl_context_get_proc_address(ctx, "glGetString")));
+    gl[0].GetStringi = @ptrCast(@alignCast(gst_gl_context_get_proc_address(ctx, "glGetStringi")));
+    gl[0].GetIntegerv = @ptrCast(@alignCast(gst_gl_context_get_proc_address(ctx, "glGetIntegerv")));
     if (gl[0].GetError == null or gl[0].GetString == null) {
         setError(err, c.GST_GL_CONTEXT_ERROR_FAILED, "could not GetProcAddress core opengl functions", .{});
         return 0;

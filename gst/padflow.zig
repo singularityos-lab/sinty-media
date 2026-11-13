@@ -1,4 +1,5 @@
 const std = @import("std");
+const va = @import("varargs.zig");
 const c = @import("c.zig").c;
 const check = @import("check.zig");
 const pad = @import("pad.zig");
@@ -83,7 +84,7 @@ fn marshalOne(hook: [*c]c.GHook, data: c.gpointer) callconv(.c) void {
         m.marshalled = true;
         return;
     }
-    const cb: c.GstPadProbeCallback = @ptrCast(hook[0].func);
+    const cb: c.GstPadProbeCallback = @ptrCast(@alignCast(hook[0].func));
     const callback = cb orelse {
         m.marshalled = true;
         return;
@@ -328,7 +329,7 @@ fn latencyDefault(p: [*c]Pad, q: [*c]Query) bool {
     c.gst_iterator_free(it);
     const ok = c.g_value_get_boolean(&ret) != 0;
     if (ok) {
-        if (d.min > d.max) info.gst_debug_log(info.GST_CAT_PADS, c.GST_LEVEL_ERROR, "../gst/gstpad.c", "gst_pad_query_latency_default", 0, @ptrCast(p), "minimum latency bigger than maximum latency");
+        if (d.min > d.max) va.entryPoint(info, "gst_debug_log")(info.GST_CAT_PADS, c.GST_LEVEL_ERROR, "../gst/gstpad.c", "gst_pad_query_latency_default", 0, @ptrCast(p), "minimum latency bigger than maximum latency");
         c.gst_query_set_latency(q, @intFromBool(d.live), d.min, d.max);
     }
     return ok;
@@ -737,7 +738,7 @@ fn pullProbe(p: [*c]Pad, mask: c.GstPadProbeType, buf: *[*c]c.GstBuffer, offset:
 
 fn logFail(p: [*c]Pad, comptime what: [:0]const u8, r: Flow) void {
     const level: c.GstDebugLevel = if (r >= c.GST_FLOW_EOS) c.GST_LEVEL_INFO else c.GST_LEVEL_WARNING;
-    info.gst_debug_log(info.GST_CAT_SCHEDULING, level, "../gst/gstpad.c", what, 0, @ptrCast(p), what ++ " failed, flow: %s", pad.gst_flow_get_name(r));
+    va.entryPoint(info, "gst_debug_log")(info.GST_CAT_SCHEDULING, level, "../gst/gstpad.c", what, 0, @ptrCast(p), what ++ " failed, flow: %s", pad.gst_flow_get_name(r));
 }
 
 fn getRange(p: [*c]Pad, offset: u64, size: c.guint, out: [*c][*c]c.GstBuffer) Flow {

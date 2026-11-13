@@ -1,4 +1,5 @@
 const std = @import("std");
+const va = @import("varargs.zig");
 const c = @import("c.zig").c;
 const check = @import("check.zig");
 const gtype = @import("gtype.zig");
@@ -349,15 +350,23 @@ fn storeFormats(q: [*c]Query, list: *c.GValue) void {
     c.g_value_unset(list);
 }
 
-pub export fn gst_query_set_formats(q: [*c]Query, n: c.gint, ...) callconv(.c) void {
-    if (!isWritable("gst_query_set_formats", q, c.GST_QUERY_FORMATS, "GST_QUERY_FORMATS")) return;
+pub fn gst_query_set_formats(q: [*c]Query, n: c.gint, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
+    return gst_query_set_formats_va(q, n, &ap);
+}
+
+pub fn gst_query_set_formats_va(q: [*c]Query, n: c.gint, ap: *va.VaList) callconv(.c) void {
+    if (!isWritable("gst_query_set_formats", q, c.GST_QUERY_FORMATS, "GST_QUERY_FORMATS")) return;
     var list = std.mem.zeroes(c.GValue);
     _ = c.g_value_init(&list, c.gst_value_list_get_type());
     var i: c.gint = 0;
-    while (i < n) : (i += 1) addFormat(&list, @cVaArg(&ap, c.GstFormat));
+    while (i < n) : (i += 1) addFormat(&list, va.arg(ap, c.GstFormat));
     storeFormats(q, &list);
+}
+
+comptime {
+    va.entry(@This(), "gst_query_set_formats");
 }
 
 pub export fn gst_query_set_formatsv(q: [*c]Query, n: c.gint, formats: [*c]const c.GstFormat) void {

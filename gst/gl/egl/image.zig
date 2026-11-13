@@ -119,7 +119,7 @@ fn create(ctx: OCtx, target: c.guint, buf: c.EGLClientBuffer, attribs: ?[]const 
     const ectx: c.EGLContext = if (target != DMA_BUF) @ptrFromInt(context.gst_gl_context_get_gl_context(ctx)) else null;
     const al = std.heap.c_allocator;
     if (egl15(ctx)) {
-        const f: CreateImage = @ptrCast(context.gst_gl_context_get_proc_address(ctx, "eglCreateImage") orelse return null);
+        const f: CreateImage = @ptrCast(@alignCast(context.gst_gl_context_get_proc_address(ctx, "eglCreateImage") orelse return null));
         var list: ?[]c.EGLAttrib = null;
         defer if (list) |l| al.free(l);
         if (attribs) |a| {
@@ -129,7 +129,7 @@ fn create(ctx: OCtx, target: c.guint, buf: c.EGLClientBuffer, attribs: ?[]const 
         return f(dpy, ectx, target, buf, if (list) |l| l.ptr else null);
     }
     if (context.gst_gl_context_check_feature(ctx, "EGL_KHR_image_base") != 0) {
-        const f: CreateImageKHR = @ptrCast(context.gst_gl_context_get_proc_address(ctx, "eglCreateImageKHR") orelse return null);
+        const f: CreateImageKHR = @ptrCast(@alignCast(context.gst_gl_context_get_proc_address(ctx, "eglCreateImageKHR") orelse return null));
         var list: ?[]c.EGLint = null;
         defer if (list) |l| al.free(l);
         if (attribs) |a| {
@@ -144,9 +144,9 @@ fn create(ctx: OCtx, target: c.guint, buf: c.EGLClientBuffer, attribs: ?[]const 
 fn destroyImage(ctx: OCtx, image: c.EGLImageKHR) void {
     var f: ?DestroyImage = null;
     if (egl15(ctx)) {
-        f = @ptrCast(context.gst_gl_context_get_proc_address(ctx, "eglDestroyImage"));
+        f = @ptrCast(@alignCast(context.gst_gl_context_get_proc_address(ctx, "eglDestroyImage")));
     } else if (context.gst_gl_context_check_feature(ctx, "EGL_KHR_image_base") != 0) {
-        f = @ptrCast(context.gst_gl_context_get_proc_address(ctx, "eglDestroyImageKHR"));
+        f = @ptrCast(@alignCast(context.gst_gl_context_get_proc_address(ctx, "eglDestroyImageKHR")));
     } else return;
     const d = f orelse return;
     const dpy = eglDisplay(ctx) orelse return;
@@ -405,8 +405,8 @@ const ExportImage = *const fn (c.EGLDisplay, c.EGLImageKHR, [*c]c_int, [*c]c.EGL
 
 pub export fn gst_egl_image_export_dmabuf(img: OImg, fd: [*c]c_int, stride: [*c]c.gint, offset: [*c]c.gsize) c.gboolean {
     const ctx = img[0].context;
-    const q: ?ExportQuery = @ptrCast(context.gst_gl_context_get_proc_address(ctx, "eglExportDMABUFImageQueryMESA"));
-    const e: ?ExportImage = @ptrCast(context.gst_gl_context_get_proc_address(ctx, "eglExportDMABUFImageMESA"));
+    const q: ?ExportQuery = @ptrCast(@alignCast(context.gst_gl_context_get_proc_address(ctx, "eglExportDMABUFImageQueryMESA")));
+    const e: ?ExportImage = @ptrCast(@alignCast(context.gst_gl_context_get_proc_address(ctx, "eglExportDMABUFImageMESA")));
     if (q == null or e == null) return 0;
     const dpy = eglDisplay(ctx) orelse return 0;
     var fcc: c_int = 0;

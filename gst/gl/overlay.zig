@@ -1,4 +1,5 @@
 const std = @import("std");
+const va = @import("../varargs.zig");
 const c = @import("../c.zig").c;
 const check = @import("check.zig");
 const gtype = @import("../gtype.zig");
@@ -288,7 +289,7 @@ fn initGl(ctx: OCtx, data: c.gpointer) callconv(.c) void {
     var err: [*c]c.GError = null;
     const p: c.GstGLSLProfile = c.GST_GLSL_PROFILE_ES | c.GST_GLSL_PROFILE_COMPATIBILITY;
     var frag = [2][*c]const u8{ strings.gst_gl_shader_string_get_highest_precision(ctx, c.GST_GLSL_VERSION_NONE, p), FRAGMENT };
-    comp[0].shader = shader.gst_gl_shader_new_link_with_stages(ctx, &err, stage.gst_glsl_stage_new_default_vertex(ctx), stage.gst_glsl_stage_new_with_strings(ctx, c.GL_FRAGMENT_SHADER, c.GST_GLSL_VERSION_NONE, p, 2, &frag), @as(?*anyopaque, null));
+    comp[0].shader = va.entryPoint(shader, "gst_gl_shader_new_link_with_stages")(ctx, &err, stage.gst_glsl_stage_new_default_vertex(ctx), stage.gst_glsl_stage_new_with_strings(ctx, c.GL_FRAGMENT_SHADER, c.GST_GLSL_VERSION_NONE, p, 2, &frag), @as(?*anyopaque, null));
     if (comp[0].shader == null) return;
     comp[0].position_attrib = shader.gst_gl_shader_get_attribute_location(comp[0].shader, "a_position");
     comp[0].texcoord_attrib = shader.gst_gl_shader_get_attribute_location(comp[0].shader, "a_texcoord");

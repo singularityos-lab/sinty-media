@@ -153,18 +153,34 @@ pub export fn gst_tag_setter_add_tag_valist_values(s: ?*TagSetter, mode: Mode, t
     taglist.gst_tag_list_add_valist_values(ensureList(d), mode, tag, ap);
 }
 
-pub export fn gst_tag_setter_add_tags(s: ?*TagSetter, mode: Mode, tag: [*c]const u8, ...) callconv(.c) void {
-    if (!guard("gst_tag_setter_add_tags", s, mode)) return;
+pub fn gst_tag_setter_add_tags(s: ?*TagSetter, mode: Mode, tag: [*c]const u8, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    gst_tag_setter_add_tag_valist(s, mode, tag, va.toC(&ap));
+    return gst_tag_setter_add_tags_va(s, mode, tag, &ap);
 }
 
-pub export fn gst_tag_setter_add_tag_values(s: ?*TagSetter, mode: Mode, tag: [*c]const u8, ...) callconv(.c) void {
-    if (!guard("gst_tag_setter_add_tag_values", s, mode)) return;
+pub fn gst_tag_setter_add_tags_va(s: ?*TagSetter, mode: Mode, tag: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+    if (!guard("gst_tag_setter_add_tags", s, mode)) return;
+    gst_tag_setter_add_tag_valist(s, mode, tag, va.toC(ap));
+}
+
+comptime {
+    va.entry(@This(), "gst_tag_setter_add_tags");
+}
+
+pub fn gst_tag_setter_add_tag_values(s: ?*TagSetter, mode: Mode, tag: [*c]const u8, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    gst_tag_setter_add_tag_valist_values(s, mode, tag, va.toC(&ap));
+    return gst_tag_setter_add_tag_values_va(s, mode, tag, &ap);
+}
+
+pub fn gst_tag_setter_add_tag_values_va(s: ?*TagSetter, mode: Mode, tag: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+    if (!guard("gst_tag_setter_add_tag_values", s, mode)) return;
+    gst_tag_setter_add_tag_valist_values(s, mode, tag, va.toC(ap));
+}
+
+comptime {
+    va.entry(@This(), "gst_tag_setter_add_tag_values");
 }
 
 pub export fn gst_tag_setter_add_tag_value(s: ?*TagSetter, mode: Mode, tag: [*c]const u8, v: [*c]const c.GValue) void {

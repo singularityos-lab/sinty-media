@@ -1,4 +1,5 @@
 const std = @import("std");
+const va = @import("varargs.zig");
 const c = @import("c.zig").c;
 const check = @import("check.zig");
 const tracer = @import("tracer.zig");
@@ -247,12 +248,12 @@ pub export fn gst_buffer_pool_set_active(p: [*c]Pool, active: c.gboolean) c.gboo
     defer unlock(p);
     if ((d.active != 0) == (active != 0)) return 1;
     if (d.configured == 0) {
-        info.gst_debug_log(debug_cat, c.GST_LEVEL_ERROR, "../gst/gstbufferpool.c", "gst_buffer_pool_set_active", 0, @ptrCast(p), "pool was not configured");
+        va.entryPoint(info, "gst_debug_log")(debug_cat, c.GST_LEVEL_ERROR, "../gst/gstbufferpool.c", "gst_buffer_pool_set_active", 0, @ptrCast(p), "pool was not configured");
         return 0;
     }
     if (active != 0) {
         if (!start(p)) {
-            info.gst_debug_log(debug_cat, c.GST_LEVEL_ERROR, "../gst/gstbufferpool.c", "gst_buffer_pool_set_active", 0, @ptrCast(p), "start failed");
+            va.entryPoint(info, "gst_debug_log")(debug_cat, c.GST_LEVEL_ERROR, "../gst/gstbufferpool.c", "gst_buffer_pool_set_active", 0, @ptrCast(p), "start failed");
             return 0;
         }
         d.active = 1;

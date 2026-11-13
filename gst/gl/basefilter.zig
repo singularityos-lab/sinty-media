@@ -1,4 +1,5 @@
 const std = @import("std");
+const va = @import("../varargs.zig");
 const c = @import("../c.zig").c;
 const check = @import("check.zig");
 const gtype = @import("../gtype.zig");
@@ -144,14 +145,14 @@ fn query(t: OTrans, dir: c.GstPadDirection, q: ?*c.GstQuery) callconv(.c) c.gboo
 
 fn glStop(_: OCtx, data: c.gpointer) callconv(.c) void {
     const f = fl(data);
-    debug.gst_gl_insert_debug_marker(f[0].context, "stopping element %s", f[0].parent.element.object.name);
+    va.entryPoint(debug, "gst_gl_insert_debug_marker")(f[0].context, "stopping element %s", f[0].parent.element.object.name);
     if (pv(f).gl_started != 0) klass(f).gl_stop.?(f);
     pv(f).gl_started = 0;
 }
 
 fn glStart(_: OCtx, data: c.gpointer) callconv(.c) void {
     const f = fl(data);
-    debug.gst_gl_insert_debug_marker(f[0].context, "starting element %s", f[0].parent.element.object.name);
+    va.entryPoint(debug, "gst_gl_insert_debug_marker")(f[0].context, "starting element %s", f[0].parent.element.object.name);
     pv(f).gl_started = klass(f).gl_start.?(f);
 }
 

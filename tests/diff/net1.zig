@@ -84,7 +84,7 @@ fn metas() void {
     c.g_free(s);
     out(" add null {d}", .{@intFromBool(c.gst_buffer_add_net_address_meta(buf, null) == null)});
     out(" add to null {d}", .{@intFromBool(c.gst_buffer_add_net_address_meta(null, sa) == null)});
-    const credNew: *const fn () callconv(.c) ?*c.GSocketControlMessage = @ptrCast(c.dlsym(null, "g_unix_credentials_message_new").?);
+    const credNew: *const fn () callconv(.c) ?*c.GSocketControlMessage = @ptrCast(@alignCast(c.dlsym(null, "g_unix_credentials_message_new").?));
     const cred = credNew();
     const ctl = c.gst_buffer_add_net_control_message_meta(buf, cred);
     out(" ctl add {d} same {d}", .{ @intFromBool(ctl != null), @intFromBool(ctl.*.message == cred) });

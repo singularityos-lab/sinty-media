@@ -198,7 +198,7 @@ fn initStaticPlugins() void {
     defer _ = c.g_module_close(m);
     var func: c.gpointer = null;
     if (c.g_module_symbol(m, "gst_init_static_plugins", &func) != 0) {
-        const f: *const fn () callconv(.c) void = @ptrCast(func);
+        const f: *const fn () callconv(.c) void = @ptrCast(@alignCast(func));
         f();
     }
 }

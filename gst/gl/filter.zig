@@ -1,4 +1,5 @@
 const std = @import("std");
+const va = @import("../varargs.zig");
 const c = @import("../c.zig").c;
 const check = @import("check.zig");
 const gtype = @import("../gtype.zig");
@@ -441,7 +442,7 @@ pub export fn gst_gl_filter_filter_texture(f: OFilter, input: [*c]c.GstBuffer, o
 
 fn filterGl(ctx: OCtx, data: c.gpointer) callconv(.c) void {
     const f = fl(data);
-    debug.gst_gl_insert_debug_marker(ctx, "processing in element %s", f[0].parent.parent.element.object.name);
+    va.entryPoint(debug, "gst_gl_insert_debug_marker")(ctx, "processing in element %s", f[0].parent.parent.element.object.name);
     f[0].gl_result = if (klass(f).filter) |fc| fc(f, f[0].inbuf, f[0].outbuf) else gst_gl_filter_filter_texture(f, f[0].inbuf, f[0].outbuf);
 }
 

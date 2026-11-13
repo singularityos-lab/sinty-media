@@ -1,4 +1,5 @@
 const std = @import("std");
+const va = @import("../varargs.zig");
 const c = @import("../c.zig").c;
 const gtype = @import("../gtype.zig");
 const el = @import("../base/el.zig");
@@ -416,17 +417,25 @@ pub export fn gst_rtp_base_payload_set_outcaps_structure(p: [*c]Pay, s: ?*c.GstS
     return @intFromBool(negotiate(of(p)));
 }
 
-pub export fn gst_rtp_base_payload_set_outcaps(p: [*c]Pay, field: [*c]const u8, ...) callconv(.c) c.gboolean {
+pub fn gst_rtp_base_payload_set_outcaps(p: [*c]Pay, field: [*c]const u8, ...) callconv(.c) c.gboolean {
+    var ap = @cVaStart();
+    defer @cVaEnd(&ap);
+    return gst_rtp_base_payload_set_outcaps_va(p, field, &ap);
+}
+
+pub fn gst_rtp_base_payload_set_outcaps_va(p: [*c]Pay, field: [*c]const u8, ap: *va.VaList) callconv(.c) c.gboolean {
     var s: ?*c.GstStructure = null;
     if (field != null) {
         s = c.gst_structure_new_empty("unused");
-        var ap = @cVaStart();
-        c.gst_structure_set_valist(s, field, @ptrCast(&ap));
-        @cVaEnd(&ap);
+        va.call(c.gst_structure_set_valist, .{ s, field, ap });
     }
     const res = gst_rtp_base_payload_set_outcaps_structure(p, s);
     if (s != null) c.gst_structure_free(s);
     return res;
+}
+
+comptime {
+    va.entry(@This(), "gst_rtp_base_payload_set_outcaps");
 }
 
 fn exts(p: *Pay) []?*Ext {

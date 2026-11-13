@@ -486,8 +486,8 @@ pub export fn gst_debug_message_get(m: ?*c.GstDebugMessage) [*c]const u8 {
     const msg: *Message = @ptrCast(@alignCast(m));
     if (msg.text == null) {
         if (msg.args) |ap| {
-            var copy = @cVaCopy(ap);
-            defer @cVaEnd(&copy);
+            var copy = va.copy(ap);
+            defer va.end(&copy);
             if (printf.vasprintf(&msg.text, msg.format, &copy) < 0) msg.text = null;
         }
     }
@@ -558,23 +558,39 @@ pub fn logVa(cat: CatPtr, level: Level, file: [*c]const u8, func: [*c]const u8, 
     if (!check.that(cat != null, "gst_debug_log_full_valist", "category != NULL")) return;
     if (level > gst_debug_category_get_threshold(cat)) return;
     if (!logGuards("gst_debug_log_full_valist", cat, file, func, format, "format")) return;
-    var copy = @cVaCopy(ap);
-    defer @cVaEnd(&copy);
+    var copy = va.copy(ap);
+    defer va.end(&copy);
     var msg = Message{ .format = format, .object = object, .text = null, .owned_text = true, .id = @constCast(id), .free_id = false, .args = &copy };
     dispatch(cat, level, file, func, line, object, &msg);
     c.g_free(msg.text);
 }
 
-pub export fn gst_debug_log(cat: CatPtr, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, object: [*c]c.GObject, format: [*c]const u8, ...) callconv(.c) void {
+pub fn gst_debug_log(cat: CatPtr, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, object: [*c]c.GObject, format: [*c]const u8, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    logVa(cat, level, file, func, line, object, null, format, &ap);
+    return gst_debug_log_va(cat, level, file, func, line, object, format, &ap);
 }
 
-pub export fn gst_debug_log_id(cat: CatPtr, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, id: [*c]const u8, format: [*c]const u8, ...) callconv(.c) void {
+pub fn gst_debug_log_va(cat: CatPtr, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, object: [*c]c.GObject, format: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+    logVa(cat, level, file, func, line, object, null, format, ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_debug_log");
+}
+
+pub fn gst_debug_log_id(cat: CatPtr, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, id: [*c]const u8, format: [*c]const u8, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    logVa(cat, level, file, func, line, null, id, format, &ap);
+    return gst_debug_log_id_va(cat, level, file, func, line, id, format, &ap);
+}
+
+pub fn gst_debug_log_id_va(cat: CatPtr, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, id: [*c]const u8, format: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+    logVa(cat, level, file, func, line, null, id, format, ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_debug_log_id");
 }
 
 pub export fn gst_debug_log_valist(cat: CatPtr, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, object: [*c]c.GObject, format: [*c]const u8, ap: va.CVaList) void {
@@ -946,10 +962,18 @@ pub export fn gst_info_strdup_vprintf(format: [*c]const u8, ap: va.CVaList) [*c]
     return strdupVa(format, va.fromC(ap));
 }
 
-pub export fn gst_info_strdup_printf(format: [*c]const u8, ...) callconv(.c) [*c]u8 {
+pub fn gst_info_strdup_printf(format: [*c]const u8, ...) callconv(.c) [*c]u8 {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    return strdupVa(format, &ap);
+    return gst_info_strdup_printf_va(format, &ap);
+}
+
+pub fn gst_info_strdup_printf_va(format: [*c]const u8, ap: *va.VaList) callconv(.c) [*c]u8 {
+    return strdupVa(format, ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_info_strdup_printf");
 }
 
 fn emit(text: [*c]u8, comptime err: bool, comptime newline: bool) void {
@@ -958,28 +982,60 @@ fn emit(text: [*c]u8, comptime err: bool, comptime newline: bool) void {
     c.g_free(text);
 }
 
-pub export fn gst_print(format: [*c]const u8, ...) callconv(.c) void {
+pub fn gst_print(format: [*c]const u8, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    emit(strdupVa(format, &ap), false, false);
+    return gst_print_va(format, &ap);
 }
 
-pub export fn gst_println(format: [*c]const u8, ...) callconv(.c) void {
-    var ap = @cVaStart();
-    defer @cVaEnd(&ap);
-    emit(strdupVa(format, &ap), false, true);
+pub fn gst_print_va(format: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+    emit(strdupVa(format, ap), false, false);
 }
 
-pub export fn gst_printerr(format: [*c]const u8, ...) callconv(.c) void {
-    var ap = @cVaStart();
-    defer @cVaEnd(&ap);
-    emit(strdupVa(format, &ap), true, false);
+comptime {
+    va.entry(@This(), "gst_print");
 }
 
-pub export fn gst_printerrln(format: [*c]const u8, ...) callconv(.c) void {
+pub fn gst_println(format: [*c]const u8, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    emit(strdupVa(format, &ap), true, true);
+    return gst_println_va(format, &ap);
+}
+
+pub fn gst_println_va(format: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+    emit(strdupVa(format, ap), false, true);
+}
+
+comptime {
+    va.entry(@This(), "gst_println");
+}
+
+pub fn gst_printerr(format: [*c]const u8, ...) callconv(.c) void {
+    var ap = @cVaStart();
+    defer @cVaEnd(&ap);
+    return gst_printerr_va(format, &ap);
+}
+
+pub fn gst_printerr_va(format: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+    emit(strdupVa(format, ap), true, false);
+}
+
+comptime {
+    va.entry(@This(), "gst_printerr");
+}
+
+pub fn gst_printerrln(format: [*c]const u8, ...) callconv(.c) void {
+    var ap = @cVaStart();
+    defer @cVaEnd(&ap);
+    return gst_printerrln_va(format, &ap);
+}
+
+pub fn gst_printerrln_va(format: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+    emit(strdupVa(format, ap), true, true);
+}
+
+comptime {
+    va.entry(@This(), "gst_printerrln");
 }
 
 fn byName(a: c.gconstpointer, b: c.gconstpointer) callconv(.c) c.gint {

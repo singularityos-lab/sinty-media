@@ -132,19 +132,27 @@ pub export fn gst_type_find_suggest_empty_simple(find: [*c]Find, probability: c.
     c.gst_caps_unref(caps);
 }
 
-pub export fn gst_type_find_suggest_simple(find: [*c]Find, probability: c.guint, media: [*c]const u8, field: [*c]const u8, ...) callconv(.c) void {
+pub fn gst_type_find_suggest_simple(find: [*c]Find, probability: c.guint, media: [*c]const u8, field: [*c]const u8, ...) callconv(.c) void {
+    var ap = @cVaStart();
+    defer @cVaEnd(&ap);
+    return gst_type_find_suggest_simple_va(find, probability, media, field, &ap);
+}
+
+pub fn gst_type_find_suggest_simple_va(find: [*c]Find, probability: c.guint, media: [*c]const u8, field: [*c]const u8, ap: *va.VaList) callconv(.c) void {
     const f = "gst_type_find_suggest_simple";
     if (!check.that(find[0].suggest != null, f, "find->suggest != NULL")) return;
     if (!check.that(probability <= 100, f, "probability <= 100")) return;
     if (!check.that(media != null, f, "media_type != NULL")) return;
     const caps = c.gst_caps_new_empty();
-    var ap = @cVaStart();
-    const s = c.gst_structure_new_valist(media, field, va.toC(&ap));
-    @cVaEnd(&ap);
+    const s = va.call(c.gst_structure_new_valist, .{ media, field, ap });
     c.gst_caps_append_structure(caps, s);
     if (!check.that(c.gst_caps_is_fixed(caps) != 0, f, "gst_caps_is_fixed (caps)")) return;
     find[0].suggest.?(find[0].data, probability, caps);
     c.gst_caps_unref(caps);
+}
+
+comptime {
+    va.entry(@This(), "gst_type_find_suggest_simple");
 }
 
 pub export fn gst_type_find_get_length(find: [*c]Find) c.guint64 {

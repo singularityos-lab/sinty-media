@@ -1,4 +1,5 @@
 const std = @import("std");
+const va = @import("varargs.zig");
 const c = @import("c.zig").c;
 const check = @import("check.zig");
 const gtype = @import("gtype.zig");
@@ -69,7 +70,7 @@ fn handlerUnref(h: *Handler) void {
 }
 
 fn log(p: [*c]Bus, comptime func: [:0]const u8, comptime text: [:0]const u8) void {
-    info.gst_debug_log(info.GST_CAT_BUS, c.GST_LEVEL_ERROR, "../gst/gstbus.c", func, 0, @ptrCast(p), text);
+    va.entryPoint(info, "gst_debug_log")(info.GST_CAT_BUS, c.GST_LEVEL_ERROR, "../gst/gstbus.c", func, 0, @ptrCast(p), text);
 }
 
 pub export fn gst_bus_get_type() c.GType {

@@ -449,7 +449,7 @@ fn fns(fmt: c.GstVideoFormat) ?Fns {
 }
 
 fn fnsOf(s: *Self) Fns {
-    return .{ .blend = @ptrCast(s.blend.?), .overlay = @ptrCast(s.overlay.?), .checker = @ptrCast(s.fill_checker.?), .color = @ptrCast(s.fill_color.?) };
+    return .{ .blend = @ptrCast(@alignCast(s.blend.?)), .overlay = @ptrCast(@alignCast(s.overlay.?)), .checker = @ptrCast(@alignCast(s.fill_checker.?)), .color = @ptrCast(@alignCast(s.fill_color.?)) };
 }
 
 fn setFunctions(s: *Self, info: *const c.GstVideoInfo) bool {

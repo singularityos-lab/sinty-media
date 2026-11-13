@@ -584,8 +584,8 @@ fn fetchFormats(ctx: OCtx) bool {
     }
     objUnlock(ctx);
     if (context.gst_gl_context_check_feature(ctx, "EGL_EXT_image_dma_buf_import_modifiers") == 0) return false;
-    const qf: QueryFormats = @ptrCast(context.gst_gl_context_get_proc_address(ctx, "eglQueryDmaBufFormatsEXT") orelse return false);
-    const qm: QueryModifiers = @ptrCast(context.gst_gl_context_get_proc_address(ctx, "eglQueryDmaBufModifiersEXT") orelse return false);
+    const qf: QueryFormats = @ptrCast(@alignCast(context.gst_gl_context_get_proc_address(ctx, "eglQueryDmaBufFormatsEXT") orelse return false));
+    const qm: QueryModifiers = @ptrCast(@alignCast(context.gst_gl_context_get_proc_address(ctx, "eglQueryDmaBufModifiersEXT") orelse return false));
     const d = edisplay.gst_gl_display_egl_from_gl_display(ctx[0].display);
     if (d == null) return false;
     const dpy: c.EGLDisplay = @ptrFromInt(c.gst_gl_display_get_handle(@ptrCast(d)));

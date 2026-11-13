@@ -1,4 +1,5 @@
 const std = @import("std");
+const va = @import("../varargs.zig");
 const c = @import("../c.zig").c;
 const check = @import("check.zig");
 const context = @import("context.zig");
@@ -123,7 +124,7 @@ pub export fn gst_gl_query_result(q: [*c]Q) c.guint64 {
 }
 
 pub fn startLog(q: [*c]Q, cat: ?*c.GstDebugCategory, comptime file: []const u8, comptime func: [*:0]const u8, line: c.gint, what: [*:0]const u8) void {
-    debug.gst_gl_async_debug_store_log_msg(&q[0].debug, cat, c.GST_LEVEL_LOG, "../gst-libs/gst/gl/" ++ file ++ "\x00", func, line, null, "%s took", what);
+    va.entryPoint(debug, "gst_gl_async_debug_store_log_msg")(&q[0].debug, cat, c.GST_LEVEL_LOG, "../gst-libs/gst/gl/" ++ file ++ "\x00", func, line, null, "%s took", what);
     debug.gst_gl_async_debug_freeze(&q[0].debug);
     gst_gl_query_start(q);
     debug.gst_gl_async_debug_thaw(&q[0].debug);

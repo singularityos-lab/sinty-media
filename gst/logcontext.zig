@@ -176,9 +176,9 @@ fn allowFormat(ctx: *Context, file: [*c]const u8, line: c.gint, object: [*c]c.GO
     var full: [*c]u8 = null;
     defer c.g_free(full);
     if (ctx.hash_flags & c.GST_LOG_CONTEXT_USE_STRING_ARGS != 0) {
-        var copy = @cVaCopy(ap);
-        defer @cVaEnd(&copy);
-        full = c.g_strdup_vprintf(format, va.toC(&copy));
+        var copy = va.copy(ap);
+        defer va.end(&copy);
+        full = va.call(c.g_strdup_vprintf, .{ format, &copy });
     }
     return !seen(ctx, messageKey(ctx, file, line, object, id, if (full != null) full else format));
 }
@@ -200,10 +200,18 @@ fn logLiteral(ctx: *Context, level: Level, file: [*c]const u8, func: [*c]const u
     info.logText(ctx.category, level, file, func, line, object, id, text);
 }
 
-pub export fn gst_debug_log_with_context(ctx: *Context, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, object: [*c]c.GObject, format: [*c]const u8, ...) callconv(.c) void {
+pub fn gst_debug_log_with_context(ctx: *Context, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, object: [*c]c.GObject, format: [*c]const u8, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    if (admit(ctx, level, file, line, object, null, format, &ap)) info.logVa(ctx.category, level, file, func, line, object, null, format, &ap);
+    return gst_debug_log_with_context_va(ctx, level, file, func, line, object, format, &ap);
+}
+
+pub fn gst_debug_log_with_context_va(ctx: *Context, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, object: [*c]c.GObject, format: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+    if (admit(ctx, level, file, line, object, null, format, ap)) info.logVa(ctx.category, level, file, func, line, object, null, format, ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_debug_log_with_context");
 }
 
 pub export fn gst_debug_log_with_context_valist(ctx: *Context, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, object: [*c]c.GObject, format: [*c]const u8, ap: va.CVaList) void {
@@ -214,10 +222,18 @@ pub export fn gst_debug_log_literal_with_context(ctx: *Context, level: Level, fi
     logLiteral(ctx, level, file, func, line, object, null, text);
 }
 
-pub export fn gst_debug_log_id_with_context(ctx: *Context, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, id: [*c]const u8, format: [*c]const u8, ...) callconv(.c) void {
+pub fn gst_debug_log_id_with_context(ctx: *Context, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, id: [*c]const u8, format: [*c]const u8, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    if (admit(ctx, level, file, line, null, id, format, &ap)) info.logVa(ctx.category, level, file, func, line, null, id, format, &ap);
+    return gst_debug_log_id_with_context_va(ctx, level, file, func, line, id, format, &ap);
+}
+
+pub fn gst_debug_log_id_with_context_va(ctx: *Context, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, id: [*c]const u8, format: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+    if (admit(ctx, level, file, line, null, id, format, ap)) info.logVa(ctx.category, level, file, func, line, null, id, format, ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_debug_log_id_with_context");
 }
 
 pub export fn gst_debug_log_id_with_context_valist(ctx: *Context, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, id: [*c]const u8, format: [*c]const u8, ap: va.CVaList) void {
@@ -240,18 +256,34 @@ fn onceContext(cat: Cat) *Context {
     return ctx;
 }
 
-pub export fn _gst_debug_log_once(cat: Cat, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, object: [*c]c.GObject, format: [*c]const u8, ...) callconv(.c) void {
+pub fn _gst_debug_log_once(cat: Cat, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, object: [*c]c.GObject, format: [*c]const u8, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    const ctx = onceContext(cat);
-    if (admit(ctx, level, file, line, object, null, format, &ap)) info.logVa(ctx.category, level, file, func, line, object, null, format, &ap);
+    return _gst_debug_log_once_va(cat, level, file, func, line, object, format, &ap);
 }
 
-pub export fn _gst_debug_log_once_id(cat: Cat, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, id: [*c]const u8, format: [*c]const u8, ...) callconv(.c) void {
+pub fn _gst_debug_log_once_va(cat: Cat, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, object: [*c]c.GObject, format: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+    const ctx = onceContext(cat);
+    if (admit(ctx, level, file, line, object, null, format, ap)) info.logVa(ctx.category, level, file, func, line, object, null, format, ap);
+}
+
+comptime {
+    va.entry(@This(), "_gst_debug_log_once");
+}
+
+pub fn _gst_debug_log_once_id(cat: Cat, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, id: [*c]const u8, format: [*c]const u8, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
+    return _gst_debug_log_once_id_va(cat, level, file, func, line, id, format, &ap);
+}
+
+pub fn _gst_debug_log_once_id_va(cat: Cat, level: Level, file: [*c]const u8, func: [*c]const u8, line: c.gint, id: [*c]const u8, format: [*c]const u8, ap: *va.VaList) callconv(.c) void {
     const ctx = onceContext(cat);
-    if (admit(ctx, level, file, line, null, id, format, &ap)) info.logVa(ctx.category, level, file, func, line, null, id, format, &ap);
+    if (admit(ctx, level, file, line, null, id, format, ap)) info.logVa(ctx.category, level, file, func, line, null, id, format, ap);
+}
+
+comptime {
+    va.entry(@This(), "_gst_debug_log_once_id");
 }
 
 const ThreadLog = struct {

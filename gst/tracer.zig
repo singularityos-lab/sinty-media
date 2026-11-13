@@ -256,7 +256,7 @@ pub export fn gst_tracer_factory_get_type() c.GType {
 
 fn dbg(o: [*c]c.GObject, comptime line: c.gint, comptime fmt: [*:0]const u8, args: anytype) void {
     if (debug_cat == null or c.GST_LEVEL_DEBUG > info._gst_debug_min) return;
-    @call(.auto, info.gst_debug_log, .{ debug_cat, c.GST_LEVEL_DEBUG, "../gst/gsttracer.c", "gst_tracer_register", line, o, fmt } ++ args);
+    @call(.auto, va.entryPoint(info, "gst_debug_log"), .{ debug_cat, c.GST_LEVEL_DEBUG, "../gst/gsttracer.c", "gst_tracer_register", line, o, fmt } ++ args);
 }
 
 pub export fn gst_tracer_register(p: [*c]plugin.Plugin, name: [*c]const u8, t: c.GType) c.gboolean {
@@ -362,7 +362,7 @@ fn templateField(field: [*c]const c.GstIdStr, v: [*c]const c.GValue, data: c.gpo
 fn buildFormat(r: [*c]Record) void {
     const name = c.gst_structure_get_name(r[0].spec);
     if (!check.that(c.g_str_has_suffix(name, ".class") != 0, "gst_tracer_record_build_format", "g_str_has_suffix (name, \".class\")")) return;
-    if (debug_cat != null and c.GST_LEVEL_TRACE <= info._gst_debug_min) info.gst_debug_log(debug_cat, c.GST_LEVEL_TRACE, "../gst/gsttracerrecord.c", "gst_tracer_record_build_format", 111, null, "%" ++ "p\x07A", r[0].spec);
+    if (debug_cat != null and c.GST_LEVEL_TRACE <= info._gst_debug_min) va.entryPoint(info, "gst_debug_log")(debug_cat, c.GST_LEVEL_TRACE, "../gst/gsttracerrecord.c", "gst_tracer_record_build_format", 111, null, "%" ++ "p\x07A", r[0].spec);
     const base = c.g_strndup(name, c.strlen(name) - 6);
     defer c.g_free(base);
     const s = c.g_string_sized_new(64);
@@ -370,29 +370,33 @@ fn buildFormat(r: [*c]Record) void {
     _ = c.gst_structure_foreach_id_str(r[0].spec, templateField, s);
     _ = c.g_string_append_c(s, ';');
     r[0].format = c.g_string_free(s, 0);
-    if (debug_cat != null and c.GST_LEVEL_DEBUG <= info._gst_debug_min) info.gst_debug_log(debug_cat, c.GST_LEVEL_DEBUG, "../gst/gsttracerrecord.c", "gst_tracer_record_build_format", 125, null, "new format string: %s", r[0].format);
+    if (debug_cat != null and c.GST_LEVEL_DEBUG <= info._gst_debug_min) va.entryPoint(info, "gst_debug_log")(debug_cat, c.GST_LEVEL_DEBUG, "../gst/gsttracerrecord.c", "gst_tracer_record_build_format", 125, null, "new format string: %s", r[0].format);
 }
 
-pub export fn gst_tracer_record_new(name: [*c]const u8, first: [*c]const u8, ...) callconv(.c) [*c]Record {
+pub fn gst_tracer_record_new(name: [*c]const u8, first: [*c]const u8, ...) callconv(.c) [*c]Record {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
+    return gst_tracer_record_new_va(name, first, &ap);
+}
+
+pub fn gst_tracer_record_new_va(name: [*c]const u8, first: [*c]const u8, ap: *va.VaList) callconv(.c) [*c]Record {
     const s = c.gst_structure_new_empty(name);
     var field = first;
     while (field != null) {
-        const t = @cVaArg(&ap, c.GType);
+        const t = va.arg(ap, c.GType);
         if (t != c.gst_structure_get_type()) {
             c.gst_structure_free(s);
             return null;
         }
         var v = std.mem.zeroes(c.GValue);
-        const err = va.collect(&v, t, &ap);
+        const err = va.collect(&v, t, ap);
         if (err != null) {
             c.g_log("GStreamer", c.G_LOG_LEVEL_CRITICAL, "%s", err);
             c.g_free(err);
             break;
         }
         c.gst_structure_take_value(s, field, &v);
-        field = @cVaArg(&ap, [*c]const u8);
+        field = va.arg(ap, [*c]const u8);
     }
     const r: [*c]Record = @ptrCast(@alignCast(c.g_object_new(gst_tracer_record_get_type(), @as([*c]const u8, null))));
     _ = object.gst_object_ref_sink(r);
@@ -401,11 +405,23 @@ pub export fn gst_tracer_record_new(name: [*c]const u8, first: [*c]const u8, ...
     return r;
 }
 
-pub export fn gst_tracer_record_log(r: [*c]Record, ...) callconv(.c) void {
+comptime {
+    va.entry(@This(), "gst_tracer_record_new");
+}
+
+pub fn gst_tracer_record_log(r: [*c]Record, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
+    return gst_tracer_record_log_va(r, &ap);
+}
+
+pub fn gst_tracer_record_log_va(r: [*c]Record, ap: *va.VaList) callconv(.c) void {
     if (c.GST_LEVEL_TRACE <= info._gst_debug_min)
-        info.gst_debug_log_valist(debug_cat, c.GST_LEVEL_TRACE, "", "", 0, null, r[0].format, va.toC(&ap));
+        info.gst_debug_log_valist(debug_cat, c.GST_LEVEL_TRACE, "", "", 0, null, r[0].format, va.toC(ap));
+}
+
+comptime {
+    va.entry(@This(), "gst_tracer_record_log");
 }
 
 fn registerHookId(t: [*c]Tracer, detail: c.GQuark, func: c.GCallback) void {

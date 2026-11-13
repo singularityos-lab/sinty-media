@@ -1,8 +1,19 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const c = @import("c.zig").c;
 
-pub const CVaList = @typeInfo(@TypeOf(c.gst_structure_set_valist)).@"fn".params[2].type.?;
-pub const VaList = std.builtin.VaList;
+pub const manual = builtin.cpu.arch == .aarch64;
+
+const Aapcs64 = extern struct {
+    stack: [*]u8,
+    gr_top: [*]u8,
+    vr_top: [*]u8,
+    gr_offs: c_int,
+    vr_offs: c_int,
+};
+
+pub const VaList = if (manual) Aapcs64 else std.builtin.VaList;
+pub const CVaList = if (manual) *VaList else @typeInfo(@TypeOf(c.gst_structure_set_valist)).@"fn".params[2].type.?;
 
 const max_collect = 8;
 
@@ -19,11 +30,61 @@ pub fn cvaluesOf(p: ?*c.GTypeCValue) [*]CValue {
 }
 
 pub fn fromC(ap: CVaList) *VaList {
-    return @ptrCast(@alignCast(ap));
+    return if (manual) ap else @ptrCast(@alignCast(ap));
 }
 
 pub fn toC(ap: *VaList) CVaList {
-    return @ptrCast(ap);
+    return if (manual) ap else @ptrCast(ap);
+}
+
+fn readArg(ap: *Aapcs64, comptime T: type) T {
+    comptime std.debug.assert(@sizeOf(T) <= 8);
+    const float = @typeInfo(T) == .float;
+    const offs = if (float) &ap.vr_offs else &ap.gr_offs;
+    if (offs.* < 0) {
+        const at = offs.*;
+        offs.* = at + if (float) 16 else 8;
+        if (offs.* <= 0) {
+            const top = if (float) ap.vr_top else ap.gr_top;
+            return @as(*align(1) const T, @ptrCast(top - @as(usize, @intCast(-at)))).*;
+        }
+    }
+    const p = ap.stack;
+    ap.stack += 8;
+    return @as(*align(1) const T, @ptrCast(p)).*;
+}
+
+pub inline fn arg(ap: *VaList, comptime T: type) T {
+    return if (manual) readArg(ap, T) else @cVaArg(ap, T);
+}
+
+pub inline fn copy(ap: *VaList) VaList {
+    return if (manual) ap.* else @cVaCopy(ap);
+}
+
+pub inline fn end(ap: *VaList) void {
+    if (!manual) @cVaEnd(ap);
+}
+
+pub fn call(comptime f: anytype, args: anytype) @typeInfo(@TypeOf(f)).@"fn".return_type.? {
+    const params = @typeInfo(@TypeOf(f)).@"fn".params;
+    const last = params.len - 1;
+    var full: std.meta.ArgsTuple(@TypeOf(f)) = undefined;
+    inline for (0..last) |i| full[i] = args[i];
+    full[last] = if (manual) @as(*const params[last].type.?, @ptrCast(args[last])).* else @ptrCast(args[last]);
+    return @call(.auto, f, full);
+}
+
+pub fn entryPoint(comptime S: type, comptime name: []const u8) *const @TypeOf(@field(S, name)) {
+    return if (manual) @extern(*const @TypeOf(@field(S, name)), .{ .name = name }) else &@field(S, name);
+}
+
+pub fn entry(comptime S: type, comptime name: []const u8) void {
+    if (manual) {
+        @export(&@field(S, name ++ "_va"), .{ .name = "sinty_va_" ++ name, .visibility = .hidden });
+    } else {
+        @export(&@field(S, name), .{ .name = name });
+    }
 }
 
 pub fn collect(value: *c.GValue, t: c.GType, ap: *VaList) callconv(.c) [*c]u8 {
@@ -37,11 +98,11 @@ pub fn collect(value: *c.GValue, t: c.GType, ap: *VaList) callconv(.c) [*c]u8 {
         const cv = &cv_buf[n];
         n += 1;
         switch (fmt[0]) {
-            'i' => cv.v_int = @cVaArg(ap, c.gint),
-            'l' => cv.v_long = @cVaArg(ap, c.glong),
-            'q' => cv.v_int64 = @cVaArg(ap, c.gint64),
-            'd' => cv.v_double = @cVaArg(ap, c.gdouble),
-            'p' => cv.v_pointer = @cVaArg(ap, c.gpointer),
+            'i' => cv.v_int = arg(ap, c.gint),
+            'l' => cv.v_long = arg(ap, c.glong),
+            'q' => cv.v_int64 = arg(ap, c.gint64),
+            'd' => cv.v_double = arg(ap, c.gdouble),
+            'p' => cv.v_pointer = arg(ap, c.gpointer),
             else => unreachable,
         }
     }
@@ -55,11 +116,11 @@ pub fn skip(t: c.GType, ap: *VaList) callconv(.c) void {
     var fmt = vtab.*.collect_format;
     while (fmt[0] != 0) : (fmt += 1) {
         switch (fmt[0]) {
-            'i' => _ = @cVaArg(ap, c.gint),
-            'l' => _ = @cVaArg(ap, c.glong),
-            'q' => _ = @cVaArg(ap, c.gint64),
-            'd' => _ = @cVaArg(ap, c.gdouble),
-            'p' => _ = @cVaArg(ap, c.gpointer),
+            'i' => _ = arg(ap, c.gint),
+            'l' => _ = arg(ap, c.glong),
+            'q' => _ = arg(ap, c.gint64),
+            'd' => _ = arg(ap, c.gdouble),
+            'p' => _ = arg(ap, c.gpointer),
             else => unreachable,
         }
     }
@@ -71,7 +132,7 @@ pub fn lcopy(value: *const c.GValue, ap: *VaList, fieldname: [*c]const u8) callc
     var n: c.guint = 0;
     var fmt = vtab.*.lcopy_format;
     while (fmt[0] != 0) : (fmt += 1) {
-        cv_buf[n].v_pointer = @cVaArg(ap, c.gpointer);
+        cv_buf[n].v_pointer = arg(ap, c.gpointer);
         n += 1;
     }
     if (n == 2 and (cv_buf[0].v_pointer == null) != (cv_buf[1].v_pointer == null)) {

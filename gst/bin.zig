@@ -778,28 +778,44 @@ pub export fn gst_bin_remove(b: [*c]Bin, e: [*c]Element) c.gboolean {
     return r;
 }
 
-pub export fn gst_bin_add_many(b: [*c]Bin, first: [*c]Element, ...) callconv(.c) void {
-    if (!check.that(isBin(b), "gst_bin_add_many", "GST_IS_BIN (bin)")) return;
-    if (!check.that(element.isElement(first), "gst_bin_add_many", "GST_IS_ELEMENT (element_1)")) return;
+pub fn gst_bin_add_many(b: [*c]Bin, first: [*c]Element, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
+    return gst_bin_add_many_va(b, first, &ap);
+}
+
+pub fn gst_bin_add_many_va(b: [*c]Bin, first: [*c]Element, ap: *va.VaList) callconv(.c) void {
+    if (!check.that(isBin(b), "gst_bin_add_many", "GST_IS_BIN (bin)")) return;
+    if (!check.that(element.isElement(first), "gst_bin_add_many", "GST_IS_ELEMENT (element_1)")) return;
     var e = first;
     while (e != null) {
         _ = gst_bin_add(b, e);
-        e = @cVaArg(&ap, [*c]Element);
+        e = va.arg(ap, [*c]Element);
     }
 }
 
-pub export fn gst_bin_remove_many(b: [*c]Bin, first: [*c]Element, ...) callconv(.c) void {
-    if (!check.that(isBin(b), "gst_bin_remove_many", "GST_IS_BIN (bin)")) return;
-    if (!check.that(element.isElement(first), "gst_bin_remove_many", "GST_IS_ELEMENT (element_1)")) return;
+comptime {
+    va.entry(@This(), "gst_bin_add_many");
+}
+
+pub fn gst_bin_remove_many(b: [*c]Bin, first: [*c]Element, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
+    return gst_bin_remove_many_va(b, first, &ap);
+}
+
+pub fn gst_bin_remove_many_va(b: [*c]Bin, first: [*c]Element, ap: *va.VaList) callconv(.c) void {
+    if (!check.that(isBin(b), "gst_bin_remove_many", "GST_IS_BIN (bin)")) return;
+    if (!check.that(element.isElement(first), "gst_bin_remove_many", "GST_IS_ELEMENT (element_1)")) return;
     var e = first;
     while (e != null) {
         _ = gst_bin_remove(b, e);
-        e = @cVaArg(&ap, [*c]Element);
+        e = va.arg(ap, [*c]Element);
     }
+}
+
+comptime {
+    va.entry(@This(), "gst_bin_remove_many");
 }
 
 pub export fn gst_bin_iterate_elements(b: [*c]Bin) [*c]c.GstIterator {

@@ -183,7 +183,7 @@ pub export fn gst_meta_api_type_tags_contain_only(api: c.GType, valid: [*c][*c]c
 pub export fn gst_meta_api_type_aggregate_params(api: c.GType, out: [*c][*c]c.GstStructure, p0: [*c]const c.GstStructure, p1: [*c]const c.GstStructure) c.gboolean {
     if (!check.that(api != 0, "gst_meta_api_type_aggregate_params", "api != 0")) return 0;
     if (!check.that(out != null, "gst_meta_api_type_aggregate_params", "aggregated_params != NULL")) return 0;
-    const f: c.GstAllocationMetaParamsAggregator = @ptrCast(c.g_type_get_qdata(api, aggregator_quark));
+    const f: c.GstAllocationMetaParamsAggregator = @ptrCast(@alignCast(c.g_type_get_qdata(api, aggregator_quark)));
     const agg = f orelse return 0;
     return agg(out, p0, p1);
 }

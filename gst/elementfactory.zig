@@ -251,7 +251,7 @@ fn collectProps(first: [*c]const u8, ap: *va.VaList, t: c.GType, n: *c.guint, na
             return 0;
         }
         count += 1;
-        name = @cVaArg(ap, [*c]const u8);
+        name = va.arg(ap, [*c]const u8);
     }
     n.* = @intCast(count);
     names.* = nm;
@@ -281,14 +281,22 @@ pub export fn gst_element_factory_create_valist(f_in: [*c]Factory, first: [*c]co
     return e;
 }
 
-pub export fn gst_element_factory_create_full(f: [*c]Factory, first: [*c]const u8, ...) callconv(.c) [*c]Element {
+pub fn gst_element_factory_create_full(f: [*c]Factory, first: [*c]const u8, ...) callconv(.c) [*c]Element {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    return gst_element_factory_create_valist(f, first, va.toC(&ap));
+    return gst_element_factory_create_full_va(f, first, &ap);
+}
+
+pub fn gst_element_factory_create_full_va(f: [*c]Factory, first: [*c]const u8, ap: *va.VaList) callconv(.c) [*c]Element {
+    return gst_element_factory_create_valist(f, first, va.toC(ap));
+}
+
+comptime {
+    va.entry(@This(), "gst_element_factory_create_full");
 }
 
 pub export fn gst_element_factory_create(f: [*c]Factory, name: [*c]const u8) [*c]Element {
-    if (name != null) return gst_element_factory_create_full(f, "name", name, @as([*c]const u8, null));
+    if (name != null) return va.entryPoint(@This(), "gst_element_factory_create_full")(f, "name", name, @as([*c]const u8, null));
     return gst_element_factory_create_with_properties(f, 0, null, null);
 }
 
@@ -312,14 +320,22 @@ pub export fn gst_element_factory_make_valist(name: [*c]const u8, first: [*c]con
     return gst_element_factory_create_valist(f, first, ap);
 }
 
-pub export fn gst_element_factory_make_full(name: [*c]const u8, first: [*c]const u8, ...) callconv(.c) [*c]Element {
+pub fn gst_element_factory_make_full(name: [*c]const u8, first: [*c]const u8, ...) callconv(.c) [*c]Element {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    return gst_element_factory_make_valist(name, first, va.toC(&ap));
+    return gst_element_factory_make_full_va(name, first, &ap);
+}
+
+pub fn gst_element_factory_make_full_va(name: [*c]const u8, first: [*c]const u8, ap: *va.VaList) callconv(.c) [*c]Element {
+    return gst_element_factory_make_valist(name, first, va.toC(ap));
+}
+
+comptime {
+    va.entry(@This(), "gst_element_factory_make_full");
 }
 
 pub export fn gst_element_factory_make(name: [*c]const u8, element_name: [*c]const u8) [*c]Element {
-    if (element_name != null) return gst_element_factory_make_full(name, "name", element_name, @as([*c]const u8, null));
+    if (element_name != null) return va.entryPoint(@This(), "gst_element_factory_make_full")(name, "name", element_name, @as([*c]const u8, null));
     return gst_element_factory_make_with_properties(name, 0, null, null);
 }
 

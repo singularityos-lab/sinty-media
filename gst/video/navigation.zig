@@ -1,4 +1,5 @@
 const std = @import("std");
+const va = @import("../varargs.zig");
 const c = @import("../c.zig").c;
 const check = @import("check.zig");
 const gtype = @import("../gtype.zig");
@@ -142,15 +143,23 @@ fn isAngles(q: [*c]Query) bool {
     return gst_navigation_query_get_type(q) == c.GST_NAVIGATION_QUERY_ANGLES;
 }
 
-pub export fn gst_navigation_query_set_commands(query: [*c]Query, n_cmds: c.gint, ...) callconv(.c) void {
+pub fn gst_navigation_query_set_commands(query: [*c]Query, n_cmds: c.gint, ...) callconv(.c) void {
+    var ap = @cVaStart();
+    defer @cVaEnd(&ap);
+    return gst_navigation_query_set_commands_va(query, n_cmds, &ap);
+}
+
+pub fn gst_navigation_query_set_commands_va(query: [*c]Query, n_cmds: c.gint, ap: *va.VaList) callconv(.c) void {
     if (!check.that(isCommands(query), "gst_navigation_query_set_commands", "GST_NAVIGATION_QUERY_HAS_TYPE (query, COMMANDS)")) return;
     var list = std.mem.zeroes(c.GValue);
     _ = c.g_value_init(&list, c.gst_value_list_get_type());
-    var ap = @cVaStart();
-    defer @cVaEnd(&ap);
     var i: c.gint = 0;
-    while (i < n_cmds) : (i += 1) addCommand(&list, @cVaArg(&ap, c.GstNavigationCommand));
+    while (i < n_cmds) : (i += 1) addCommand(&list, va.arg(ap, c.GstNavigationCommand));
     c.gst_structure_take_value(c.gst_query_writable_structure(query), "commands", &list);
+}
+
+comptime {
+    va.entry(@This(), "gst_navigation_query_set_commands");
 }
 
 pub export fn gst_navigation_query_set_commandsv(query: [*c]Query, n_cmds: c.gint, cmds: [*c]c.GstNavigationCommand) void {

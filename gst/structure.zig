@@ -285,39 +285,39 @@ pub export fn gst_structure_new_static_str_empty(name: [*c]const u8) [*c]Structu
 }
 
 fn countFields(comptime Key: type, first: Key, ap: *va.VaList) callconv(.c) c.guint {
-    var copy = @cVaCopy(ap);
-    defer @cVaEnd(&copy);
+    var copy = va.copy(ap);
+    defer va.end(&copy);
     var n: c.guint = 0;
     var key = first;
     while (key != 0) {
-        va.skip(@cVaArg(&copy, c.GType), &copy);
-        key = @cVaArg(&copy, Key);
+        va.skip(va.arg(&copy, c.GType), &copy);
+        key = va.arg(&copy, Key);
         n += 1;
     }
     return n;
 }
 
 fn countPtr(first: c.gpointer, ap: *va.VaList) callconv(.c) c.guint {
-    var copy = @cVaCopy(ap);
-    defer @cVaEnd(&copy);
+    var copy = va.copy(ap);
+    defer va.end(&copy);
     var n: c.guint = 0;
     var key = first;
     while (key != null) {
-        va.skip(@cVaArg(&copy, c.GType), &copy);
-        key = @cVaArg(&copy, c.gpointer);
+        va.skip(va.arg(&copy, c.GType), &copy);
+        key = va.arg(&copy, c.gpointer);
         n += 1;
     }
     return n;
 }
 
 fn countQuark(first: c.GQuark, ap: *va.VaList) callconv(.c) c.guint {
-    var copy = @cVaCopy(ap);
-    defer @cVaEnd(&copy);
+    var copy = va.copy(ap);
+    defer va.end(&copy);
     var n: c.guint = 0;
     var key = first;
     while (key != 0) {
-        va.skip(@cVaArg(&copy, c.GType), &copy);
-        key = @cVaArg(&copy, c.GQuark);
+        va.skip(va.arg(&copy, c.GType), &copy);
+        key = va.arg(&copy, c.GQuark);
         n += 1;
     }
     return n;
@@ -335,7 +335,7 @@ fn setList(s: [*c]Structure, kind: KeyKind, first: c.gpointer, ap: *va.VaList) c
             .id_str => idstr.gst_id_str_copy_into(&f.name, @ptrCast(@alignCast(key))),
             .quark => idstr.gst_id_str_set_static_str(&f.name, c.g_quark_to_string(@intCast(@intFromPtr(key)))),
         }
-        const t = @cVaArg(ap, c.GType);
+        const t = va.arg(ap, c.GType);
         const err = va.collect(&f.value, t, ap);
         if (err != null) {
             c.g_log("GStreamer", c.G_LOG_LEVEL_CRITICAL, "%s", err);
@@ -344,7 +344,7 @@ fn setList(s: [*c]Structure, kind: KeyKind, first: c.gpointer, ap: *va.VaList) c
             return;
         }
         putField(s, &f);
-        key = if (kind == .quark) @ptrFromInt(@as(usize, @cVaArg(ap, c.GQuark))) else @cVaArg(ap, c.gpointer);
+        key = if (kind == .quark) @ptrFromInt(@as(usize, va.arg(ap, c.GQuark))) else va.arg(ap, c.gpointer);
     }
 }
 
@@ -372,44 +372,76 @@ pub export fn gst_structure_new_id_str_valist(name: [*c]const IdStr, first: [*c]
     return s;
 }
 
-pub export fn gst_structure_new(name: [*c]const u8, first: [*c]const u8, ...) callconv(.c) [*c]Structure {
+pub fn gst_structure_new(name: [*c]const u8, first: [*c]const u8, ...) callconv(.c) [*c]Structure {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
+    return gst_structure_new_va(name, first, &ap);
+}
+
+pub fn gst_structure_new_va(name: [*c]const u8, first: [*c]const u8, ap: *va.VaList) callconv(.c) [*c]Structure {
     if (!check.that(validName(name), "gst_structure_new_valist", "gst_structure_validate_name (name)")) return null;
-    const s = createDupName(name, countPtr(@constCast(first), &ap));
-    setList(s, .dup, @constCast(first), &ap);
+    const s = createDupName(name, countPtr(@constCast(first), ap));
+    setList(s, .dup, @constCast(first), ap);
     return s;
 }
 
-pub export fn gst_structure_new_static_str(name: [*c]const u8, first: [*c]const u8, ...) callconv(.c) [*c]Structure {
+comptime {
+    va.entry(@This(), "gst_structure_new");
+}
+
+pub fn gst_structure_new_static_str(name: [*c]const u8, first: [*c]const u8, ...) callconv(.c) [*c]Structure {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
+    return gst_structure_new_static_str_va(name, first, &ap);
+}
+
+pub fn gst_structure_new_static_str_va(name: [*c]const u8, first: [*c]const u8, ap: *va.VaList) callconv(.c) [*c]Structure {
     if (!check.that(validName(name), "gst_structure_new_static_str_valist", "gst_structure_validate_name (name)")) return null;
-    const s = createStaticName(name, countPtr(@constCast(first), &ap));
-    setList(s, .static, @constCast(first), &ap);
+    const s = createStaticName(name, countPtr(@constCast(first), ap));
+    setList(s, .static, @constCast(first), ap);
     return s;
 }
 
-pub export fn gst_structure_new_id(name: c.GQuark, first: c.GQuark, ...) callconv(.c) [*c]Structure {
+comptime {
+    va.entry(@This(), "gst_structure_new_static_str");
+}
+
+pub fn gst_structure_new_id(name: c.GQuark, first: c.GQuark, ...) callconv(.c) [*c]Structure {
+    var ap = @cVaStart();
+    defer @cVaEnd(&ap);
+    return gst_structure_new_id_va(name, first, &ap);
+}
+
+pub fn gst_structure_new_id_va(name: c.GQuark, first: c.GQuark, ap: *va.VaList) callconv(.c) [*c]Structure {
     if (!check.that(name != 0, "gst_structure_new_id", "name_quark != 0")) return null;
     if (!check.that(first != 0, "gst_structure_new_id", "field_quark != 0")) return null;
-    var ap = @cVaStart();
-    defer @cVaEnd(&ap);
-    const s = createStaticName(c.g_quark_to_string(name), countQuark(first, &ap));
-    setList(s, .quark, @ptrFromInt(@as(usize, first)), &ap);
+    const s = createStaticName(c.g_quark_to_string(name), countQuark(first, ap));
+    setList(s, .quark, @ptrFromInt(@as(usize, first)), ap);
     return s;
 }
 
-pub export fn gst_structure_new_id_str(name: [*c]const IdStr, first: [*c]const IdStr, ...) callconv(.c) [*c]Structure {
+comptime {
+    va.entry(@This(), "gst_structure_new_id");
+}
+
+pub fn gst_structure_new_id_str(name: [*c]const IdStr, first: [*c]const IdStr, ...) callconv(.c) [*c]Structure {
+    var ap = @cVaStart();
+    defer @cVaEnd(&ap);
+    return gst_structure_new_id_str_va(name, first, &ap);
+}
+
+pub fn gst_structure_new_id_str_va(name: [*c]const IdStr, first: [*c]const IdStr, ap: *va.VaList) callconv(.c) [*c]Structure {
     const func = "gst_structure_new_id_str";
     if (!check.that(name != null, func, "name != 0")) return null;
     if (!check.that(validName(idstr.gst_id_str_as_str(name)), func, "gst_structure_validate_name (gst_id_str_as_str (name))")) return null;
     if (!check.that(first != null, func, "fieldname != NULL")) return null;
-    var ap = @cVaStart();
-    defer @cVaEnd(&ap);
-    const s = createCopyName(name, countPtr(@constCast(first), &ap));
-    setList(s, .id_str, @constCast(first), &ap);
+    const s = createCopyName(name, countPtr(@constCast(first), ap));
+    setList(s, .id_str, @constCast(first), ap);
     return s;
+}
+
+comptime {
+    va.entry(@This(), "gst_structure_new_id_str");
 }
 
 pub export fn gst_structure_set_parent_refcount(s: [*c]Structure, refcount: [*c]c.gint) c.gboolean {
@@ -591,20 +623,36 @@ pub export fn gst_structure_id_str_take_value(s: [*c]Structure, name: [*c]const 
     setTake(s, &n, v);
 }
 
-pub export fn gst_structure_set(s: [*c]Structure, field: [*c]const u8, ...) callconv(.c) void {
-    if (!check.that(s != null, "gst_structure_set", "structure != NULL")) return;
-    if (!check.that(mutable(s) or field == null, "gst_structure_set", "IS_MUTABLE (structure) || field == NULL")) return;
+pub fn gst_structure_set(s: [*c]Structure, field: [*c]const u8, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    setList(s, .dup, @constCast(field), &ap);
+    return gst_structure_set_va(s, field, &ap);
 }
 
-pub export fn gst_structure_set_static_str(s: [*c]Structure, field: [*c]const u8, ...) callconv(.c) void {
-    if (!check.that(s != null, "gst_structure_set_static_str", "structure != NULL")) return;
-    if (!check.that(mutable(s) or field == null, "gst_structure_set_static_str", "IS_MUTABLE (structure) || field == NULL")) return;
+pub fn gst_structure_set_va(s: [*c]Structure, field: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+    if (!check.that(s != null, "gst_structure_set", "structure != NULL")) return;
+    if (!check.that(mutable(s) or field == null, "gst_structure_set", "IS_MUTABLE (structure) || field == NULL")) return;
+    setList(s, .dup, @constCast(field), ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_structure_set");
+}
+
+pub fn gst_structure_set_static_str(s: [*c]Structure, field: [*c]const u8, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    setList(s, .static, @constCast(field), &ap);
+    return gst_structure_set_static_str_va(s, field, &ap);
+}
+
+pub fn gst_structure_set_static_str_va(s: [*c]Structure, field: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+    if (!check.that(s != null, "gst_structure_set_static_str", "structure != NULL")) return;
+    if (!check.that(mutable(s) or field == null, "gst_structure_set_static_str", "IS_MUTABLE (structure) || field == NULL")) return;
+    setList(s, .static, @constCast(field), ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_structure_set_static_str");
 }
 
 pub export fn gst_structure_set_valist(s: [*c]Structure, field: [*c]const u8, ap: va.CVaList) void {
@@ -619,11 +667,19 @@ pub export fn gst_structure_set_static_str_valist(s: [*c]Structure, field: [*c]c
     setList(s, .static, @constCast(field), va.fromC(ap));
 }
 
-pub export fn gst_structure_id_set(s: [*c]Structure, field: c.GQuark, ...) callconv(.c) void {
-    if (!check.that(s != null, "gst_structure_id_set", "structure != NULL")) return;
+pub fn gst_structure_id_set(s: [*c]Structure, field: c.GQuark, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    setList(s, .quark, @ptrFromInt(@as(usize, field)), &ap);
+    return gst_structure_id_set_va(s, field, &ap);
+}
+
+pub fn gst_structure_id_set_va(s: [*c]Structure, field: c.GQuark, ap: *va.VaList) callconv(.c) void {
+    if (!check.that(s != null, "gst_structure_id_set", "structure != NULL")) return;
+    setList(s, .quark, @ptrFromInt(@as(usize, field)), ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_structure_id_set");
 }
 
 pub export fn gst_structure_id_set_valist(s: [*c]Structure, field: c.GQuark, ap: va.CVaList) void {
@@ -632,11 +688,19 @@ pub export fn gst_structure_id_set_valist(s: [*c]Structure, field: c.GQuark, ap:
     setList(s, .quark, @ptrFromInt(@as(usize, field)), va.fromC(ap));
 }
 
-pub export fn gst_structure_id_str_set(s: [*c]Structure, field: [*c]const IdStr, ...) callconv(.c) void {
-    if (!check.that(s != null, "gst_structure_id_str_set", "structure != NULL")) return;
+pub fn gst_structure_id_str_set(s: [*c]Structure, field: [*c]const IdStr, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    setList(s, .id_str, @constCast(field), &ap);
+    return gst_structure_id_str_set_va(s, field, &ap);
+}
+
+pub fn gst_structure_id_str_set_va(s: [*c]Structure, field: [*c]const IdStr, ap: *va.VaList) callconv(.c) void {
+    if (!check.that(s != null, "gst_structure_id_str_set", "structure != NULL")) return;
+    setList(s, .id_str, @constCast(field), ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_structure_id_str_set");
 }
 
 pub export fn gst_structure_id_str_set_valist(s: [*c]Structure, field: [*c]const IdStr, ap: va.CVaList) void {
@@ -697,7 +761,7 @@ fn removeNames(s: [*c]Structure, first: [*c]const u8, ap: *va.VaList) callconv(.
     var name = first;
     while (name != null) {
         gst_structure_remove_field(s, name);
-        name = @cVaArg(ap, [*c]const u8);
+        name = va.arg(ap, [*c]const u8);
     }
 }
 
@@ -705,16 +769,24 @@ fn removeIdNames(s: [*c]Structure, first: [*c]const IdStr, ap: *va.VaList) callc
     var name = first;
     while (name != null) {
         gst_structure_id_str_remove_field(s, name);
-        name = @cVaArg(ap, [*c]const IdStr);
+        name = va.arg(ap, [*c]const IdStr);
     }
 }
 
-pub export fn gst_structure_remove_fields(s: [*c]Structure, first: [*c]const u8, ...) callconv(.c) void {
-    if (!check.that(s != null, "gst_structure_remove_fields", "structure != NULL")) return;
-    if (!check.that(first != null, "gst_structure_remove_fields", "fieldname != NULL")) return;
+pub fn gst_structure_remove_fields(s: [*c]Structure, first: [*c]const u8, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    removeNames(s, first, &ap);
+    return gst_structure_remove_fields_va(s, first, &ap);
+}
+
+pub fn gst_structure_remove_fields_va(s: [*c]Structure, first: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+    if (!check.that(s != null, "gst_structure_remove_fields", "structure != NULL")) return;
+    if (!check.that(first != null, "gst_structure_remove_fields", "fieldname != NULL")) return;
+    removeNames(s, first, ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_structure_remove_fields");
 }
 
 pub export fn gst_structure_id_str_remove_fields_valist(s: [*c]Structure, first: [*c]const IdStr, ap: va.CVaList) void {
@@ -723,12 +795,20 @@ pub export fn gst_structure_id_str_remove_fields_valist(s: [*c]Structure, first:
     removeIdNames(s, first, va.fromC(ap));
 }
 
-pub export fn gst_structure_id_str_remove_fields(s: [*c]Structure, first: [*c]const IdStr, ...) callconv(.c) void {
-    if (!check.that(s != null, "gst_structure_id_str_remove_fields", "structure != NULL")) return;
-    if (!check.that(first != null, "gst_structure_id_str_remove_fields", "fieldname != NULL")) return;
+pub fn gst_structure_id_str_remove_fields(s: [*c]Structure, first: [*c]const IdStr, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    removeIdNames(s, first, &ap);
+    return gst_structure_id_str_remove_fields_va(s, first, &ap);
+}
+
+pub fn gst_structure_id_str_remove_fields_va(s: [*c]Structure, first: [*c]const IdStr, ap: *va.VaList) callconv(.c) void {
+    if (!check.that(s != null, "gst_structure_id_str_remove_fields", "structure != NULL")) return;
+    if (!check.that(first != null, "gst_structure_id_str_remove_fields", "fieldname != NULL")) return;
+    removeIdNames(s, first, ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_structure_id_str_remove_fields");
 }
 
 pub export fn gst_structure_remove_all_fields(s: [*c]Structure) void {
@@ -1400,7 +1480,7 @@ const KeyGet = enum(c_int) { str, id_str, quark };
 fn getList(s: [*c]const Structure, kind: KeyGet, first: c.gpointer, ap: *va.VaList) callconv(.c) c.gboolean {
     var key = first;
     while (key != null) {
-        const expected = @cVaArg(ap, c.GType);
+        const expected = va.arg(ap, c.GType);
         const name: [*c]const u8 = switch (kind) {
             .str => @ptrCast(key),
             .id_str => idstr.gst_id_str_as_str(@ptrCast(@alignCast(key))),
@@ -1419,7 +1499,7 @@ fn getList(s: [*c]const Structure, kind: KeyGet, first: c.gpointer, ap: *va.VaLi
             c.g_free(err);
             return 0;
         }
-        key = if (kind == .quark) @ptrFromInt(@as(usize, @cVaArg(ap, c.GQuark))) else @cVaArg(ap, c.gpointer);
+        key = if (kind == .quark) @ptrFromInt(@as(usize, va.arg(ap, c.GQuark))) else va.arg(ap, c.gpointer);
     }
     return 1;
 }
@@ -1442,28 +1522,52 @@ pub export fn gst_structure_id_get_valist(s: [*c]const Structure, first: c.GQuar
     return getList(s, .quark, @ptrFromInt(@as(usize, first)), va.fromC(ap));
 }
 
-pub export fn gst_structure_get(s: [*c]const Structure, first: [*c]const u8, ...) callconv(.c) c.gboolean {
+pub fn gst_structure_get(s: [*c]const Structure, first: [*c]const u8, ...) callconv(.c) c.gboolean {
+    var ap = @cVaStart();
+    defer @cVaEnd(&ap);
+    return gst_structure_get_va(s, first, &ap);
+}
+
+pub fn gst_structure_get_va(s: [*c]const Structure, first: [*c]const u8, ap: *va.VaList) callconv(.c) c.gboolean {
     if (!check.that(isStructure(s), "gst_structure_get", "GST_IS_STRUCTURE (structure)")) return 0;
     if (!check.that(first != null, "gst_structure_get", "first_fieldname != NULL")) return 0;
-    var ap = @cVaStart();
-    defer @cVaEnd(&ap);
-    return getList(s, .str, @constCast(first), &ap);
+    return getList(s, .str, @constCast(first), ap);
 }
 
-pub export fn gst_structure_id_str_get(s: [*c]const Structure, first: [*c]const IdStr, ...) callconv(.c) c.gboolean {
+comptime {
+    va.entry(@This(), "gst_structure_get");
+}
+
+pub fn gst_structure_id_str_get(s: [*c]const Structure, first: [*c]const IdStr, ...) callconv(.c) c.gboolean {
+    var ap = @cVaStart();
+    defer @cVaEnd(&ap);
+    return gst_structure_id_str_get_va(s, first, &ap);
+}
+
+pub fn gst_structure_id_str_get_va(s: [*c]const Structure, first: [*c]const IdStr, ap: *va.VaList) callconv(.c) c.gboolean {
     if (!check.that(isStructure(s), "gst_structure_id_str_get", "GST_IS_STRUCTURE (structure)")) return 0;
     if (!check.that(first != null, "gst_structure_id_str_get", "first_fieldname != NULL")) return 0;
-    var ap = @cVaStart();
-    defer @cVaEnd(&ap);
-    return getList(s, .id_str, @constCast(first), &ap);
+    return getList(s, .id_str, @constCast(first), ap);
 }
 
-pub export fn gst_structure_id_get(s: [*c]const Structure, first: c.GQuark, ...) callconv(.c) c.gboolean {
-    if (!check.that(isStructure(s), "gst_structure_id_get", "GST_IS_STRUCTURE (structure)")) return 0;
-    if (!check.that(first != 0, "gst_structure_id_get", "first_field_id != 0")) return 0;
+comptime {
+    va.entry(@This(), "gst_structure_id_str_get");
+}
+
+pub fn gst_structure_id_get(s: [*c]const Structure, first: c.GQuark, ...) callconv(.c) c.gboolean {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    return getList(s, .quark, @ptrFromInt(@as(usize, first)), &ap);
+    return gst_structure_id_get_va(s, first, &ap);
+}
+
+pub fn gst_structure_id_get_va(s: [*c]const Structure, first: c.GQuark, ap: *va.VaList) callconv(.c) c.gboolean {
+    if (!check.that(isStructure(s), "gst_structure_id_get", "GST_IS_STRUCTURE (structure)")) return 0;
+    if (!check.that(first != 0, "gst_structure_id_get", "first_field_id != 0")) return 0;
+    return getList(s, .quark, @ptrFromInt(@as(usize, first)), ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_structure_id_get");
 }
 
 pub export fn gst_structure_is_equal(a: [*c]const Structure, b: [*c]const Structure) c.gboolean {

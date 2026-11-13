@@ -698,7 +698,7 @@ pub fn main(init: std.process.Init) u8 {
     const n = S.readlink("/proc/self/exe", &self_path, self_path.len - 1);
     if (n <= 0) return 1;
     self_path[@intCast(n)] = 0;
-    _ = S.signal(S.SIGCHLD, S.SIG_IGN);
+    std.posix.sigaction(.CHLD, &.{ .handler = .{ .handler = std.posix.SIG.IGN }, .mask = std.posix.sigemptyset(), .flags = 0 }, null);
     loop = c.g_main_loop_new(null, 0);
     const args = init.minimal.args.toSlice(gpa) catch return 1;
     if (args.len > 1) {

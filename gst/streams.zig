@@ -1,4 +1,5 @@
 const std = @import("std");
+const va = @import("varargs.zig");
 const c = @import("c.zig").c;
 const check = @import("check.zig");
 const gtype = @import("gtype.zig");
@@ -102,7 +103,7 @@ fn setId(s: *Stream, id: [*c]const u8) void {
     c.g_free(s.object.name);
     s.object.name = c.g_strdup(s.stream_id);
     object.unlock(s);
-    if (id == null) info.gst_debug_log(debug_cat, c.GST_LEVEL_FIXME, "gst/streams.zig", "gst_stream_set_stream_id", 0, @ptrCast(s), "Created random stream-id, consider implementing a deterministic way of creating a stream-id");
+    if (id == null) va.entryPoint(info, "gst_debug_log")(debug_cat, c.GST_LEVEL_FIXME, "gst/streams.zig", "gst_stream_set_stream_id", 0, @ptrCast(s), "Created random stream-id, consider implementing a deterministic way of creating a stream-id");
 }
 
 pub export fn gst_stream_get_stream_id(s: [*c]Stream) [*c]const u8 {

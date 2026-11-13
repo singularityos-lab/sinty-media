@@ -355,7 +355,7 @@ pub fn loadForRegistry(filename: [*c]const u8, reg_in: [*c]registry.Registry, er
     var found = c.g_module_symbol(module, sym, &ptr) != 0;
     c.g_free(sym);
     if (found) {
-        const get: *const fn () callconv(.c) *const Desc = @ptrCast(ptr);
+        const get: *const fn () callconv(.c) *const Desc = @ptrCast(@alignCast(ptr));
         ptr = @constCast(get());
     } else found = c.g_module_symbol(module, "gst_plugin_desc", &ptr) != 0;
     if (!found) {

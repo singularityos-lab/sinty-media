@@ -105,33 +105,41 @@ pub export fn gst_caps_features_new_single_static_str(feature: [*c]const u8) ?*C
 fn listStr(first: [*c]const u8, ap: *va.VaList) callconv(.c) ?*CF {
     const f = gst_caps_features_new_empty();
     var cur = first;
-    while (cur != null) : (cur = @cVaArg(ap, [*c]const u8)) gst_caps_features_add(f, cur);
+    while (cur != null) : (cur = va.arg(ap, [*c]const u8)) gst_caps_features_add(f, cur);
     return f;
 }
 fn listStatic(first: [*c]const u8, ap: *va.VaList) callconv(.c) ?*CF {
     const f = gst_caps_features_new_empty();
     var cur = first;
-    while (cur != null) : (cur = @cVaArg(ap, [*c]const u8)) gst_caps_features_add_static_str(f, cur);
+    while (cur != null) : (cur = va.arg(ap, [*c]const u8)) gst_caps_features_add_static_str(f, cur);
     return f;
 }
 fn listQuark(first: c.GQuark, ap: *va.VaList) callconv(.c) ?*CF {
     const f = gst_caps_features_new_empty();
     var cur = first;
-    while (cur != 0) : (cur = @cVaArg(ap, c.GQuark)) gst_caps_features_add_id(f, cur);
+    while (cur != 0) : (cur = va.arg(ap, c.GQuark)) gst_caps_features_add_id(f, cur);
     return f;
 }
 fn listIdStr(first: [*c]const IdStr, ap: *va.VaList) callconv(.c) ?*CF {
     const f = gst_caps_features_new_empty();
     var cur = first;
-    while (cur != null) : (cur = @cVaArg(ap, [*c]const IdStr)) gst_caps_features_add_id_str(f, cur);
+    while (cur != null) : (cur = va.arg(ap, [*c]const IdStr)) gst_caps_features_add_id_str(f, cur);
     return f;
 }
 
-pub export fn gst_caps_features_new(first: [*c]const u8, ...) callconv(.c) ?*CF {
-    if (!check.that(first != null, "gst_caps_features_new", "feature1 != NULL")) return null;
+pub fn gst_caps_features_new(first: [*c]const u8, ...) callconv(.c) ?*CF {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    return listStr(first, &ap);
+    return gst_caps_features_new_va(first, &ap);
+}
+
+pub fn gst_caps_features_new_va(first: [*c]const u8, ap: *va.VaList) callconv(.c) ?*CF {
+    if (!check.that(first != null, "gst_caps_features_new", "feature1 != NULL")) return null;
+    return listStr(first, ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_caps_features_new");
 }
 
 pub export fn gst_caps_features_new_valist(first: [*c]const u8, ap: va.CVaList) ?*CF {
@@ -139,11 +147,19 @@ pub export fn gst_caps_features_new_valist(first: [*c]const u8, ap: va.CVaList) 
     return listStr(first, va.fromC(ap));
 }
 
-pub export fn gst_caps_features_new_static_str(first: [*c]const u8, ...) callconv(.c) ?*CF {
-    if (!check.that(first != null, "gst_caps_features_new_static_str", "feature1 != NULL")) return null;
+pub fn gst_caps_features_new_static_str(first: [*c]const u8, ...) callconv(.c) ?*CF {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    return listStatic(first, &ap);
+    return gst_caps_features_new_static_str_va(first, &ap);
+}
+
+pub fn gst_caps_features_new_static_str_va(first: [*c]const u8, ap: *va.VaList) callconv(.c) ?*CF {
+    if (!check.that(first != null, "gst_caps_features_new_static_str", "feature1 != NULL")) return null;
+    return listStatic(first, ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_caps_features_new_static_str");
 }
 
 pub export fn gst_caps_features_new_static_str_valist(first: [*c]const u8, ap: va.CVaList) ?*CF {
@@ -151,11 +167,19 @@ pub export fn gst_caps_features_new_static_str_valist(first: [*c]const u8, ap: v
     return listStatic(first, va.fromC(ap));
 }
 
-pub export fn gst_caps_features_new_id(first: c.GQuark, ...) callconv(.c) ?*CF {
-    if (!check.that(first != 0, "gst_caps_features_new_id", "feature1 != 0")) return null;
+pub fn gst_caps_features_new_id(first: c.GQuark, ...) callconv(.c) ?*CF {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    return listQuark(first, &ap);
+    return gst_caps_features_new_id_va(first, &ap);
+}
+
+pub fn gst_caps_features_new_id_va(first: c.GQuark, ap: *va.VaList) callconv(.c) ?*CF {
+    if (!check.that(first != 0, "gst_caps_features_new_id", "feature1 != 0")) return null;
+    return listQuark(first, ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_caps_features_new_id");
 }
 
 pub export fn gst_caps_features_new_id_valist(first: c.GQuark, ap: va.CVaList) ?*CF {
@@ -163,11 +187,19 @@ pub export fn gst_caps_features_new_id_valist(first: c.GQuark, ap: va.CVaList) ?
     return listQuark(first, va.fromC(ap));
 }
 
-pub export fn gst_caps_features_new_id_str(first: [*c]const IdStr, ...) callconv(.c) ?*CF {
-    if (!check.that(first != null, "gst_caps_features_new_id_str", "feature1 != NULL")) return null;
+pub fn gst_caps_features_new_id_str(first: [*c]const IdStr, ...) callconv(.c) ?*CF {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    return listIdStr(first, &ap);
+    return gst_caps_features_new_id_str_va(first, &ap);
+}
+
+pub fn gst_caps_features_new_id_str_va(first: [*c]const IdStr, ap: *va.VaList) callconv(.c) ?*CF {
+    if (!check.that(first != null, "gst_caps_features_new_id_str", "feature1 != NULL")) return null;
+    return listIdStr(first, ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_caps_features_new_id_str");
 }
 
 pub export fn gst_caps_features_new_id_str_valist(first: [*c]const IdStr, ap: va.CVaList) ?*CF {
@@ -503,7 +535,7 @@ pub fn initialize() void {
     _gst_caps_features_any = gst_caps_features_new_any();
     _ = gst_caps_features_set_parent_refcount(_gst_caps_features_any, &forever);
     idstr.gst_id_str_set_static_str(&sysmem, c.GST_CAPS_FEATURE_MEMORY_SYSTEM_MEMORY);
-    _gst_caps_features_memory_system_memory = gst_caps_features_new_id_str(&sysmem, @as([*c]const IdStr, null));
+    _gst_caps_features_memory_system_memory = va.entryPoint(@This(), "gst_caps_features_new_id_str")(&sysmem, @as([*c]const IdStr, null));
     _ = gst_caps_features_set_parent_refcount(_gst_caps_features_memory_system_memory, &forever);
 }
 

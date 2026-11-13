@@ -48,7 +48,7 @@ fn me(p: anytype) *Self {
 }
 
 fn parser(s: *Self) fm.Parser {
-    return @ptrCast(s.parse_line.?);
+    return @ptrCast(@alignCast(s.parse_line.?));
 }
 
 fn dispose(o: [*c]c.GObject) callconv(.c) void {

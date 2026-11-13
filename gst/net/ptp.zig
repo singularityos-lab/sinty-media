@@ -338,7 +338,7 @@ fn emit(domain: c.guint, stats: ?*c.GstStructure) void {
     const marshal = struct {
         fn f(hook: [*c]c.GHook, data: c.gpointer) callconv(.c) void {
             const dd: *Data = @ptrCast(@alignCast(data));
-            const cb: c.GstPtpStatisticsCallback = @ptrCast(hook.*.func);
+            const cb: c.GstPtpStatisticsCallback = @ptrCast(@alignCast(hook.*.func));
             if (cb.?(dd.domain, dd.stats, hook.*.data) == 0) _ = c.g_hook_destroy(hooks, hook.*.hook_id);
         }
     }.f;

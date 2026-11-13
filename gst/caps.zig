@@ -216,35 +216,67 @@ fn simpleResult(s: ?*Structure) [*c]Caps {
     return null;
 }
 
-pub export fn gst_caps_new_simple(media: [*c]const u8, field: [*c]const u8, ...) callconv(.c) [*c]Caps {
+pub fn gst_caps_new_simple(media: [*c]const u8, field: [*c]const u8, ...) callconv(.c) [*c]Caps {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    return simpleResult(c.gst_structure_new_valist(media, field, va.toC(&ap)));
+    return gst_caps_new_simple_va(media, field, &ap);
 }
 
-pub export fn gst_caps_new_static_str_simple(media: [*c]const u8, field: [*c]const u8, ...) callconv(.c) [*c]Caps {
-    var ap = @cVaStart();
-    defer @cVaEnd(&ap);
-    return simpleResult(c.gst_structure_new_static_str_valist(media, field, va.toC(&ap)));
+pub fn gst_caps_new_simple_va(media: [*c]const u8, field: [*c]const u8, ap: *va.VaList) callconv(.c) [*c]Caps {
+    return simpleResult(va.call(c.gst_structure_new_valist, .{ media, field, ap }));
 }
 
-pub export fn gst_caps_new_id_str_simple(media: [*c]const c.GstIdStr, field: [*c]const c.GstIdStr, ...) callconv(.c) [*c]Caps {
+comptime {
+    va.entry(@This(), "gst_caps_new_simple");
+}
+
+pub fn gst_caps_new_static_str_simple(media: [*c]const u8, field: [*c]const u8, ...) callconv(.c) [*c]Caps {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    return simpleResult(c.gst_structure_new_id_str_valist(media, field, va.toC(&ap)));
+    return gst_caps_new_static_str_simple_va(media, field, &ap);
+}
+
+pub fn gst_caps_new_static_str_simple_va(media: [*c]const u8, field: [*c]const u8, ap: *va.VaList) callconv(.c) [*c]Caps {
+    return simpleResult(va.call(c.gst_structure_new_static_str_valist, .{ media, field, ap }));
+}
+
+comptime {
+    va.entry(@This(), "gst_caps_new_static_str_simple");
+}
+
+pub fn gst_caps_new_id_str_simple(media: [*c]const c.GstIdStr, field: [*c]const c.GstIdStr, ...) callconv(.c) [*c]Caps {
+    var ap = @cVaStart();
+    defer @cVaEnd(&ap);
+    return gst_caps_new_id_str_simple_va(media, field, &ap);
+}
+
+pub fn gst_caps_new_id_str_simple_va(media: [*c]const c.GstIdStr, field: [*c]const c.GstIdStr, ap: *va.VaList) callconv(.c) [*c]Caps {
+    return simpleResult(va.call(c.gst_structure_new_id_str_valist, .{ media, field, ap }));
+}
+
+comptime {
+    va.entry(@This(), "gst_caps_new_id_str_simple");
 }
 
 fn fullFrom(first: [*c]Structure, ap: *va.VaList) callconv(.c) [*c]Caps {
     const p = gst_caps_new_empty();
     var s = first;
-    while (s != null) : (s = @cVaArg(ap, [*c]Structure)) appendRaw(p, s, null);
+    while (s != null) : (s = va.arg(ap, [*c]Structure)) appendRaw(p, s, null);
     return p;
 }
 
-pub export fn gst_caps_new_full(first: [*c]Structure, ...) callconv(.c) [*c]Caps {
+pub fn gst_caps_new_full(first: [*c]Structure, ...) callconv(.c) [*c]Caps {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    return fullFrom(first, &ap);
+    return gst_caps_new_full_va(first, &ap);
+}
+
+pub fn gst_caps_new_full_va(first: [*c]Structure, ap: *va.VaList) callconv(.c) [*c]Caps {
+    return fullFrom(first, ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_caps_new_full");
 }
 
 pub export fn gst_caps_new_full_valist(first: [*c]Structure, ap: va.CVaList) [*c]Caps {
@@ -529,7 +561,7 @@ const SetKind = enum(c_int) { dup, static, id_str };
 fn setList(p: [*c]Caps, kind: SetKind, first: c.gpointer, ap: *va.VaList) callconv(.c) void {
     var key = first;
     while (key != null) {
-        const t = @cVaArg(ap, c.GType);
+        const t = va.arg(ap, c.GType);
         var v = std.mem.zeroes(Value);
         const err = va.collect(&v, t, ap);
         if (err != null) {
@@ -543,7 +575,7 @@ fn setList(p: [*c]Caps, kind: SetKind, first: c.gpointer, ap: *va.VaList) callco
             .id_str => gst_caps_id_str_set_value(p, @ptrCast(@alignCast(key)), &v),
         }
         c.g_value_unset(&v);
-        key = @cVaArg(ap, c.gpointer);
+        key = va.arg(ap, c.gpointer);
     }
 }
 
@@ -567,25 +599,49 @@ pub export fn gst_caps_id_str_set_simple_valist(p: [*c]Caps, field: [*c]const c.
     setList(p, .id_str, @ptrCast(@constCast(field)), va.fromC(ap));
 }
 
-pub export fn gst_caps_set_simple(p: [*c]Caps, field: [*c]const u8, ...) callconv(.c) void {
+pub fn gst_caps_set_simple(p: [*c]Caps, field: [*c]const u8, ...) callconv(.c) void {
+    var ap = @cVaStart();
+    defer @cVaEnd(&ap);
+    return gst_caps_set_simple_va(p, field, &ap);
+}
+
+pub fn gst_caps_set_simple_va(p: [*c]Caps, field: [*c]const u8, ap: *va.VaList) callconv(.c) void {
     if (!listGuard("gst_caps_set_simple", p)) return;
-    var ap = @cVaStart();
-    defer @cVaEnd(&ap);
-    setList(p, .dup, @constCast(field), &ap);
+    setList(p, .dup, @constCast(field), ap);
 }
 
-pub export fn gst_caps_set_simple_static_str(p: [*c]Caps, field: [*c]const u8, ...) callconv(.c) void {
+comptime {
+    va.entry(@This(), "gst_caps_set_simple");
+}
+
+pub fn gst_caps_set_simple_static_str(p: [*c]Caps, field: [*c]const u8, ...) callconv(.c) void {
+    var ap = @cVaStart();
+    defer @cVaEnd(&ap);
+    return gst_caps_set_simple_static_str_va(p, field, &ap);
+}
+
+pub fn gst_caps_set_simple_static_str_va(p: [*c]Caps, field: [*c]const u8, ap: *va.VaList) callconv(.c) void {
     if (!listGuard("gst_caps_set_simple_static_str", p)) return;
-    var ap = @cVaStart();
-    defer @cVaEnd(&ap);
-    setList(p, .static, @constCast(field), &ap);
+    setList(p, .static, @constCast(field), ap);
 }
 
-pub export fn gst_caps_id_str_set_simple(p: [*c]Caps, field: [*c]const c.GstIdStr, ...) callconv(.c) void {
-    if (!listGuard("gst_caps_id_str_set_simple", p)) return;
+comptime {
+    va.entry(@This(), "gst_caps_set_simple_static_str");
+}
+
+pub fn gst_caps_id_str_set_simple(p: [*c]Caps, field: [*c]const c.GstIdStr, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    setList(p, .id_str, @ptrCast(@constCast(field)), &ap);
+    return gst_caps_id_str_set_simple_va(p, field, &ap);
+}
+
+pub fn gst_caps_id_str_set_simple_va(p: [*c]Caps, field: [*c]const c.GstIdStr, ap: *va.VaList) callconv(.c) void {
+    if (!listGuard("gst_caps_id_str_set_simple", p)) return;
+    setList(p, .id_str, @ptrCast(@constCast(field)), ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_caps_id_str_set_simple");
 }
 
 pub export fn gst_caps_is_any(p: [*c]const Caps) c.gboolean {

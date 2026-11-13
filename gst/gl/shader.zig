@@ -137,7 +137,7 @@ fn newWithStages(ctx: OCtx, err: [*c][*c]c.GError, ap: *va.VaList) OShader {
     s[0].context = @ptrCast(@alignCast(c.gst_object_ref(ctx)));
     var bail = false;
     while (true) {
-        const st = @cVaArg(ap, OStage);
+        const st = va.arg(ap, OStage);
         if (st == null) break;
         if (bail) {
             c.gst_object_unref(st);
@@ -160,27 +160,43 @@ fn newWithStages(ctx: OCtx, err: [*c][*c]c.GError, ap: *va.VaList) OShader {
     return s;
 }
 
-pub export fn gst_gl_shader_new_link_with_stages(ctx: OCtx, err: [*c][*c]c.GError, ...) callconv(.c) OShader {
+pub fn gst_gl_shader_new_link_with_stages(ctx: OCtx, err: [*c][*c]c.GError, ...) callconv(.c) OShader {
     var ap = @cVaStart();
-    const s = newWithStages(ctx, err, &ap);
-    @cVaEnd(&ap);
+    defer @cVaEnd(&ap);
+    return gst_gl_shader_new_link_with_stages_va(ctx, err, &ap);
+}
+
+pub fn gst_gl_shader_new_link_with_stages_va(ctx: OCtx, err: [*c][*c]c.GError, ap: *va.VaList) callconv(.c) OShader {
+    const s = newWithStages(ctx, err, ap);
     if (s == null) return null;
     if (gst_gl_shader_link(s, err) == 0) return null;
     return s;
 }
 
-pub export fn gst_gl_shader_new_with_stages(ctx: OCtx, err: [*c][*c]c.GError, ...) callconv(.c) OShader {
+comptime {
+    va.entry(@This(), "gst_gl_shader_new_link_with_stages");
+}
+
+pub fn gst_gl_shader_new_with_stages(ctx: OCtx, err: [*c][*c]c.GError, ...) callconv(.c) OShader {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    return newWithStages(ctx, err, &ap);
+    return gst_gl_shader_new_with_stages_va(ctx, err, &ap);
+}
+
+pub fn gst_gl_shader_new_with_stages_va(ctx: OCtx, err: [*c][*c]c.GError, ap: *va.VaList) callconv(.c) OShader {
+    return newWithStages(ctx, err, ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_gl_shader_new_with_stages");
 }
 
 pub export fn gst_gl_shader_new(ctx: OCtx) OShader {
-    return gst_gl_shader_new_with_stages(ctx, null, @as(OStage, null));
+    return va.entryPoint(@This(), "gst_gl_shader_new_with_stages")(ctx, null, @as(OStage, null));
 }
 
 pub export fn gst_gl_shader_new_default(ctx: OCtx, err: [*c][*c]c.GError) OShader {
-    return gst_gl_shader_new_link_with_stages(ctx, err, stage.gst_glsl_stage_new_default_vertex(ctx), stage.gst_glsl_stage_new_default_fragment(ctx), @as(OStage, null));
+    return va.entryPoint(@This(), "gst_gl_shader_new_link_with_stages")(ctx, err, stage.gst_glsl_stage_new_default_vertex(ctx), stage.gst_glsl_stage_new_default_fragment(ctx), @as(OStage, null));
 }
 
 pub export fn gst_gl_shader_is_linked(s: OShader) c.gboolean {

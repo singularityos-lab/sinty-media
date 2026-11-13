@@ -1,4 +1,5 @@
 const std = @import("std");
+const va = @import("../varargs.zig");
 const c = @import("../c.zig").c;
 const check = @import("check.zig");
 const gtype = @import("../gtype.zig");
@@ -121,13 +122,13 @@ fn findLocalUnlocked(m: OMix) bool {
 
 fn glStart(_: OCtx, data: c.gpointer) callconv(.c) void {
     const m = mx(data);
-    debug.gst_gl_insert_debug_marker(m[0].context, "starting element %s", m[0].parent.aggregator.parent.object.name);
+    va.entryPoint(debug, "gst_gl_insert_debug_marker")(m[0].context, "starting element %s", m[0].parent.aggregator.parent.object.name);
     pv(m).gl_started = klass(m).gl_start.?(m);
 }
 
 fn glStop(_: OCtx, data: c.gpointer) callconv(.c) void {
     const m = mx(data);
-    debug.gst_gl_insert_debug_marker(m[0].context, "stopping element %s", m[0].parent.aggregator.parent.object.name);
+    va.entryPoint(debug, "gst_gl_insert_debug_marker")(m[0].context, "stopping element %s", m[0].parent.aggregator.parent.object.name);
     if (pv(m).gl_started != 0) klass(m).gl_stop.?(m);
     pv(m).gl_started = 0;
 }

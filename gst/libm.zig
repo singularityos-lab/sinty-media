@@ -16,7 +16,7 @@ var rint_f: ?F1 = null;
 fn resolve(comptime T: type, slot: *?T, name: [*:0]const u8) T {
     if (slot.*) |f| return f;
     if (handle == null) handle = c.dlopen("libm.so.6", c.RTLD_LAZY);
-    const f: T = @ptrCast(c.dlsym(handle, name) orelse @panic("libm symbol missing"));
+    const f: T = @ptrCast(@alignCast(c.dlsym(handle, name) orelse @panic("libm symbol missing")));
     slot.* = f;
     return f;
 }

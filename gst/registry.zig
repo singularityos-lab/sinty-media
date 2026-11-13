@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const c = @import("c.zig").c;
 const check = @import("check.zig");
 const gtype = @import("gtype.zig");
@@ -588,7 +589,7 @@ fn scanAndUpdate(r: [*c]Registry, file: [*c]const u8) void {
 
 pub fn cacheFile() [*c]u8 {
     if (envOr("GST_REGISTRY_1_0", "GST_REGISTRY")) |f| return c.g_strdup(f);
-    return c.g_build_filename(c.g_get_user_cache_dir(), "gstreamer-1.0", "sinty-registry.x86_64.bin", @as([*c]const u8, null));
+    return c.g_build_filename(c.g_get_user_cache_dir(), "gstreamer-1.0", "sinty-registry." ++ @tagName(builtin.cpu.arch) ++ ".bin", @as([*c]const u8, null));
 }
 
 fn ensureCurrent() void {

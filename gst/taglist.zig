@@ -182,19 +182,27 @@ pub export fn gst_tag_list_new_empty() [*c]TagList {
     return wrap(c.gst_structure_new_empty("taglist"), c.GST_TAG_SCOPE_STREAM);
 }
 
-pub export fn gst_tag_list_new(tag: [*c]const u8, ...) callconv(.c) [*c]TagList {
-    if (!check.that(tag != null, "gst_tag_list_new", "tag != NULL")) return null;
-    const l = gst_tag_list_new_empty();
+pub fn gst_tag_list_new(tag: [*c]const u8, ...) callconv(.c) [*c]TagList {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    addList(l, c.GST_TAG_MERGE_APPEND, tag, &ap);
+    return gst_tag_list_new_va(tag, &ap);
+}
+
+pub fn gst_tag_list_new_va(tag: [*c]const u8, ap: *va.VaList) callconv(.c) [*c]TagList {
+    if (!check.that(tag != null, "gst_tag_list_new", "tag != NULL")) return null;
+    const l = gst_tag_list_new_empty();
+    addList(l, c.GST_TAG_MERGE_APPEND, tag, ap);
     return l;
+}
+
+comptime {
+    va.entry(@This(), "gst_tag_list_new");
 }
 
 pub export fn gst_tag_list_new_valist(ap_c: va.CVaList) [*c]TagList {
     const l = gst_tag_list_new_empty();
     const ap = va.fromC(ap_c);
-    const tag = @cVaArg(ap, [*c]const u8);
+    const tag = va.arg(ap, [*c]const u8);
     addList(l, c.GST_TAG_MERGE_APPEND, tag, ap);
     return l;
 }
@@ -369,7 +377,7 @@ fn addList(l: [*c]TagList, mode: c.GstTagMergeMode, first: [*c]const u8, ap: *va
             c.g_log("GStreamer", c.G_LOG_LEVEL_WARNING, "Expected GstSample argument for tag '%s'", tag);
         } else addValue(l, mode, tag, &v, info);
         c.g_value_unset(&v);
-        tag = @cVaArg(ap, [*c]const u8);
+        tag = va.arg(ap, [*c]const u8);
     }
 }
 
@@ -381,23 +389,39 @@ fn addValueList(l: [*c]TagList, mode: c.GstTagMergeMode, first: [*c]const u8, ap
             c.g_log("GStreamer", c.G_LOG_LEVEL_WARNING, "unknown tag '%s'", tag);
             return;
         };
-        addValue(l, mode, tag, @cVaArg(ap, [*c]const Value), info);
-        tag = @cVaArg(ap, [*c]const u8);
+        addValue(l, mode, tag, va.arg(ap, [*c]const Value), info);
+        tag = va.arg(ap, [*c]const u8);
     }
 }
 
-pub export fn gst_tag_list_add(l: [*c]TagList, mode: c.GstTagMergeMode, tag: [*c]const u8, ...) callconv(.c) void {
-    if (!addGuard("gst_tag_list_add", l, mode, tag)) return;
+pub fn gst_tag_list_add(l: [*c]TagList, mode: c.GstTagMergeMode, tag: [*c]const u8, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    addList(l, mode, tag, &ap);
+    return gst_tag_list_add_va(l, mode, tag, &ap);
 }
 
-pub export fn gst_tag_list_add_values(l: [*c]TagList, mode: c.GstTagMergeMode, tag: [*c]const u8, ...) callconv(.c) void {
-    if (!addGuard("gst_tag_list_add_values", l, mode, tag)) return;
+pub fn gst_tag_list_add_va(l: [*c]TagList, mode: c.GstTagMergeMode, tag: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+    if (!addGuard("gst_tag_list_add", l, mode, tag)) return;
+    addList(l, mode, tag, ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_tag_list_add");
+}
+
+pub fn gst_tag_list_add_values(l: [*c]TagList, mode: c.GstTagMergeMode, tag: [*c]const u8, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    addValueList(l, mode, tag, &ap);
+    return gst_tag_list_add_values_va(l, mode, tag, &ap);
+}
+
+pub fn gst_tag_list_add_values_va(l: [*c]TagList, mode: c.GstTagMergeMode, tag: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+    if (!addGuard("gst_tag_list_add_values", l, mode, tag)) return;
+    addValueList(l, mode, tag, ap);
+}
+
+comptime {
+    va.entry(@This(), "gst_tag_list_add_values");
 }
 
 pub export fn gst_tag_list_add_valist(l: [*c]TagList, mode: c.GstTagMergeMode, tag: [*c]const u8, ap: va.CVaList) void {

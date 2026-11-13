@@ -171,7 +171,7 @@ fn copyOut(v: *c.GValue, ap: *va.VaList) callconv(.c) [*c]u8 {
     var n: c.guint = 0;
     var fmt = vtab[0].lcopy_format;
     while (fmt[0] != 0) : (fmt += 1) {
-        cv[n].v_pointer = @cVaArg(ap, c.gpointer);
+        cv[n].v_pointer = va.arg(ap, c.gpointer);
         n += 1;
     }
     return vtab[0].lcopy_value.?(v, n, @ptrCast(&cv), 0);
@@ -199,15 +199,23 @@ pub export fn gst_child_proxy_get_valist(p: ?*Proxy, first: [*c]const u8, ap_c: 
             return;
         }
         c.g_value_unset(&v);
-        name = @cVaArg(ap, [*c]const u8);
+        name = va.arg(ap, [*c]const u8);
     }
 }
 
-pub export fn gst_child_proxy_get(p: ?*Proxy, first: [*c]const u8, ...) callconv(.c) void {
-    if (!check.that(isProxy(p), "gst_child_proxy_get", "GST_IS_CHILD_PROXY (object)")) return;
+pub fn gst_child_proxy_get(p: ?*Proxy, first: [*c]const u8, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    gst_child_proxy_get_valist(p, first, va.toC(&ap));
+    return gst_child_proxy_get_va(p, first, &ap);
+}
+
+pub fn gst_child_proxy_get_va(p: ?*Proxy, first: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+    if (!check.that(isProxy(p), "gst_child_proxy_get", "GST_IS_CHILD_PROXY (object)")) return;
+    gst_child_proxy_get_valist(p, first, va.toC(ap));
+}
+
+comptime {
+    va.entry(@This(), "gst_child_proxy_get");
 }
 
 pub export fn gst_child_proxy_set_property(p: ?*Proxy, name: [*c]const u8, v: [*c]const c.GValue) void {
@@ -248,15 +256,23 @@ pub export fn gst_child_proxy_set_valist(p: ?*Proxy, first: [*c]const u8, ap_c: 
         c.g_object_set_property(target, pspec[0].name, &v);
         c.gst_object_unref(target);
         c.g_value_unset(&v);
-        name = @cVaArg(ap, [*c]const u8);
+        name = va.arg(ap, [*c]const u8);
     }
 }
 
-pub export fn gst_child_proxy_set(p: ?*Proxy, first: [*c]const u8, ...) callconv(.c) void {
-    if (!check.that(isProxy(p), "gst_child_proxy_set", "GST_IS_CHILD_PROXY (object)")) return;
+pub fn gst_child_proxy_set(p: ?*Proxy, first: [*c]const u8, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    gst_child_proxy_set_valist(p, first, va.toC(&ap));
+    return gst_child_proxy_set_va(p, first, &ap);
+}
+
+pub fn gst_child_proxy_set_va(p: ?*Proxy, first: [*c]const u8, ap: *va.VaList) callconv(.c) void {
+    if (!check.that(isProxy(p), "gst_child_proxy_set", "GST_IS_CHILD_PROXY (object)")) return;
+    gst_child_proxy_set_valist(p, first, va.toC(ap));
+}
+
+comptime {
+    va.entry(@This(), "gst_child_proxy_set");
 }
 
 pub export fn gst_child_proxy_child_added(p: ?*Proxy, child: [*c]c.GObject, name: [*c]const u8) void {

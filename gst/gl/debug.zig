@@ -138,14 +138,18 @@ pub fn enable(ctx: *c.GstGLContext) void {
     for (types[0..n]) |t| gl.DebugMessageControl.?(c.GL_DONT_CARE, t, c.GL_DONT_CARE, 0, null, c.GL_TRUE);
 }
 
-pub export fn gst_gl_insert_debug_marker(ctx: [*c]c.GstGLContext, format: [*c]const u8, ...) callconv(.c) void {
+pub fn gst_gl_insert_debug_marker(ctx: [*c]c.GstGLContext, format: [*c]const u8, ...) callconv(.c) void {
+    var ap = @cVaStart();
+    defer @cVaEnd(&ap);
+    return gst_gl_insert_debug_marker_va(ctx, format, &ap);
+}
+
+pub fn gst_gl_insert_debug_marker_va(ctx: [*c]c.GstGLContext, format: [*c]const u8, ap: *va.VaList) callconv(.c) void {
     const gl = &ctx[0].gl_vtable[0];
     initDebug();
     if (c.gst_debug_category_get_threshold(marker_cat) < c.GST_LEVEL_FIXME) return;
-    var ap = @cVaStart();
     var s: [*c]u8 = null;
-    const len = c.gst_info_vasprintf(&s, format, va.toC(&ap));
-    @cVaEnd(&ap);
+    const len = va.call(c.gst_info_vasprintf, .{ &s, format, ap });
     if (len < 0 or s == null) return;
     if (gl.DebugMessageInsert) |f| {
         f(0x8249, 0x8268, 0, 0x9148, len, s);
@@ -155,6 +159,10 @@ pub export fn gst_gl_insert_debug_marker(ctx: [*c]c.GstGLContext, format: [*c]co
         f(len, s);
     }
     c.g_free(s);
+}
+
+comptime {
+    va.entry(@This(), "gst_gl_insert_debug_marker");
 }
 
 pub export fn gst_gl_async_debug_store_log_msg_valist(ad: [*c]AD, dc: ?*c.GstDebugCategory, level: c.GstDebugLevel, file: [*c]const u8, function: [*c]const u8, line: c.gint, object: [*c]c.GObject, format: [*c]const u8, ap: va.CVaList) void {
@@ -167,7 +175,7 @@ pub export fn gst_gl_async_debug_store_log_msg_valist(ad: [*c]AD, dc: ?*c.GstDeb
         ad[0].function = function;
         ad[0].line = line;
         ad[0].object = if (object != null) @ptrCast(@alignCast(c.g_object_ref(object))) else null;
-        ad[0].debug_msg = c.gst_info_strdup_vprintf(format, ap);
+        ad[0].debug_msg = va.call(c.gst_info_strdup_vprintf, .{ format, ap });
         ad[0].state_flags |= FILLED;
     }
 }
@@ -184,10 +192,18 @@ pub export fn gst_gl_async_debug_output_log_msg(ad: [*c]AD) void {
     }
 }
 
-pub export fn gst_gl_async_debug_store_log_msg(ad: [*c]AD, dc: ?*c.GstDebugCategory, level: c.GstDebugLevel, file: [*c]const u8, function: [*c]const u8, line: c.gint, object: [*c]c.GObject, format: [*c]const u8, ...) callconv(.c) void {
+pub fn gst_gl_async_debug_store_log_msg(ad: [*c]AD, dc: ?*c.GstDebugCategory, level: c.GstDebugLevel, file: [*c]const u8, function: [*c]const u8, line: c.gint, object: [*c]c.GObject, format: [*c]const u8, ...) callconv(.c) void {
+    var ap = @cVaStart();
+    defer @cVaEnd(&ap);
+    return gst_gl_async_debug_store_log_msg_va(ad, dc, level, file, function, line, object, format, &ap);
+}
+
+pub fn gst_gl_async_debug_store_log_msg_va(ad: [*c]AD, dc: ?*c.GstDebugCategory, level: c.GstDebugLevel, file: [*c]const u8, function: [*c]const u8, line: c.gint, object: [*c]c.GObject, format: [*c]const u8, ap: *va.VaList) callconv(.c) void {
     if (level <= c.GST_LEVEL_MAX and level <= c._gst_debug_min) {
-        var ap = @cVaStart();
-        defer @cVaEnd(&ap);
-        gst_gl_async_debug_store_log_msg_valist(ad, dc, level, file, function, line, object, format, va.toC(&ap));
+        gst_gl_async_debug_store_log_msg_valist(ad, dc, level, file, function, line, object, format, va.toC(ap));
     }
+}
+
+comptime {
+    va.entry(@This(), "gst_gl_async_debug_store_log_msg");
 }

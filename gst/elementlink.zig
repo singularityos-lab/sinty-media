@@ -487,19 +487,27 @@ pub export fn gst_element_link(src: [*c]Element, dest: [*c]Element) c.gboolean {
     return gst_element_link_pads(src, null, dest, null);
 }
 
-pub export fn gst_element_link_many(a_in: [*c]Element, b_in: [*c]Element, ...) callconv(.c) c.gboolean {
-    if (!check.that(element.isElement(a_in), "gst_element_link_many", "GST_IS_ELEMENT (element_1)")) return 0;
-    if (!check.that(element.isElement(b_in), "gst_element_link_many", "GST_IS_ELEMENT (element_2)")) return 0;
+pub fn gst_element_link_many(a_in: [*c]Element, b_in: [*c]Element, ...) callconv(.c) c.gboolean {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
+    return gst_element_link_many_va(a_in, b_in, &ap);
+}
+
+pub fn gst_element_link_many_va(a_in: [*c]Element, b_in: [*c]Element, ap: *va.VaList) callconv(.c) c.gboolean {
+    if (!check.that(element.isElement(a_in), "gst_element_link_many", "GST_IS_ELEMENT (element_1)")) return 0;
+    if (!check.that(element.isElement(b_in), "gst_element_link_many", "GST_IS_ELEMENT (element_2)")) return 0;
     var a = a_in;
     var b = b_in;
     while (b != null) {
         if (gst_element_link(a, b) == 0) return 0;
         a = b;
-        b = @cVaArg(&ap, [*c]Element);
+        b = va.arg(ap, [*c]Element);
     }
     return 1;
+}
+
+comptime {
+    va.entry(@This(), "gst_element_link_many");
 }
 
 pub export fn gst_element_link_filtered(src: [*c]Element, dest: [*c]Element, filter: [*c]c.GstCaps) c.gboolean {
@@ -526,18 +534,26 @@ pub export fn gst_element_unlink_pads(src: [*c]Element, sn: [*c]const u8, dest: 
     releaseUnref(src, sp, sr);
 }
 
-pub export fn gst_element_unlink_many(a_in: [*c]Element, b_in: [*c]Element, ...) callconv(.c) void {
-    if (!check.that(a_in != null and b_in != null, "gst_element_unlink_many", "element_1 != NULL && element_2 != NULL")) return;
-    if (!check.that(element.isElement(a_in) and element.isElement(b_in), "gst_element_unlink_many", "GST_IS_ELEMENT (element_1) && GST_IS_ELEMENT (element_2)")) return;
+pub fn gst_element_unlink_many(a_in: [*c]Element, b_in: [*c]Element, ...) callconv(.c) void {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
+    return gst_element_unlink_many_va(a_in, b_in, &ap);
+}
+
+pub fn gst_element_unlink_many_va(a_in: [*c]Element, b_in: [*c]Element, ap: *va.VaList) callconv(.c) void {
+    if (!check.that(a_in != null and b_in != null, "gst_element_unlink_many", "element_1 != NULL && element_2 != NULL")) return;
+    if (!check.that(element.isElement(a_in) and element.isElement(b_in), "gst_element_unlink_many", "GST_IS_ELEMENT (element_1) && GST_IS_ELEMENT (element_2)")) return;
     var a = a_in;
     var b = b_in;
     while (b != null) {
         gst_element_unlink(a, b);
         a = b;
-        b = @cVaArg(&ap, [*c]Element);
+        b = va.arg(ap, [*c]Element);
     }
+}
+
+comptime {
+    va.entry(@This(), "gst_element_unlink_many");
 }
 
 pub export fn gst_element_unlink(src: [*c]Element, dest: [*c]Element) void {
@@ -646,16 +662,24 @@ fn decorate(e: [*c]Element, id: [*c]const u8) [*c]u8 {
 
 pub export fn gst_element_decorate_stream_id_printf_valist(e: [*c]Element, fmt: [*c]const u8, ap: va.CVaList) [*c]u8 {
     if (!check.that(fmt != null, "gst_element_decorate_stream_id_printf_valist", "format")) return null;
-    const id = c.g_strdup_vprintf(fmt, ap);
+    const id = va.call(c.g_strdup_vprintf, .{ fmt, ap });
     defer c.g_free(id);
     return decorate(e, id);
 }
 
-pub export fn gst_element_decorate_stream_id_printf(e: [*c]Element, fmt: [*c]const u8, ...) callconv(.c) [*c]u8 {
-    if (!check.that(fmt != null, "gst_element_decorate_stream_id_printf", "format")) return null;
+pub fn gst_element_decorate_stream_id_printf(e: [*c]Element, fmt: [*c]const u8, ...) callconv(.c) [*c]u8 {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    return gst_element_decorate_stream_id_printf_valist(e, fmt, va.toC(&ap));
+    return gst_element_decorate_stream_id_printf_va(e, fmt, &ap);
+}
+
+pub fn gst_element_decorate_stream_id_printf_va(e: [*c]Element, fmt: [*c]const u8, ap: *va.VaList) callconv(.c) [*c]u8 {
+    if (!check.that(fmt != null, "gst_element_decorate_stream_id_printf", "format")) return null;
+    return gst_element_decorate_stream_id_printf_valist(e, fmt, va.toC(ap));
+}
+
+comptime {
+    va.entry(@This(), "gst_element_decorate_stream_id_printf");
 }
 
 pub export fn gst_element_decorate_stream_id(e: [*c]Element, id: [*c]const u8) [*c]u8 {
@@ -675,15 +699,23 @@ fn createId(p: [*c]Pad, parent: [*c]Element, id: [*c]const u8) [*c]u8 {
 }
 
 pub export fn gst_pad_create_stream_id_printf_valist(p: [*c]Pad, parent: [*c]Element, fmt: [*c]const u8, ap: va.CVaList) [*c]u8 {
-    const expanded: [*c]u8 = if (fmt != null) c.g_strdup_vprintf(fmt, ap) else null;
+    const expanded: [*c]u8 = if (fmt != null) va.call(c.g_strdup_vprintf, .{ fmt, ap }) else null;
     defer c.g_free(expanded);
     return createId(p, parent, expanded);
 }
 
-pub export fn gst_pad_create_stream_id_printf(p: [*c]Pad, parent: [*c]Element, fmt: [*c]const u8, ...) callconv(.c) [*c]u8 {
+pub fn gst_pad_create_stream_id_printf(p: [*c]Pad, parent: [*c]Element, fmt: [*c]const u8, ...) callconv(.c) [*c]u8 {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    return gst_pad_create_stream_id_printf_valist(p, parent, fmt, va.toC(&ap));
+    return gst_pad_create_stream_id_printf_va(p, parent, fmt, &ap);
+}
+
+pub fn gst_pad_create_stream_id_printf_va(p: [*c]Pad, parent: [*c]Element, fmt: [*c]const u8, ap: *va.VaList) callconv(.c) [*c]u8 {
+    return gst_pad_create_stream_id_printf_valist(p, parent, fmt, va.toC(ap));
+}
+
+comptime {
+    va.entry(@This(), "gst_pad_create_stream_id_printf");
 }
 
 pub export fn gst_pad_create_stream_id(p: [*c]Pad, parent: [*c]Element, id: [*c]const u8) [*c]u8 {

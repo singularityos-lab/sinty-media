@@ -1,4 +1,5 @@
 const std = @import("std");
+const va = @import("varargs.zig");
 const c = @import("c.zig").c;
 const check = @import("check.zig");
 const gtype = @import("gtype.zig");
@@ -394,7 +395,7 @@ pub export fn gst_clock_unadjust_unlocked(clock: [*c]Clock, external: Time) Time
 pub export fn gst_clock_get_internal_time(clock: [*c]Clock) Time {
     if (!check.that(isClock(clock), "gst_clock_get_internal_time", "GST_IS_CLOCK (clock)")) return NONE;
     if (flagged(clock, c.GST_CLOCK_FLAG_NEEDS_STARTUP_SYNC) and priv(clock).synced == 0)
-        info.gst_debug_log(info.GST_CAT_CLOCK, c.GST_LEVEL_WARNING, "../gst/gstclock.c", "gst_clock_get_internal_time", 0, @ptrCast(clock), "called get_internal_time() before syncing");
+        va.entryPoint(info, "gst_debug_log")(info.GST_CAT_CLOCK, c.GST_LEVEL_WARNING, "../gst/gstclock.c", "gst_clock_get_internal_time", 0, @ptrCast(clock), "called get_internal_time() before syncing");
     const get = classOf(clock).get_internal_time orelse return 0;
     return get(clock);
 }

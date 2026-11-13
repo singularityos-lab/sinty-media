@@ -1,4 +1,5 @@
 const std = @import("std");
+const va = @import("../varargs.zig");
 const c = @import("../c.zig").c;
 const check = @import("check.zig");
 const gtype = @import("../gtype.zig");
@@ -182,13 +183,13 @@ fn defaultFill(_: OSrc, _: [*c]c.GstGLMemory) callconv(.c) c.gboolean {
 
 fn glStart(_: OCtx, data: c.gpointer) callconv(.c) void {
     const s = sr(data);
-    debug.gst_gl_insert_debug_marker(s[0].context, "starting element %s", s[0].parent.parent.element.object.name);
+    va.entryPoint(debug, "gst_gl_insert_debug_marker")(s[0].context, "starting element %s", s[0].parent.parent.element.object.name);
     pv(s).gl_started = klass(s).gl_start.?(s);
 }
 
 fn glStop(_: OCtx, data: c.gpointer) callconv(.c) void {
     const s = sr(data);
-    debug.gst_gl_insert_debug_marker(s[0].context, "stopping element %s", s[0].parent.parent.element.object.name);
+    va.entryPoint(debug, "gst_gl_insert_debug_marker")(s[0].context, "stopping element %s", s[0].parent.parent.element.object.name);
     pv(s).out_tex = null;
     if (pv(s).gl_started != 0) klass(s).gl_stop.?(s);
     pv(s).gl_started = 0;

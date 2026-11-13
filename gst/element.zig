@@ -772,13 +772,21 @@ pub export fn gst_element_post_message(e: [*c]Element, m: [*c]c.GstMessage) c.gb
     return res;
 }
 
-pub export fn _gst_element_error_printf(fmt: [*c]const u8, ...) callconv(.c) [*c]u8 {
-    if (fmt == null or fmt[0] == 0) return null;
+pub fn _gst_element_error_printf(fmt: [*c]const u8, ...) callconv(.c) [*c]u8 {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
+    return _gst_element_error_printf_va(fmt, &ap);
+}
+
+pub fn _gst_element_error_printf_va(fmt: [*c]const u8, ap: *va.VaList) callconv(.c) [*c]u8 {
+    if (fmt == null or fmt[0] == 0) return null;
     var buf: [*c]u8 = null;
-    if (printf.vasprintf(&buf, fmt, &ap) < 0) return null;
+    if (printf.vasprintf(&buf, fmt, ap) < 0) return null;
     return buf;
+}
+
+comptime {
+    va.entry(@This(), "_gst_element_error_printf");
 }
 
 pub export fn gst_element_message_full_with_details(e: [*c]Element, kind: c.GstMessageType, domain: c.GQuark, code: c.gint, text: [*c]u8, debug: [*c]u8, file: [*c]const u8, function: [*c]const u8, line: c.gint, s: [*c]c.GstStructure) void {
@@ -1314,11 +1322,19 @@ pub export fn gst_element_call_async(e: [*c]Element, func: c.GstElementCallAsync
     callAsync(@ptrCast(e), @ptrCast(func), data, destroy);
 }
 
-pub export fn gst_make_element_message_details(first: [*c]const u8, ...) callconv(.c) [*c]c.GstStructure {
-    if (first == null) return null;
+pub fn gst_make_element_message_details(first: [*c]const u8, ...) callconv(.c) [*c]c.GstStructure {
     var ap = @cVaStart();
     defer @cVaEnd(&ap);
-    return c.gst_structure_new_valist("details", first, va.toC(&ap));
+    return gst_make_element_message_details_va(first, &ap);
+}
+
+pub fn gst_make_element_message_details_va(first: [*c]const u8, ap: *va.VaList) callconv(.c) [*c]c.GstStructure {
+    if (first == null) return null;
+    return va.call(c.gst_structure_new_valist, .{ "details", first, ap });
+}
+
+comptime {
+    va.entry(@This(), "gst_make_element_message_details");
 }
 
 pub export fn gst_state_get_name(s: c.GstState) [*c]const u8 {

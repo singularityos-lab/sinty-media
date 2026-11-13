@@ -1,4 +1,5 @@
 const std = @import("std");
+const va = @import("../varargs.zig");
 const c = @import("../c.zig").c;
 const check = @import("check.zig");
 const gtype = @import("../gtype.zig");
@@ -1496,7 +1497,7 @@ fn doConvert(ctx: OCtx, data: c.gpointer) callconv(.c) void {
         p.pool_started = 1;
     }
     if (c.gst_buffer_pool_acquire_buffer(p.pool, &cc[0].outbuf, null) != c.GST_FLOW_OK) return fail(p);
-    debug.gst_gl_insert_debug_marker(ctx, "%s converting from %s to %s", cc[0].parent.name, c.gst_video_format_to_string(fmtOf(&cc[0].in_info)), c.gst_video_format_to_string(fmtOf(&cc[0].out_info)));
+    va.entryPoint(debug, "gst_gl_insert_debug_marker")(ctx, "%s converting from %s to %s", cc[0].parent.name, c.gst_video_format_to_string(fmtOf(&cc[0].in_info)), c.gst_video_format_to_string(fmtOf(&cc[0].out_info)));
     var ok = true;
     v = 0;
     while (ok and v < views) : (v += 1) ok = convertView(ctx, cc, v);

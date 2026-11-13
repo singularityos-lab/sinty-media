@@ -79,27 +79,27 @@ pub fn stimeAlloc(t: i64) [*c]u8 {
 
 fn unsignedArg(spec: *const Spec, ap: *va.VaList) callconv(.c) u64 {
     return switch (spec.length) {
-        .hh => @as(u8, @truncate(@cVaArg(ap, c_uint))),
-        .h => @as(u16, @truncate(@cVaArg(ap, c_uint))),
-        .none => @cVaArg(ap, c_uint),
-        .l => @cVaArg(ap, c_ulong),
-        .ll, .big_l => @cVaArg(ap, c_ulonglong),
-        .j => @cVaArg(ap, u64),
-        .z => @cVaArg(ap, usize),
-        .t => @bitCast(@as(i64, @cVaArg(ap, isize))),
+        .hh => @as(u8, @truncate(va.arg(ap, c_uint))),
+        .h => @as(u16, @truncate(va.arg(ap, c_uint))),
+        .none => va.arg(ap, c_uint),
+        .l => va.arg(ap, c_ulong),
+        .ll, .big_l => va.arg(ap, c_ulonglong),
+        .j => va.arg(ap, u64),
+        .z => va.arg(ap, usize),
+        .t => @bitCast(@as(i64, va.arg(ap, isize))),
     };
 }
 
 fn signedArg(spec: *const Spec, ap: *va.VaList) callconv(.c) i64 {
     return switch (spec.length) {
-        .hh => @as(i8, @truncate(@cVaArg(ap, c_int))),
-        .h => @as(i16, @truncate(@cVaArg(ap, c_int))),
-        .none => @cVaArg(ap, c_int),
-        .l => @cVaArg(ap, c_long),
-        .ll, .big_l => @cVaArg(ap, c_longlong),
-        .j => @cVaArg(ap, i64),
-        .z => @bitCast(@as(u64, @cVaArg(ap, usize))),
-        .t => @cVaArg(ap, isize),
+        .hh => @as(i8, @truncate(va.arg(ap, c_int))),
+        .h => @as(i16, @truncate(va.arg(ap, c_int))),
+        .none => va.arg(ap, c_int),
+        .l => va.arg(ap, c_long),
+        .ll, .big_l => va.arg(ap, c_longlong),
+        .j => va.arg(ap, i64),
+        .z => @bitCast(@as(u64, va.arg(ap, usize))),
+        .t => va.arg(ap, isize),
     };
 }
 
@@ -151,7 +151,7 @@ fn integer(out: *Out, spec: *const Spec, conv: u8, ap: *va.VaList) callconv(.c) 
 }
 
 fn floating(out: *Out, spec: *const Spec, conv: u8, ap: *va.VaList) callconv(.c) void {
-    const v: f64 = @cVaArg(ap, f64);
+    const v: f64 = va.arg(ap, f64);
     var sign: []const u8 = "";
     if (std.math.signbit(v)) sign = "-" else if (spec.plus) sign = "+" else if (spec.space) sign = " ";
     const mag = @abs(v);
@@ -173,7 +173,7 @@ fn floating(out: *Out, spec: *const Spec, conv: u8, ap: *va.VaList) callconv(.c)
 }
 
 fn pointer(out: *Out, spec: *const Spec, ap: *va.VaList, ext: u8) callconv(.c) void {
-    const p = @cVaArg(ap, ?*anyopaque);
+    const p = va.arg(ap, ?*anyopaque);
     if (ext != 0) {
         if (describe) |hook| {
             const s = hook(ext, p);
@@ -217,7 +217,7 @@ fn run(out: *Out, fmt: [*c]const u8, ap: *va.VaList) callconv(.c) void {
             }
         }
         if (fmt[i] == '*') {
-            const w = @cVaArg(ap, c_int);
+            const w = va.arg(ap, c_int);
             if (w < 0) {
                 spec.left = true;
                 spec.width = @intCast(-w);
@@ -235,7 +235,7 @@ fn run(out: *Out, fmt: [*c]const u8, ap: *va.VaList) callconv(.c) void {
         if (fmt[i] == '.') {
             i += 1;
             if (fmt[i] == '*') {
-                const p = @cVaArg(ap, c_int);
+                const p = va.arg(ap, c_int);
                 spec.precision = if (p < 0) null else @intCast(p);
                 i += 1;
             } else {
@@ -290,11 +290,11 @@ fn run(out: *Out, fmt: [*c]const u8, ap: *va.VaList) callconv(.c) void {
             'd', 'i', 'u', 'o', 'x', 'X' => integer(out, &spec, conv, ap),
             'e', 'E', 'f', 'F', 'g', 'G', 'a', 'A' => floating(out, &spec, conv, ap),
             'c' => {
-                const ch: u8 = @truncate(@as(c_uint, @bitCast(@cVaArg(ap, c_int))));
+                const ch: u8 = @truncate(@as(c_uint, @bitCast(va.arg(ap, c_int))));
                 out.padded(&spec, "", "", &.{ch}, false);
             },
             's' => {
-                const s = @cVaArg(ap, [*c]const u8);
+                const s = va.arg(ap, [*c]const u8);
                 const text: []const u8 = if (s == null) "(null)" else std.mem.span(s);
                 const n = if (spec.precision) |p| @min(p, text.len) else text.len;
                 out.padded(&spec, "", "", text[0..n], false);
@@ -307,7 +307,7 @@ fn run(out: *Out, fmt: [*c]const u8, ap: *va.VaList) callconv(.c) void {
                 }
                 pointer(out, &spec, ap, ext);
             },
-            'n' => _ = @cVaArg(ap, ?*anyopaque),
+            'n' => _ = va.arg(ap, ?*anyopaque),
             else => out.add(&.{ '%', conv }),
         }
     }

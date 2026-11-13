@@ -1,4 +1,5 @@
 const std = @import("std");
+const va = @import("varargs.zig");
 const c = @import("c.zig").c;
 const check = @import("check.zig");
 const gtype = @import("gtype.zig");
@@ -348,13 +349,13 @@ fn dumpEntries(list: [*c]c.GList, depth: usize) void {
         const stop = printf.timeAlloc(x.stop);
         defer c.g_free(start);
         defer c.g_free(stop);
-        info.gst_debug_log(info.GST_CAT_DEFAULT, c.GST_LEVEL_LOG, "gst/toc.zig", "gst_toc_dump_entries", 0, null, "%s  - %s (%s), %s - %s, tags: %p\x07A", &indent, x.uid, gst_toc_entry_type_get_nick(x.kind), start, stop, x.tags);
+        va.entryPoint(info, "gst_debug_log")(info.GST_CAT_DEFAULT, c.GST_LEVEL_LOG, "gst/toc.zig", "gst_toc_dump_entries", 0, null, "%s  - %s (%s), %s - %s, tags: %p\x07A", &indent, x.uid, gst_toc_entry_type_get_nick(x.kind), start, stop, x.tags);
         if (x.subentries != null) dumpEntries(x.subentries, depth + 2);
     }
 }
 
 pub export fn gst_toc_dump(p: ?*Toc) void {
     if (info.GST_CAT_DEFAULT == null or info.gst_debug_category_get_threshold(info.GST_CAT_DEFAULT) < c.GST_LEVEL_LOG) return;
-    info.gst_debug_log(info.GST_CAT_DEFAULT, c.GST_LEVEL_LOG, "gst/toc.zig", "gst_toc_dump", 0, null, "       Toc %p, scope: %s, tags: %p\x07A", p, @as([*c]const u8, if (t(p).scope == c.GST_TOC_SCOPE_GLOBAL) "global" else "current"), t(p).tags);
+    va.entryPoint(info, "gst_debug_log")(info.GST_CAT_DEFAULT, c.GST_LEVEL_LOG, "gst/toc.zig", "gst_toc_dump", 0, null, "       Toc %p, scope: %s, tags: %p\x07A", p, @as([*c]const u8, if (t(p).scope == c.GST_TOC_SCOPE_GLOBAL) "global" else "current"), t(p).tags);
     dumpEntries(t(p).entries, 2);
 }
