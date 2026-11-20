@@ -3,9 +3,12 @@ const cm = @import("common.zig");
 const c = cm.c;
 const build = @import("build_options");
 const pipewire = @import("pipewire/src.zig");
+const provider = @import("pipewire/provider.zig");
 
 fn pluginInit(p: ?*c.GstPlugin) callconv(.c) c.gboolean {
-    return @intFromBool(pipewire.register(p));
+    const src = pipewire.register(p);
+    const dev = provider.register(p);
+    return @intFromBool(src and dev);
 }
 
 var desc = c.GstPluginDesc{

@@ -190,6 +190,7 @@ pub fn build(b: *std.Build) void {
         const m = gstModule(b, pl.root, target, optimize, pl.system);
         m.addOptions("build_options", plugin_opts);
         m.addImport("mediad", proto_mod);
+        if (std.mem.eql(u8, pl.name, "pipewire")) m.addCSourceFile(.{ .file = b.path("plugins/pipewire/registry.c") });
         const lib = b.addLibrary(.{ .name = b.fmt("gst{s}", .{pl.name}), .linkage = .dynamic, .root_module = m, .use_llvm = true });
         const inst = b.addInstallArtifact(lib, .{ .dest_dir = .{ .override = .{ .custom = "plugins" } } });
         plugin_step.dependOn(&inst.step);
